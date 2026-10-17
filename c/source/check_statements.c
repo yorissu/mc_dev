@@ -208,7 +208,7 @@ mc_place_s mc_place_of(mc_checker_s* const c, const mc_node_s* const node, mc_co
 		const char* component = "*";
 		if (mc_try_value(c, node->as.index.index, &value) && mc_cvalue_integer == value.kind) {
 			char text[64];
-			(void)snprintf(text, sizeof(text), "%lld", (long long)value.as.integer);
+			(void)snprintf(text, sizeof(text), "%lld", (long long)mc_i128_to_int(value.as.integer));
 			component = mc_arena_strndup(c->arena, text, strlen(text));
 		}
 		mc_place_s base = mc_place_of(c, node->as.index.target, context);

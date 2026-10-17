@@ -218,7 +218,7 @@ static mc_plugin_constant_s _mc_check_constant(mc_plugin_check_s* const check, c
 	switch (value.kind) {
 		case mc_cvalue_integer:
 			constant.kind = mc_plugin_constant_integer;
-			constant.integer = (int64_t)(uint64_t)value.as.integer;
+			constant.integer = mc_i128_to_int(value.as.integer);
 			return constant;
 		case mc_cvalue_real:
 			constant.kind = mc_plugin_constant_float;
@@ -238,7 +238,7 @@ static mc_plugin_constant_s _mc_check_constant(mc_plugin_check_s* const check, c
 			const int64_t start = (mc_cvalue_list == value.kind) ? 0 : value.as.slice.start;
 			const int64_t length = (mc_cvalue_list == value.kind) ? (int64_t)list->count : value.as.slice.length;
 			uint8_t* const bytes = mc_arena_alloc(c->arena, (size_t)length + 1);
-			for (int64_t i = 0; i < length && list != NULL; ++i) bytes[i] = (uint8_t)list->items[start + i].as.integer;
+			for (int64_t i = 0; i < length && list != NULL; ++i) bytes[i] = (uint8_t)mc_i128_low(list->items[start + i].as.integer);
 			constant.kind = mc_plugin_constant_bytes;
 			constant.bytes = bytes;
 			constant.length = (size_t)length;

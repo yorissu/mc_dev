@@ -6,28 +6,31 @@
 
 #include "check.h"
 #include "mc/parser.h"
+#include "mc/platform.h"
 
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
-/// 'path' made absolute and normalized (like python's os.path.abspath).
+/// 'path' made absolute and normalized (like python's os.path.abspath),
+/// with '/' between its parts on every system.
 static char* _mc_absolute(const char* const path) {
 	mc_string_s joined = {0};
-	if ('/' != path[0]) {
-		char directory[4096];
-		if (NULL != getcwd(directory, sizeof(directory))) mc_string_append_cstr(&joined, directory);
+	if (0 == mc_path_root(path)) {
+		char* const directory = mc_current_directory();
+		if (directory != NULL) mc_string_append_cstr(&joined, directory);
+		mc_free(directory);
 		mc_string_append_char(&joined, '/');
 	}
 	mc_string_append_cstr(&joined, path);
+	const char* const text = mc_string_cstr(&joined);
+	const size_t root = mc_path_root(text);
 	// normalize: drop empty parts and '.', resolve '..'.
 	mc_vector_of(mc_view_s) parts = {0};
-	const char* cursor = mc_string_cstr(&joined);
+	const char* cursor = text + root;
 	while (*cursor != '\0') {
-		while ('/' == *cursor) ++cursor;
+		while (mc_is_path_separator(*cursor)) ++cursor;
 		const char* const start = cursor;
-		while (*cursor != '\0' && *cursor != '/') ++cursor;
+		while (*cursor != '\0' && !mc_is_path_separator(*cursor)) ++cursor;
 		const mc_view_s part = mc_view_new(start, (size_t)(cursor - start));
 		if (0 == part.length || mc_view_eq_cstr(part, ".")) continue;
 		if (mc_view_eq_cstr(part, "..")) {
@@ -37,11 +40,11 @@ static char* _mc_absolute(const char* const path) {
 		mc_vector_push(&parts, part);
 	}
 	mc_string_s result = {0};
+	for (size_t i = 0; i < root; ++i) mc_string_append_char(&result, mc_is_path_separator(text[i]) ? '/' : text[i]);
 	for (size_t i = 0; i < parts.count; ++i) {
-		mc_string_append_char(&result, '/');
+		if (i > 0) mc_string_append_char(&result, '/');
 		mc_string_append(&result, parts.data[i]);
 	}
-	if (0 == parts.count) mc_string_append_char(&result, '/');
 	mc_vector_free(&parts);
 	mc_string_free(&joined);
 	return mc_string_take(&result);
@@ -64,11 +67,6 @@ static char* _mc_module_path(const char* const root, const mc_views_s* const par
 	}
 	mc_string_append_cstr(&path, ".mc");
 	return mc_string_take(&path);
-}
-
-static bool _mc_is_file(const char* const path) {
-	struct stat status;
-	return 0 == stat(path, &status) && S_ISREG(status.st_mode);
 }
 
 static char* _mc_dotted(const mc_views_s* const parts) {
@@ -110,7 +108,7 @@ static mc_module_s* _mc_load(_mc_loader_s* const loader, const char* const key, 
 		const char* found = NULL;
 		for (size_t r = 0; r < c->roots.count && NULL == found; ++r) {
 			char* const candidate = _mc_module_path(c->roots.data[r], parts);
-			if (_mc_is_file(candidate)) found = _mc_keep(c, candidate);
+			if (mc_is_file(candidate)) found = _mc_keep(c, candidate);
 			else mc_free(candidate);
 		}
 		if (NULL == found) {

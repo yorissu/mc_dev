@@ -10,6 +10,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/// MC_PORTABLE builds with standard c11 only: no __typeof__, no
+/// attributes and the portable 128-bit integers (int128.h). without it the
+/// build uses the extensions the compiler has; the results are the same.
+#if !defined(MC_PORTABLE) && (defined(__GNUC__) || defined(__clang__) || (defined(_MSC_VER) && _MSC_VER >= 1939))
+#	define MC_HAS_TYPEOF 1
+#else
+#	define MC_HAS_TYPEOF 0
+#endif
+
 #define mc_noreturn _Noreturn
 
 #define mc_unused(_value) do {                                                 \
@@ -20,8 +29,12 @@
 		sizeof(_array) / sizeof(*(_array))                                     \
 	)
 
-#define mc_printf_like(_format, _arguments)                                    \
-	__attribute__((format(printf, _format, _arguments)))
+#if defined(__GNUC__) && !defined(MC_PORTABLE)
+#	define mc_printf_like(_format, _arguments)                                 \
+		__attribute__((format(printf, _format, _arguments)))
+#else
+#	define mc_printf_like(_format, _arguments)
+#endif
 
 mc_noreturn void mc_panic_impl_(const char* const file, const int line,
 								const char* const format, ...)

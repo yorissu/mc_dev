@@ -288,7 +288,7 @@ static mc_node_s* _mc_attribute(_mc_parser_s* const p) {
 		}
 		else if (mc_token_integer == value->kind) {
 			node->as.attribute.value_kind = mc_attribute_value_integer;
-			node->as.attribute.integer = (int64_t)value->integer;
+			node->as.attribute.integer = mc_i128_to_int(value->integer);
 		}
 		else if (mc_token_identifier == value->kind || mc_token_type == value->kind || _mc_is_keyword(value->kind)) {
 			node->as.attribute.value_kind = mc_attribute_value_name;
@@ -1207,7 +1207,7 @@ static mc_node_s* _mc_primary(_mc_parser_s* const p) {
 		case mc_token_char: {
 			_mc_advance(p);
 			mc_node_s* const node = _mc_new(p, mc_node_char, span);
-			node->as.char_.value = (uint8_t)token->integer;
+			node->as.char_.value = (uint8_t)mc_i128_low(token->integer);
 			return node;
 		}
 		case mc_token_string: {

@@ -47,16 +47,17 @@ static int64_t _mc_constant_length(mc_checker_s* const c, mc_node_s* const node,
 	if (mc_type_is_special(type, mc_special_untyped_integer)) {
 		mc_cvalue_s probe = {0};
 		const bool known = mc_try_value(c, node, &probe);
-		const bool negative = known && mc_cvalue_integer == probe.kind && probe.as.integer < 0;
+		const bool negative = known && mc_cvalue_integer == probe.kind && mc_i128_negative(probe.as.integer);
 		mc_finalize(c, node, mc_scalar_type(c, negative ? mc_scalar_int : mc_scalar_uint));
 	}
 	mc_cvalue_s value = {0};
 	if (!mc_require_constant(c, node, context, "an array length", &value) || value.kind != mc_cvalue_integer) return -2;
-	if (value.as.integer < 0) {
-		mc_label_main(mc_error(c->diag, mc_E0502, node->span, "an array length cannot be negative"), "length is %lld", (long long)value.as.integer);
+	if (mc_i128_negative(value.as.integer)) {
+		mc_label_main(mc_error(c->diag, mc_E0502, node->span, "an array length cannot be negative"), "length is %lld",
+			(long long)mc_i128_to_int(value.as.integer));
 		return -1;
 	}
-	return (int64_t)value.as.integer;
+	return mc_i128_to_int(value.as.integer);
 }
 
 const mc_type_s* mc_resolve_type(mc_checker_s* const c, const mc_node_s* const node, mc_context_s* const context,

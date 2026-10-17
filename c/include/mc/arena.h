@@ -27,8 +27,7 @@ void mc_arena_free(mc_arena_s* const arena);
 
 /// pushes onto a vector (data, count, capacity) whose memory lives in 'arena':
 /// nothing to free, so syntax trees can be abandoned at any point.
-#define mc_arena_push(_arena, _vector, _item) do {                             \
-		__typeof__(*(_vector)->data) _mc_item = (_item);                       \
+#define mc_arena_grow_(_arena, _vector) do {                                   \
 		if ((_vector)->count == (_vector)->capacity) {                         \
 			const size_t _capacity = (_vector)->capacity ? (_vector)->capacity * 2 : 4; \
 			void* const _data = mc_arena_alloc((_arena), _capacity * sizeof(*(_vector)->data)); \
@@ -36,7 +35,21 @@ void mc_arena_free(mc_arena_s* const arena);
 			(_vector)->data = _data;                                           \
 			(_vector)->capacity = _capacity;                                   \
 		}                                                                      \
+	} while (0)
+
+/// the item is evaluated like in mc_vector_push (see vector.h).
+#if MC_HAS_TYPEOF
+#	define mc_arena_push(_arena, _vector, _item) do {                          \
+		__typeof__(*(_vector)->data) _mc_item = (_item);                       \
+		mc_arena_grow_(_arena, _vector);                                       \
 		(_vector)->data[(_vector)->count++] = _mc_item;                        \
 	} while (0)
+#else
+#	define mc_arena_push(_arena, _vector, _item) do {                          \
+		mc_arena_grow_(_arena, _vector);                                       \
+		(_vector)->data[(_vector)->count] = (_item);                           \
+		(_vector)->count += 1;                                                 \
+	} while (0)
+#endif
 
 #endif

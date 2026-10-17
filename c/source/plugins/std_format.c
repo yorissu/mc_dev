@@ -5,6 +5,7 @@
 
 #include "std.h"
 
+#include <ctype.h>
 #include <inttypes.h>
 #include <math.h>
 #include <stdio.h>
@@ -204,7 +205,12 @@ void mc_std_format_integer(mc_string_s* const out, const mc_std_spec_s* const sp
 
 void mc_std_format_float(mc_string_s* const out, const mc_std_spec_s* const spec, const double value, const int bits) {
 	mc_string_s body = {0};
-	if ((0 == spec->type || 'g' == spec->type) && !spec->has_precision) {
+	if (!isfinite(value)) {
+		// spelled here: c libraries differ ('-nan', 'nan(ind)'); 'E' writes them in capitals
+		const char* const text = isnan(value) ? "nan" : (value > 0) ? "inf" : "-inf";
+		for (const char* at = text; *at != '\0'; ++at) mc_string_append_char(&body, ('E' == spec->type) ? (char)toupper((unsigned char)*at) : *at);
+	}
+	else if ((0 == spec->type || 'g' == spec->type) && !spec->has_precision) {
 		mc_format_float_value(&body, value, bits);
 	}
 	else {

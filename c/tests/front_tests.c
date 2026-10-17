@@ -47,11 +47,11 @@ cairo_test_new(lexer, numbers_with_bases_separators_and_suffixes) {
 	_lexed_s lexed;
 	_lex(&lexed, "0x1F 0b1010 0o17 1_000 255u8 1.5f32 2e3");
 	const mc_token_s* const t = lexed.tokens.data;
-	cairo_assert_eq((unsigned long long)t[0].integer, 31ull);
-	cairo_assert_eq((unsigned long long)t[1].integer, 10ull);
-	cairo_assert_eq((unsigned long long)t[2].integer, 15ull);
-	cairo_assert_eq((unsigned long long)t[3].integer, 1000ull);
-	cairo_assert_eq((unsigned long long)t[4].integer, 255ull);
+	cairo_assert_eq((unsigned long long)mc_i128_low(t[0].integer), 31ull);
+	cairo_assert_eq((unsigned long long)mc_i128_low(t[1].integer), 10ull);
+	cairo_assert_eq((unsigned long long)mc_i128_low(t[2].integer), 15ull);
+	cairo_assert_eq((unsigned long long)mc_i128_low(t[3].integer), 1000ull);
+	cairo_assert_eq((unsigned long long)mc_i128_low(t[4].integer), 255ull);
 	cairo_assert_eq((int)t[4].suffix, (int)mc_scalar_u8);
 	cairo_assert_eq((int)t[5].kind, (int)mc_token_float);
 	cairo_assert_eq(t[5].real, 1.5);
@@ -72,7 +72,7 @@ cairo_test_new(lexer, strings_characters_and_comments) {
 	cairo_assert_true(t[1].c);
 	cairo_assert_eq((int)t[1].bytes.data[2], 0);
 	cairo_assert_eq((int)t[2].kind, (int)mc_token_char);
-	cairo_assert_eq((unsigned long long)t[2].integer, (unsigned long long)'z');
+	cairo_assert_eq((unsigned long long)mc_i128_low(t[2].integer), (unsigned long long)'z');
 	cairo_assert_eq((int)t[3].kind, (int)mc_token_eof);
 	_lexed_free(&lexed);
 }
@@ -128,8 +128,9 @@ cairo_test_new(types, unify_binds_parameters) {
 cairo_test_new(types, integer_ranges) {
 	mc_types_s types;
 	mc_types_init(&types);
-	cairo_assert_eq((long long)mc_type_minimum(mc_type_of_scalar(&types, mc_scalar_s8)), -128ll);
-	cairo_assert_eq((unsigned long long)mc_type_maximum(mc_type_of_scalar(&types, mc_scalar_u64)), 18446744073709551615ull);
+	cairo_assert_eq((long long)mc_i128_to_int(mc_type_minimum(mc_type_of_scalar(&types, mc_scalar_s8))), -128ll);
+	cairo_assert_eq((unsigned long long)mc_i128_low(mc_type_maximum(mc_type_of_scalar(&types, mc_scalar_u64))), 18446744073709551615ull);
+	cairo_assert_eq(mc_i128_high(mc_type_maximum(mc_type_of_scalar(&types, mc_scalar_u64))), 0ull);
 	cairo_assert_true(mc_type_is_signed(mc_type_of_scalar(&types, mc_scalar_int)));
 	cairo_assert_false(mc_type_is_signed(mc_type_of_scalar(&types, mc_scalar_uint)));
 	mc_types_free(&types);

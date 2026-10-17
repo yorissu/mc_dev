@@ -6,6 +6,7 @@
 /// floats, strings and bytes, the 'g' format), so the c and the python
 /// implementations print identical trees, values and messages.
 
+#include "mc/int128.h"
 #include "mc/string.h"
 
 /// the shortest text that reads back as 'value' (python's repr: '1.5',
@@ -24,9 +25,9 @@ void mc_format_f32(mc_string_s* const out, const double value);
 void mc_format_float_value(mc_string_s* const out, const double value, const int bits);
 
 /// a 128-bit integer in decimal.
-void mc_format_int128(mc_string_s* const out, const __int128 value);
+void mc_format_int128(mc_string_s* const out, const mc_i128_s value);
 
-void mc_format_uint128(mc_string_s* const out, const unsigned __int128 value);
+void mc_format_uint128(mc_string_s* const out, const mc_i128_s value);
 
 /// python's repr of a text ('name', "it's") and of bytes (the part after b).
 void mc_format_repr_text(mc_string_s* const out, const mc_view_s text);

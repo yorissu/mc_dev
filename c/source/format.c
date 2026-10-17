@@ -89,24 +89,14 @@ void mc_format_float_value(mc_string_s* const out, const double value, const int
 	if (!marked) mc_string_append_cstr(out, ".0");
 }
 
-void mc_format_uint128(mc_string_s* const out, unsigned __int128 value) {
-	char digits[48];
-	size_t count = 0;
-	do {
-		digits[count++] = (char)('0' + (int)(value % 10));
-		value /= 10;
-	} while (value > 0);
-	while (count > 0) mc_string_append_char(out, digits[--count]);
+void mc_format_uint128(mc_string_s* const out, const mc_i128_s value) {
+	char text[48];
+	mc_string_append_cstr(out, mc_u128_text(text, value));
 }
 
-void mc_format_int128(mc_string_s* const out, const __int128 value) {
-	if (value < 0) {
-		mc_string_append_char(out, '-');
-		mc_format_uint128(out, (unsigned __int128)0 - (unsigned __int128)value);
-	}
-	else {
-		mc_format_uint128(out, (unsigned __int128)value);
-	}
+void mc_format_int128(mc_string_s* const out, const mc_i128_s value) {
+	char text[48];
+	mc_string_append_cstr(out, mc_i128_text(text, value));
 }
 
 static void _mc_repr(mc_string_s* const out, const mc_view_s text, const bool bytes) {

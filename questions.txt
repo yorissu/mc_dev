@@ -210,3 +210,25 @@ each one is easy to revisit.
 - E0705 points at the innermost loop or call still running when the step
   limit is reached; for a recursive function that is the innermost
   recursive call ('the call of `fib` runs more than 1000000 steps').
+- 128-bit integers: include/mc/int128.h wraps the value in a struct
+  (mc_i128_s) on both paths, so the compiler's code is the same with
+  gcc/clang (__int128 inside) and msvc (two 64-bit halves). the tests build
+  the cases twice (tests/int128_tests.c, tests/int128_portable_tests.c)
+  and check the portable path against __int128 on random values.
+- 'MC_PORTABLE' builds with standard c11 only: the portable integers, no
+  __typeof__ in the push macros (the item is then evaluated after the
+  vector grows), no attributes. 'make CONFIG=portable check' runs every
+  test on that build; -Wno-pedantic is gone from the makefile, so every
+  build is -Wpedantic clean. 'make CC=clang' works too (gcc-only warnings
+  are left out for clang).
+- programs print the same bytes on every system: on windows mc puts
+  stdout and stderr in binary mode (no '\r\n'). nan and infinities in
+  '{:...}' specifiers are spelled by mc ('nan', 'inf', capitals with 'E'),
+  as c libraries differ ('-nan', 'nan(ind)').
+- paths: module paths are absolute with '/' between parts on every system
+  ('C:/x/y.mc' on windows); windows accepts both separators.
+- msvc: c/build.bat (not a makefile.msvc: one script needs no nmake
+  knowledge). it builds with /std:c11 /W4 (without the warnings about what
+  c11 allows and the implicit conversions gcc does not flag either), not
+  /WX, as it could not be tried here. .gitattributes checks .bat files
+  out with crlf.

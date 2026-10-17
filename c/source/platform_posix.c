@@ -69,6 +69,10 @@ bool mc_is_terminal(FILE* const stream) {
 	return isatty(fileno(stream)) != 0;
 }
 
+void mc_binary_stream(FILE* const stream) {
+	mc_unused(stream);
+}
+
 char* mc_current_directory(void) {
 	char directory[4096];
 	if (NULL == getcwd(directory, sizeof(directory))) return NULL;
@@ -98,6 +102,14 @@ void mc_remove_tree(const char* const path) {
 	else {
 		(void)unlink(path);
 	}
+}
+
+bool mc_is_path_separator(const char c) {
+	return '/' == c;
+}
+
+size_t mc_path_root(const char* const path) {
+	return ('/' == path[0]) ? 1 : 0;
 }
 
 char mc_path_list_separator(void) {

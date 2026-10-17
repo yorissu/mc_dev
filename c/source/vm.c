@@ -126,7 +126,7 @@ static mc_word_u _mc_arithmetic(mc_vm_s* const vm, const mc_instruction_s* const
 		case mc_op_SHR: {
 			if (mc_vm_signed(instruction->target) && right.i < 0) {
 				char text[48];
-				mc_vm_fail(vm, "negative shift count %s", mc_vm_int_text(text, right.i));
+				mc_vm_fail(vm, "negative shift count %s", mc_vm_int_text(text, mc_i128_from_int(right.i)));
 			}
 			const uint64_t count = ub;
 			if (mc_op_SHL == opcode) return mc_vm_wrap(code, count >= 64 ? 0 : ua << count);
@@ -250,15 +250,15 @@ static void _mc_slice_bounds(mc_vm_s* const vm, const mc_instruction_s* const in
 							 uint64_t* const high_out) {
 	const int64_t flags = instruction->a;
 	const bool has_high = (flags & mc_slice_high) != 0, has_low = (flags & mc_slice_low) != 0;
-	const __int128 high_value = has_high ? mc_vm_integer(instruction->target, _mc_pop(vm)) : 0;
-	const __int128 low = has_low ? mc_vm_integer(instruction->type, _mc_pop(vm)) : 0;
-	const __int128 high = has_high ? high_value + ((flags & mc_slice_inclusive) ? 1 : 0) : (__int128)length;
-	if (!(0 <= low && low <= high && high <= (__int128)length)) {
+	const mc_i128_s high_value = has_high ? mc_vm_integer(instruction->target, _mc_pop(vm)) : mc_i128_zero();
+	const mc_i128_s low = has_low ? mc_vm_integer(instruction->type, _mc_pop(vm)) : mc_i128_zero();
+	const mc_i128_s high = has_high ? mc_i128_add(high_value, mc_i128_from_uint((flags & mc_slice_inclusive) ? 1 : 0)) : mc_i128_from_uint(length);
+	if (mc_i128_negative(low) || mc_i128_less(high, low) || mc_i128_less(mc_i128_from_uint(length), high)) {
 		char low_text[48], high_text[48];
 		mc_vm_fail(vm, "slice %s..%s is out of bounds (length %lld)", mc_vm_int_text(low_text, low), mc_vm_int_text(high_text, high), (long long)length);
 	}
-	*low_out = (uint64_t)low;
-	*high_out = (uint64_t)high;
+	*low_out = mc_i128_low(low);
+	*high_out = mc_i128_low(high);
 }
 
 /// pushes a slice; its offset and length must fit the slice format.

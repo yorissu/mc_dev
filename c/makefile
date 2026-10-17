@@ -2,6 +2,7 @@
 # mc: the c implementation
 #
 #   make [CONFIG=debug|release]   build the compiler: build/<config>/mc
+#   make CONFIG=portable check    the same tests on the standard-c11 build (MC_PORTABLE)
 #   make test                     build and run the unit tests
 #   make plugins                  build the example plugins: build/<config>/plugins/<name>.so
 #   make check                    unit tests, then the golden tests (tests/programs)
@@ -18,11 +19,20 @@ BUILD  := build/$(CONFIG)
 
 WARNINGS := -Wall -Wextra -Werror -Wpedantic -Wshadow -Wundef -Wformat=2 -Wstrict-prototypes   \
 	-Wold-style-definition -Wmissing-prototypes -Wwrite-strings -Wcast-qual -Wvla -Walloca        \
-	-Wnull-dereference -Winit-self -Wduplicated-cond -Wlogical-op -Wno-format-zero-length          \
-	-Wno-pedantic
+	-Wnull-dereference -Winit-self -Wno-format-zero-length
+
+# clang has neither these warnings nor -Wformat-truncation (cairo's reports
+# truncate long operands on purpose).
+ifeq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
+WARNINGS     += -Wduplicated-cond -Wlogical-op
+TEST_WARNINGS := -Wno-format-truncation
+endif
 
 FLAGS_debug   := -g -O0 -fsanitize=address,undefined -fno-omit-frame-pointer
 FLAGS_release := -O2 -DNDEBUG
+# standard c11 only, as msvc builds it: the portable 128-bit integers, no
+# __typeof__ and no attributes (see include/mc/global.h).
+FLAGS_portable := -g -O1 -DMC_PORTABLE -fsanitize=address,undefined -fno-omit-frame-pointer
 
 STDLIB  := $(abspath ../stdlib)
 CFLAGS  := -std=c11 $(WARNINGS) $(FLAGS_$(CONFIG)) -Iinclude -D_POSIX_C_SOURCE=200809L -MMD -MP \
@@ -81,10 +91,9 @@ $(BUILD)/mc: $(BUILD)/source/main.o $(LIBRARY)
 $(BUILD)/mc_tests: $(TESTS) $(LIBRARY)
 	$(CC) $(LDFLAGS) $^ -o $@ $(LIBS)
 
-# cairo truncates long operands of its failure reports on purpose.
 $(BUILD)/tests/%.o: tests/%.c
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -Itests/cairo -Wno-format-truncation -Wno-missing-prototypes -c $< -o $@
+	$(CC) $(CFLAGS) -Itests/cairo $(TEST_WARNINGS) -Wno-missing-prototypes -c $< -o $@
 
 $(BUILD)/source/%.o: source/%.c
 	@mkdir -p $(@D)

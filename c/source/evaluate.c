@@ -51,8 +51,12 @@ static mc_arena_s* _mc_arena(const mc_evaluator_s* const e) {
 	return e->checker->arena;
 }
 
-static mc_cvalue_s _mc_integer(const __int128 value) {
+static mc_cvalue_s _mc_integer(const mc_i128_s value) {
 	return (mc_cvalue_s) { .kind = mc_cvalue_integer, .as.integer = value, };
+}
+
+static mc_cvalue_s _mc_int(const int64_t value) {
+	return _mc_integer(mc_i128_from_int(value));
 }
 
 static mc_cvalue_s _mc_real(const double value) {
@@ -89,12 +93,14 @@ static mc_cvalue_s _mc_copy(mc_evaluator_s* const e, const mc_cvalue_s value) {
 	return mc_cvalue_copy(e->checker, value);
 }
 
-__int128 mc_integer_wrap(const __int128 value, const mc_type_s* const type) {
+mc_i128_s mc_integer_wrap(const mc_i128_s value, const mc_type_s* const type) {
 	const uint32_t bits = mc_scalar_bits(type->as.scalar);
-	const unsigned __int128 mask = (bits >= 128) ? ~(unsigned __int128)0 : (((unsigned __int128)1 << bits) - 1);
-	unsigned __int128 wrapped = (unsigned __int128)value & mask;
-	if (mc_scalar_signed(type->as.scalar) && bits < 128 && (wrapped >> (bits - 1)) != 0) wrapped -= (unsigned __int128)1 << bits;
-	return (__int128)wrapped;
+	if (bits >= 128) return value;
+	const mc_i128_s top = mc_i128_shift_left(mc_i128_from_uint(1), bits);
+	mc_i128_s wrapped = mc_i128_and(value, mc_i128_sub(top, mc_i128_from_uint(1)));
+	const bool sign = !mc_i128_is_zero(mc_u128_shift_right(wrapped, bits - 1));
+	if (mc_scalar_signed(type->as.scalar) && sign) wrapped = mc_i128_sub(wrapped, top);
+	return wrapped;
 }
 
 double mc_float_wrap(const double value, const mc_type_s* const type) {
@@ -111,39 +117,36 @@ static mc_cvalue_s _mc_wrap(const mc_cvalue_s value, const mc_type_s* const type
 	const char kind = mc_scalar_kind(type->as.scalar);
 	if ('i' == kind && mc_cvalue_integer == value.kind) return _mc_integer(mc_integer_wrap(value.as.integer, type));
 	if ('f' == kind) {
-		const double real = (mc_cvalue_integer == value.kind) ? (double)value.as.integer : value.as.real;
+		const double real = (mc_cvalue_integer == value.kind) ? mc_i128_to_double(value.as.integer) : value.as.real;
 		return _mc_real(mc_float_wrap(real, type));
 	}
 	return value;
 }
 
-static __int128 _mc_divide(const __int128 left, const __int128 right) {
-	const __int128 a = left < 0 ? -left : left, b = right < 0 ? -right : right;
-	const __int128 quotient = a / b;
-	return ((left >= 0) == (right >= 0)) ? quotient : -quotient;
+/// a shift count: negative counts never get here (the checker rejects
+/// them), large ones shift everything out.
+static unsigned _mc_shift_count(const mc_i128_s right) {
+	if (mc_i128_negative(right) || !mc_i128_less(right, mc_i128_from_uint(128))) return 128;
+	return (unsigned)mc_i128_low(right);
 }
 
-bool mc_integer_arithmetic(const mc_operator_e operator_, const __int128 left, const __int128 right, __int128* const result) {
+bool mc_integer_arithmetic(const mc_operator_e operator_, const mc_i128_s left, const mc_i128_s right, mc_i128_s* const result) {
 	switch (operator_) {
-		case mc_operator_add:       *result = left + right; return true;
-		case mc_operator_subtract:  *result = left - right; return true;
-		case mc_operator_multiply:  *result = left * right; return true;
-		case mc_operator_divide:
-			if (0 == right) return false;
-			*result = _mc_divide(left, right);
+		case mc_operator_add:       *result = mc_i128_add(left, right); return true;
+		case mc_operator_subtract:  *result = mc_i128_sub(left, right); return true;
+		case mc_operator_multiply:  *result = mc_i128_mul(left, right); return true;
+		case mc_operator_divide:    return mc_i128_divide(left, right, result, NULL);
+		case mc_operator_remainder: return mc_i128_divide(left, right, NULL, result);
+		case mc_operator_bit_and:   *result = mc_i128_and(left, right); return true;
+		case mc_operator_bit_or:    *result = mc_i128_or(left, right); return true;
+		case mc_operator_bit_xor:   *result = mc_i128_xor(left, right); return true;
+		case mc_operator_shift_left: {
+			const unsigned count = _mc_shift_count(right);
+			*result = (count >= 120) ? mc_i128_zero() : mc_i128_shift_left(left, count);
 			return true;
-		case mc_operator_remainder:
-			if (0 == right) return false;
-			*result = left - right * _mc_divide(left, right);
-			return true;
-		case mc_operator_bit_and:   *result = left & right; return true;
-		case mc_operator_bit_or:    *result = left | right; return true;
-		case mc_operator_bit_xor:   *result = left ^ right; return true;
-		case mc_operator_shift_left:
-			*result = (right >= 120) ? 0 : (__int128)((unsigned __int128)left << right);
-			return true;
+		}
 		case mc_operator_shift_right:
-			*result = (right >= 127) ? (left < 0 ? -1 : 0) : (left >> right);
+			*result = mc_i128_shift_right(left, _mc_shift_count(right));
 			return true;
 		default:
 			return false;
@@ -295,11 +298,11 @@ static mc_cvalue_s* _mc_element(mc_evaluator_s* const e, const mc_node_s* const 
 	const _mc_storage_s storage = _mc_storage(e, target);
 	const mc_cvalue_s index = _mc_expression(e, index_node);
 	if (index.kind != mc_cvalue_integer) _mc_broken(e);
-	if (index.as.integer < 0 || index.as.integer >= storage.length) {
+	if (mc_i128_negative(index.as.integer) || !mc_i128_less(index.as.integer, mc_i128_from_int(storage.length))) {
 		_mc_fail(e, mc_E0706, index_node, _mc_text(e, "the length is %lld", (long long)storage.length), "index %lld is out of bounds",
-			(long long)index.as.integer);
+			(long long)mc_i128_to_int(index.as.integer));
 	}
-	return &storage.list->items[storage.start + (int64_t)index.as.integer];
+	return &storage.list->items[storage.start + mc_i128_to_int(index.as.integer)];
 }
 
 /// the value at a place without copying it (so slices share it).
@@ -344,7 +347,7 @@ static mc_cvalue_s _mc_zero(mc_evaluator_s* const e, const mc_type_s* const type
 			const char kind = mc_scalar_kind(type->as.scalar);
 			if ('b' == kind) return _mc_boolean(false);
 			if ('f' == kind) return _mc_real(0.0);
-			return _mc_integer(0);
+			return _mc_int(0);
 		}
 		case mc_type_slice:
 			return _mc_slice_value(NULL, 0, 0);
@@ -437,7 +440,7 @@ static mc_cvalue_s _mc_call(mc_evaluator_s* const e, const mc_cvalue_s function,
 
 static bool _mc_truthy(mc_evaluator_s* const e, const mc_cvalue_s value) {
 	if (mc_cvalue_boolean == value.kind) return value.as.boolean;
-	if (mc_cvalue_integer == value.kind) return value.as.integer != 0;
+	if (mc_cvalue_integer == value.kind) return !mc_i128_is_zero(value.as.integer);
 	_mc_broken(e);
 }
 
@@ -472,7 +475,7 @@ static bool _mc_slice_empty(const mc_cvalue_s value) {
 }
 
 static double _mc_as_real(const mc_cvalue_s value) {
-	return (mc_cvalue_integer == value.kind) ? (double)value.as.integer : value.as.real;
+	return (mc_cvalue_integer == value.kind) ? mc_i128_to_double(value.as.integer) : value.as.real;
 }
 
 static mc_cvalue_s _mc_binary_values(mc_evaluator_s* const e, const mc_node_s* const node, const mc_operator_e operator_, mc_cvalue_s left,
@@ -496,7 +499,7 @@ static mc_cvalue_s _mc_binary_values(mc_evaluator_s* const e, const mc_node_s* c
 			equal = left.as.boolean == right.as.boolean;
 		}
 		else if (mc_cvalue_integer == left.kind && mc_cvalue_integer == right.kind) {
-			equal = left.as.integer == right.as.integer;
+			equal = mc_i128_equal(left.as.integer, right.as.integer);
 		}
 		else {
 			_mc_broken(e);
@@ -505,12 +508,12 @@ static mc_cvalue_s _mc_binary_values(mc_evaluator_s* const e, const mc_node_s* c
 	}
 	if (operator_ >= mc_operator_less && operator_ <= mc_operator_greater_equal) {
 		if (mc_cvalue_integer == left.kind && mc_cvalue_integer == right.kind) {
-			const __int128 a = left.as.integer, b = right.as.integer;
+			const int order = mc_i128_compare(left.as.integer, right.as.integer);
 			switch (operator_) {
-				case mc_operator_less:    return _mc_boolean(a < b);
-				case mc_operator_greater: return _mc_boolean(a > b);
-				case mc_operator_less_equal: return _mc_boolean(a <= b);
-				default:                  return _mc_boolean(a >= b);
+				case mc_operator_less:    return _mc_boolean(order < 0);
+				case mc_operator_greater: return _mc_boolean(order > 0);
+				case mc_operator_less_equal: return _mc_boolean(order <= 0);
+				default:                  return _mc_boolean(order >= 0);
 			}
 		}
 		if ((mc_cvalue_integer != left.kind && mc_cvalue_real != left.kind) || (mc_cvalue_integer != right.kind && mc_cvalue_real != right.kind)) _mc_broken(e);
@@ -525,10 +528,10 @@ static mc_cvalue_s _mc_binary_values(mc_evaluator_s* const e, const mc_node_s* c
 	const mc_type_s* const node_type = node->note.type;
 	const mc_type_s* const type = (node_type != NULL && mc_type_scalar == node_type->kind) ? node_type : operand_type;
 	if (mc_cvalue_integer == left.kind && mc_cvalue_integer == right.kind) {
-		if ((mc_operator_divide == operator_ || mc_operator_remainder == operator_) && 0 == right.as.integer) {
+		if ((mc_operator_divide == operator_ || mc_operator_remainder == operator_) && mc_i128_is_zero(right.as.integer)) {
 			_mc_fail(e, mc_E0704, node, "the divisor is zero at compile time", "division by zero");
 		}
-		__int128 result = 0;
+		mc_i128_s result = mc_i128_zero();
 		if (!mc_integer_arithmetic(operator_, left.as.integer, right.as.integer, &result)) _mc_broken(e);
 		if (type != NULL && mc_type_scalar == type->kind && 'f' == mc_scalar_kind(type->as.scalar)) return _mc_wrap(_mc_integer(result), type);
 		return (type != NULL && mc_type_scalar == type->kind) ? _mc_wrap(_mc_integer(result), type) : _mc_integer(result);
@@ -606,17 +609,17 @@ static mc_cvalue_s _mc_expression(mc_evaluator_s* const e, const mc_node_s* cons
 	switch (node->kind) {
 		case mc_node_integer: {
 			const mc_type_s* const type = node->note.type;
-			if (type != NULL && mc_type_is_float(type)) return _mc_wrap(_mc_real((double)node->as.integer.value), type);
-			return _mc_integer((__int128)node->as.integer.value);
+			if (type != NULL && mc_type_is_float(type)) return _mc_wrap(_mc_real(mc_u128_to_double(node->as.integer.value)), type);
+			return _mc_integer(node->as.integer.value);
 		}
 		case mc_node_float:
 			return _mc_wrap(_mc_real(node->as.float_.value), node->note.type);
 		case mc_node_char:
-			return _mc_integer(node->as.char_.value);
+			return _mc_int(node->as.char_.value);
 		case mc_node_string: {
 			const mc_view_s data = node->as.string.data;
 			mc_clist_s* const list = _mc_list_new(e, data.length);
-			for (size_t i = 0; i < data.length; ++i) list->items[i] = _mc_integer((uint8_t)data.data[i]);
+			for (size_t i = 0; i < data.length; ++i) list->items[i] = _mc_int((uint8_t)data.data[i]);
 			return _mc_list_value(list);
 		}
 		case mc_node_bool:  return _mc_boolean(node->as.bool_.value);
@@ -635,11 +638,11 @@ static mc_cvalue_s _mc_expression(mc_evaluator_s* const e, const mc_node_s* cons
 		case mc_node_lambda:
 			return (mc_cvalue_s) { .kind = mc_cvalue_function, .as.function = { .lambda = (mc_node_s*)(uintptr_t)node, }, };
 		case mc_node_sizeof:
-			return _mc_integer((__int128)node->note.size);
+			return _mc_int((int64_t)node->note.size);
 		case mc_node_lenof: {
 			const mc_cvalue_s value = _mc_expression(e, node->as.lenof.operand);
-			if (mc_cvalue_slice == value.kind) return _mc_integer(value.as.slice.length);
-			if (mc_cvalue_list == value.kind) return _mc_integer((__int128)value.as.list->count);
+			if (mc_cvalue_slice == value.kind) return _mc_int(value.as.slice.length);
+			if (mc_cvalue_list == value.kind) return _mc_int((int64_t)value.as.list->count);
 			_mc_broken(e);
 		}
 		case mc_node_cast: {
@@ -656,10 +659,10 @@ static mc_cvalue_s _mc_expression(mc_evaluator_s* const e, const mc_node_s* cons
 						mc_string_free(&shown);
 						_mc_fail(e, mc_E0510, node, "not a finite number", "%s", text);
 					}
-					return _mc_wrap(_mc_integer((__int128)value.as.real), target);
+					return _mc_wrap(_mc_integer(mc_i128_from_double(value.as.real)), target);
 				}
 				if (mc_cvalue_integer == value.kind) return _mc_wrap(value, target);
-				if (mc_cvalue_boolean == value.kind) return _mc_wrap(_mc_integer(value.as.boolean ? 1 : 0), target);
+				if (mc_cvalue_boolean == value.kind) return _mc_wrap(_mc_int(value.as.boolean ? 1 : 0), target);
 				_mc_broken(e);
 			}
 			if ('f' == kind) return _mc_wrap(_mc_real(_mc_as_real(value)), target);
@@ -675,12 +678,12 @@ static mc_cvalue_s _mc_expression(mc_evaluator_s* const e, const mc_node_s* cons
 			switch (node->as.unary.operator_) {
 				case mc_operator_not: return _mc_boolean(!_mc_truthy(e, value));
 				case mc_operator_negate:
-					if (mc_cvalue_integer == value.kind) return _mc_wrap(_mc_integer(-value.as.integer), type);
+					if (mc_cvalue_integer == value.kind) return _mc_wrap(_mc_integer(mc_i128_negate(value.as.integer)), type);
 					if (mc_cvalue_real == value.kind) return _mc_wrap(_mc_real(-value.as.real), type);
 					_mc_broken(e);
 				default:
 					if (mc_cvalue_integer != value.kind) _mc_broken(e);
-					return _mc_wrap(_mc_integer(~value.as.integer), type);
+					return _mc_wrap(_mc_integer(mc_i128_not(value.as.integer)), type);
 			}
 		}
 		case mc_node_binary: {
@@ -712,12 +715,12 @@ static mc_cvalue_s _mc_expression(mc_evaluator_s* const e, const mc_node_s* cons
 			if (node->as.slice_of.low != NULL) {
 				const mc_cvalue_s value = _mc_expression(e, node->as.slice_of.low);
 				if (value.kind != mc_cvalue_integer) _mc_broken(e);
-				low = (int64_t)value.as.integer;
+				low = mc_i128_to_int(value.as.integer);
 			}
 			if (node->as.slice_of.high != NULL) {
 				const mc_cvalue_s value = _mc_expression(e, node->as.slice_of.high);
 				if (value.kind != mc_cvalue_integer) _mc_broken(e);
-				high = (int64_t)value.as.integer + (node->as.slice_of.inclusive ? 1 : 0);
+				high = mc_i128_to_int(value.as.integer) + (node->as.slice_of.inclusive ? 1 : 0);
 			}
 			if (!(0 <= low && low <= high && high <= storage.length)) {
 				_mc_fail(e, mc_E0706, node, _mc_text(e, "the length is %lld", (long long)storage.length), "slice %lld..%lld is out of bounds",
@@ -815,11 +818,11 @@ static _mc_signal_s _mc_statement(mc_evaluator_s* const e, const mc_node_s* cons
 			const mc_cvalue_s start = _mc_expression(e, node->as.for_.start);
 			const mc_cvalue_s end = _mc_expression(e, node->as.for_.end);
 			if (start.kind != mc_cvalue_integer || end.kind != mc_cvalue_integer || NULL == frame || NULL == node->note.variable) _mc_broken(e);
-			const __int128 step = (end.as.integer >= start.as.integer) ? 1 : -1;
-			const __int128 stop = node->as.for_.inclusive ? end.as.integer + step : end.as.integer;
+			const mc_i128_s step = mc_i128_from_int(mc_i128_less(end.as.integer, start.as.integer) ? -1 : 1);
+			const mc_i128_s stop = node->as.for_.inclusive ? mc_i128_add(end.as.integer, step) : end.as.integer;
 			_mc_running(e, node, NULL);
 			_mc_signal_s result = _mc_normal();
-			for (__int128 value = start.as.integer; value != stop; value += step) {
+			for (mc_i128_s value = start.as.integer; !mc_i128_equal(value, stop); value = mc_i128_add(value, step)) {
 				_mc_bind(e, frame, node->note.variable, _mc_integer(value));
 				const _mc_signal_s signal = _mc_block(e, node->as.for_.body);
 				if (_mc_flow_break == signal.flow) break;

@@ -368,6 +368,8 @@ static void _mc_write(mc_plugin_call_s* const call, const char* const data, cons
 	if (length > 0) (void)fwrite(data, 1, length, _mc_call_of(call)->vm->out);
 }
 
+static void _mc_fail(mc_plugin_call_s* const call, const char* const format, va_list args) mc_printf_like(2, 0);
+
 static void _mc_fail(mc_plugin_call_s* const call, const char* const format, va_list args) {
 	mc_vm_vfail(_mc_call_of(call)->vm, format, args);
 }

@@ -25,16 +25,31 @@
 		}                                                                      \
 	} while (0)
 
-#define mc_vector_push(_vector, _item) do {                                    \
-		__typeof__(*(_vector)->data) _mc_item = (_item);                       \
+#define mc_vector_grow_(_vector) do {                                           \
 		if ((_vector)->count == (_vector)->capacity) {                         \
 			(_vector)->capacity = (                                            \
 				((_vector)->capacity > 0) ? (_vector)->capacity * 2 : 8);      \
 			(_vector)->data = mc_realloc((_vector)->data,                      \
 				(_vector)->capacity * sizeof(*(_vector)->data));               \
 		}                                                                      \
+	} while (0)
+
+/// with __typeof__ the item is evaluated before the vector grows, so it may
+/// read the vector's own elements; standard c evaluates it into the new slot
+/// (the item must then not push onto the same vector, which no code does).
+#if MC_HAS_TYPEOF
+#	define mc_vector_push(_vector, _item) do {                                 \
+		__typeof__(*(_vector)->data) _mc_item = (_item);                       \
+		mc_vector_grow_(_vector);                                              \
 		(_vector)->data[(_vector)->count++] = _mc_item;                        \
 	} while (0)
+#else
+#	define mc_vector_push(_vector, _item) do {                                 \
+		mc_vector_grow_(_vector);                                              \
+		(_vector)->data[(_vector)->count] = (_item);                           \
+		(_vector)->count += 1;                                                 \
+	} while (0)
+#endif
 
 #define mc_vector_pop(_vector) ((_vector)->data[--(_vector)->count])
 

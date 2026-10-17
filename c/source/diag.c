@@ -67,6 +67,9 @@ static bool _mc_has_span(const mc_span_s span) {
 }
 
 static mc_diagnostic_s* _mc_report(mc_diag_s* const diag, const mc_level_e level, const mc_code_e code,
+								   const mc_span_s span, const char* const format, va_list args) mc_printf_like(5, 0);
+
+static mc_diagnostic_s* _mc_report(mc_diag_s* const diag, const mc_level_e level, const mc_code_e code,
 								   const mc_span_s span, const char* const format, va_list args) {
 	mc_assert(diag != NULL);
 	mc_diagnostic_s* const diagnostic = mc_calloc(1, sizeof(*diagnostic));
@@ -138,6 +141,9 @@ mc_diagnostic_s* mc_label(mc_diagnostic_s* const diagnostic, const mc_span_s spa
 	mc_vector_push(&diagnostic->labels, label);
 	return diagnostic;
 }
+
+static mc_diagnostic_s* _mc_footer(mc_diagnostic_s* const diagnostic, const bool help,
+								   const char* const format, va_list args) mc_printf_like(3, 0);
 
 static mc_diagnostic_s* _mc_footer(mc_diagnostic_s* const diagnostic, const bool help,
 								   const char* const format, va_list args) {

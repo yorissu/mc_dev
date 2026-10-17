@@ -62,7 +62,7 @@
 #	define MC_PLUGIN_EXPORT
 #endif
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(MC_PORTABLE)
 #	define MC_PLUGIN_PRINTF(_format, _arguments) __attribute__((format(printf, _format, _arguments)))
 #else
 #	define MC_PLUGIN_PRINTF(_format, _arguments)

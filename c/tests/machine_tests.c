@@ -29,7 +29,9 @@ cairo_test_new(bytecode, file_round_trip) {
 		"NAMES :: \"ab\";\n"
 		"pub main :: () -> int { let p: Point = { x: 2, }; println(\"{} {}\", p, NAMES[..]); return p.x; }\n");
 	cairo_assert_true(run.compiled);
-	const char* const path = "/tmp/mc_tests_round_trip.mcb";
+	char* const directory = mc_temporary_directory();
+	cairo_assert_true(directory != NULL);
+	char* const path = mc_format("%s/round_trip.mcb", directory);
 	cairo_assert_true(mc_module_bc_save(&run.module, path));
 	mc_module_bc_s loaded = {0};
 	char* error = NULL;
@@ -42,22 +44,25 @@ cairo_test_new(bytecode, file_round_trip) {
 	mc_string_free(&before);
 	mc_string_free(&after);
 	mc_module_bc_free(&loaded);
-	(void)unlink(path);
+	mc_remove_tree(directory);
+	mc_free(directory);
+	mc_free(path);
 	mc_test_run_free(&run);
 }
 
 cairo_test_new(bytecode, loading_rejects_other_files) {
-	const char* const path = "/tmp/mc_tests_bad.mcb";
-	FILE* const file = fopen(path, "wb");
-	(void)fputs("not bytecode\n", file);
-	(void)fclose(file);
+	char* const directory = mc_temporary_directory();
+	cairo_assert_true(directory != NULL);
+	char* const path = mc_test_write_file(directory, "bad.mcb", "not bytecode\n");
 	mc_module_bc_s module = {0};
 	char* error = NULL;
 	cairo_assert_false(mc_module_bc_load(path, &module, &error));
 	cairo_assert_true(error != NULL);
 	mc_free(error);
 	mc_module_bc_free(&module);
-	(void)unlink(path);
+	mc_remove_tree(directory);
+	mc_free(directory);
+	mc_free(path);
 }
 
 cairo_test_new(bytecode, truncated_and_corrupted_files_are_refused) {
@@ -77,6 +82,9 @@ cairo_test_new(bytecode, truncated_and_corrupted_files_are_refused) {
 		mc_free(error);
 	}
 	// a changed byte is refused, or the module loads and the machine refuses or runs it: it never crashes
+	char* const directory = mc_temporary_directory();
+	cairo_assert_true(directory != NULL);
+	char* const out_path = mc_format("%s/out.txt", directory);
 	uint32_t seed = 12345;
 	for (int round = 0; round < 3000; ++round) {
 		mc_string_s copy = {0};
@@ -90,17 +98,21 @@ cairo_test_new(bytecode, truncated_and_corrupted_files_are_refused) {
 		mc_module_bc_s module = {0};
 		char* error = NULL;
 		if (mc_module_bc_read(mc_string_view(&copy), &module, &error)) {
-			FILE* const out = tmpfile();
+			FILE* const out = fopen(out_path, "wb");
+			cairo_assert_true(out != NULL);
 			const mc_vm_options_s options = { .out = out, .limit = 100000, };
 			mc_vm_result_s result = {0};
 			(void)mc_vm_run(&module, &options, &result);
 			mc_vm_result_free(&result);
-			if (out != NULL) (void)fclose(out);
+			(void)fclose(out);
 			mc_module_bc_free(&module);
 		}
 		mc_free(error);
 		mc_string_free(&copy);
 	}
+	mc_remove_tree(directory);
+	mc_free(directory);
+	mc_free(out_path);
 	mc_string_free(&bytes);
 	mc_test_run_free(&run);
 }

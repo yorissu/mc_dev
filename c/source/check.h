@@ -40,7 +40,7 @@ typedef struct mc_clist_s mc_clist_s;
 struct mc_cvalue_s {
 	mc_cvalue_kind_e kind;
 	union {
-		__int128 integer;
+		mc_i128_s integer;
 		double   real;
 		bool     boolean;
 		mc_clist_s* list;
@@ -96,10 +96,10 @@ mc_evaluation_s mc_evaluate(mc_evaluator_s* const evaluator, const mc_node_s* co
 mc_cvalue_s mc_cvalue_copy(mc_checker_s* const checker, const mc_cvalue_s value);
 
 /// the exact result of an arithmetic or bit operator on integers; false on division by zero.
-bool mc_integer_arithmetic(const mc_operator_e operator_, const __int128 left, const __int128 right, __int128* const result);
+bool mc_integer_arithmetic(const mc_operator_e operator_, const mc_i128_s left, const mc_i128_s right, mc_i128_s* const result);
 
 /// 'value' wrapped around to fit the integer scalar 'type'.
-__int128 mc_integer_wrap(const __int128 value, const mc_type_s* const type);
+mc_i128_s mc_integer_wrap(const mc_i128_s value, const mc_type_s* const type);
 
 /// 'value' rounded as the float scalar 'type' (f32 rounds).
 double mc_float_wrap(const double value, const mc_type_s* const type);

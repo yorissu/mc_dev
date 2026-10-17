@@ -165,8 +165,8 @@ static int64_t _mc_constant(_mc_compiler_s* const c, mc_bc_constant_s constant) 
 	return (int64_t)c->module->constants.count - 1;
 }
 
-static mc_bc_constant_s _mc_integer_constant(const __int128 value, const bool signed_) {
-	return (mc_bc_constant_s) { .kind = mc_constant_integer, .type = -1, .integer = (uint64_t)value, .signed_ = signed_, };
+static mc_bc_constant_s _mc_integer_constant(const mc_i128_s value, const bool signed_) {
+	return (mc_bc_constant_s) { .kind = mc_constant_integer, .type = -1, .integer = mc_i128_low(value), .signed_ = signed_, };
 }
 
 static mc_bc_constant_s _mc_real_constant(const double value) {
@@ -268,7 +268,7 @@ static mc_bc_constant_s _mc_zero(_mc_compiler_s* const c, const mc_type_s* const
 			const char kind = mc_scalar_kind(type->as.scalar);
 			if ('b' == kind) return _mc_boolean_constant(false);
 			if ('f' == kind) return _mc_real_constant(0.0);
-			return _mc_integer_constant(0, mc_scalar_signed(type->as.scalar));
+			return _mc_integer_constant(mc_i128_zero(), mc_scalar_signed(type->as.scalar));
 		}
 		case mc_type_slice:
 			return _mc_null_slice();
@@ -301,15 +301,15 @@ static mc_bc_constant_s _mc_zero(_mc_compiler_s* const c, const mc_type_s* const
 static mc_bc_constant_s _mc_convert(_mc_compiler_s* const c, const mc_cvalue_s* const value, const mc_type_s* const type) {
 	if (mc_type_is_untyped(type)) {
 		if (mc_type_is_special(type, mc_special_untyped_float)) {
-			return _mc_real_constant(mc_cvalue_real == value->kind ? value->as.real : (double)value->as.integer);
+			return _mc_real_constant(mc_cvalue_real == value->kind ? value->as.real : mc_i128_to_double(value->as.integer));
 		}
 		return (mc_cvalue_real == value->kind) ? _mc_real_constant(value->as.real) : _mc_integer_constant(value->as.integer, true);
 	}
 	switch (type->kind) {
 		case mc_type_scalar: {
 			const char kind = mc_scalar_kind(type->as.scalar);
-			if ('b' == kind) return _mc_boolean_constant(mc_cvalue_boolean == value->kind ? value->as.boolean : value->as.integer != 0);
-			if ('f' == kind) return _mc_real_constant(mc_float_wrap(mc_cvalue_real == value->kind ? value->as.real : (double)value->as.integer, type));
+			if ('b' == kind) return _mc_boolean_constant(mc_cvalue_boolean == value->kind ? value->as.boolean : !mc_i128_is_zero(value->as.integer));
+			if ('f' == kind) return _mc_real_constant(mc_float_wrap(mc_cvalue_real == value->kind ? value->as.real : mc_i128_to_double(value->as.integer), type));
 			return _mc_integer_constant(mc_integer_wrap(value->as.integer, type), mc_scalar_signed(type->as.scalar));
 		}
 		case mc_type_array: {
@@ -654,7 +654,7 @@ static int64_t _mc_static_constant(_mc_function_s* const f, const mc_node_s* con
 	if (mc_node_string == node->kind) {
 		mc_bc_constant_s list = { .kind = mc_constant_list, .type = _mc_describe(f->c, node->note.type), };
 		const mc_view_s data = node->as.string.data;
-		for (size_t i = 0; i < data.length; ++i) mc_vector_push(&list.items, _mc_integer_constant((uint8_t)data.data[i], false));
+		for (size_t i = 0; i < data.length; ++i) mc_vector_push(&list.items, _mc_integer_constant(mc_i128_from_uint((uint8_t)data.data[i]), false));
 		return _mc_constant(f->c, list);
 	}
 	const mc_constant_s* const constant = node->note.constant;
@@ -683,9 +683,9 @@ static bool _mc_frame_place(_mc_function_s* const f, const mc_node_s* const node
 			if (node->note.operator_call != NULL || target->kind != mc_type_array) return false;
 			mc_cvalue_s value = {0};
 			if (!mc_try_value(f->c->checker, node->as.index.index, &value) || value.kind != mc_cvalue_integer) return false;
-			if (value.as.integer < 0 || value.as.integer >= target->as.array.length) return false;
+			if (mc_i128_negative(value.as.integer) || !mc_i128_less(value.as.integer, mc_i128_from_int(target->as.array.length))) return false;
 			if (!_mc_frame_place(f, node->as.index.target, offset)) return false;
-			*offset += (int64_t)value.as.integer * (int64_t)_mc_size(f->c, target->as.array.element, NULL);
+			*offset += mc_i128_to_int(value.as.integer) * (int64_t)_mc_size(f->c, target->as.array.element, NULL);
 			return true;
 		}
 		default:
@@ -773,15 +773,15 @@ static void _mc_read_place(_mc_function_s* const f, const mc_node_s* const node)
 // --- expressions -------------------------------------------------------------------------
 
 /// a literal number as a constant of 'type'.
-static void _mc_scalar(_mc_function_s* const f, const bool real, const __int128 integer, const double number, const mc_type_s* const type) {
+static void _mc_scalar(_mc_function_s* const f, const bool real, const mc_i128_s integer, const double number, const mc_type_s* const type) {
 	if (mc_type_scalar == type->kind) {
 		const char kind = mc_scalar_kind(type->as.scalar);
-		if ('b' == kind) _mc_push_constant(f, _mc_boolean_constant(real ? number != 0.0 : integer != 0));
-		else if ('f' == kind) _mc_push_constant(f, _mc_real_constant(mc_float_wrap(real ? number : (double)integer, type)));
+		if ('b' == kind) _mc_push_constant(f, _mc_boolean_constant(real ? number != 0.0 : !mc_i128_is_zero(integer)));
+		else if ('f' == kind) _mc_push_constant(f, _mc_real_constant(mc_float_wrap(real ? number : mc_i128_to_double(integer), type)));
 		else _mc_push_constant(f, _mc_integer_constant(mc_integer_wrap(integer, type), mc_scalar_signed(type->as.scalar)));
 	}
 	else if (real || mc_type_is_special(type, mc_special_untyped_float)) {
-		_mc_push_constant(f, _mc_real_constant(real ? number : (double)integer));
+		_mc_push_constant(f, _mc_real_constant(real ? number : mc_i128_to_double(integer)));
 	}
 	else {
 		_mc_push_constant(f, _mc_integer_constant(integer, true));
@@ -917,11 +917,11 @@ static void _mc_unary(_mc_function_s* const f, const mc_node_s* const node) {
 	if (_mc_operator(f, node, operand, NULL)) return;
 	const mc_operator_e operator_ = node->as.unary.operator_;
 	if (mc_operator_negate == operator_ && mc_node_integer == operand->kind) {
-		_mc_scalar(f, false, -(__int128)operand->as.integer.value, 0.0, node->note.type);
+		_mc_scalar(f, false, mc_i128_negate(operand->as.integer.value), 0.0, node->note.type);
 		return;
 	}
 	if (mc_operator_negate == operator_ && mc_node_float == operand->kind) {
-		_mc_scalar(f, true, 0, -operand->as.float_.value, node->note.type);
+		_mc_scalar(f, true, mc_i128_zero(), -operand->as.float_.value, node->note.type);
 		return;
 	}
 	_mc_value(f, operand);
@@ -1016,7 +1016,7 @@ static void _mc_lenof(_mc_function_s* const f, const mc_node_s* const node) {
 			_mc_value(f, operand);
 			_mc_pop(f, type);
 		}
-		_mc_push_constant(f, _mc_integer_constant(type->as.array.length, false));
+		_mc_push_constant(f, _mc_integer_constant(mc_i128_from_int(type->as.array.length), false));
 		return;
 	}
 	_mc_value(f, operand);
@@ -1072,9 +1072,9 @@ static void _mc_index(_mc_function_s* const f, const mc_node_s* const node) {
 
 static void _mc_expression(_mc_function_s* const f, const mc_node_s* const node) {
 	switch (node->kind) {
-		case mc_node_integer: _mc_scalar(f, false, (__int128)node->as.integer.value, 0.0, node->note.type); break;
-		case mc_node_float:   _mc_scalar(f, true, 0, node->as.float_.value, node->note.type); break;
-		case mc_node_char:    _mc_push_constant(f, _mc_integer_constant(node->as.char_.value, false)); break;
+		case mc_node_integer: _mc_scalar(f, false, node->as.integer.value, 0.0, node->note.type); break;
+		case mc_node_float:   _mc_scalar(f, true, mc_i128_zero(), node->as.float_.value, node->note.type); break;
+		case mc_node_char:    _mc_push_constant(f, _mc_integer_constant(mc_i128_from_uint(node->as.char_.value), false)); break;
 		case mc_node_bool:    _mc_push_constant(f, _mc_boolean_constant(node->as.bool_.value)); break;
 		case mc_node_null:    _mc_emit_a(f, mc_op_ZERO, 2); break;
 		case mc_node_string:  _mc_emit_a(f, mc_op_CONST, _mc_static_constant(f, node)); break;
@@ -1097,7 +1097,7 @@ static void _mc_expression(_mc_function_s* const f, const mc_node_s* const node)
 		}
 		case mc_node_reference: _mc_fail(f->c, "a reference outside of a call argument");
 		case mc_node_composite: _mc_composite(f, node); break;
-		case mc_node_sizeof:  _mc_push_constant(f, _mc_integer_constant((__int128)node->note.size, false)); break;
+		case mc_node_sizeof:  _mc_push_constant(f, _mc_integer_constant(mc_i128_from_uint(node->note.size), false)); break;
 		case mc_node_lenof:   _mc_lenof(f, node); break;
 		case mc_node_assert:  _mc_assert(f, node); break;
 		default: _mc_fail(f->c, "cannot compile a `%s` node", mc_node_kind_name(node->kind));

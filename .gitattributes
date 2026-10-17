@@ -1,0 +1,3 @@
+
+# batch files run best with crlf; the repository keeps lf like every other file
+*.bat text eol=crlf

@@ -111,9 +111,12 @@ bool mc_type_is_signed(const mc_type_s* const type);
 bool mc_type_is_bool(const mc_type_s* const type);
 
 /// the smallest and largest value of an integer scalar.
-__int128 mc_type_minimum(const mc_type_s* const type);
+mc_i128_s mc_type_minimum(const mc_type_s* const type);
 
-__int128 mc_type_maximum(const mc_type_s* const type);
+mc_i128_s mc_type_maximum(const mc_type_s* const type);
+
+/// whether an integer scalar holds 'value'.
+bool mc_type_holds(const mc_type_s* const type, const mc_i128_s value);
 
 bool mc_type_contains_parameter(const mc_type_s* const type);
 

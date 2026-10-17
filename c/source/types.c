@@ -233,14 +233,20 @@ bool mc_type_is_bool(const mc_type_s* const type) {
 	return type != NULL && mc_type_scalar == type->kind && mc_scalar_bool == type->as.scalar;
 }
 
-__int128 mc_type_minimum(const mc_type_s* const type) {
+mc_i128_s mc_type_minimum(const mc_type_s* const type) {
 	const uint32_t bits = mc_scalar_bits(type->as.scalar);
-	return mc_scalar_signed(type->as.scalar) ? -((__int128)1 << (bits - 1)) : 0;
+	if (!mc_scalar_signed(type->as.scalar)) return mc_i128_zero();
+	return mc_i128_negate(mc_i128_shift_left(mc_i128_from_uint(1), bits - 1));
 }
 
-__int128 mc_type_maximum(const mc_type_s* const type) {
+mc_i128_s mc_type_maximum(const mc_type_s* const type) {
 	const uint32_t bits = mc_scalar_bits(type->as.scalar);
-	return mc_scalar_signed(type->as.scalar) ? ((__int128)1 << (bits - 1)) - 1 : ((__int128)1 << bits) - 1;
+	const uint32_t magnitude_bits = mc_scalar_signed(type->as.scalar) ? bits - 1 : bits;
+	return mc_i128_sub(mc_i128_shift_left(mc_i128_from_uint(1), magnitude_bits), mc_i128_from_uint(1));
+}
+
+bool mc_type_holds(const mc_type_s* const type, const mc_i128_s value) {
+	return !mc_i128_less(value, mc_type_minimum(type)) && !mc_i128_less(mc_type_maximum(type), value);
 }
 
 bool mc_type_contains_parameter(const mc_type_s* const type) {

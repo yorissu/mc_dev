@@ -35,6 +35,7 @@
 ///   frame owns memory except heap blocks, which 'free' gives back; the
 ///   rest is freed when the machine stops.
 
+#include "mc/int128.h"
 #include "mc/vm.h"
 #include "plugin_host.h"
 
@@ -268,7 +269,7 @@ static inline void mc_vm_write(const mc_type_code_e code, uint8_t* const memory,
 }
 
 /// the value of an integer word of 'code' as a 128-bit integer (for messages and checks).
-__int128 mc_vm_integer(const mc_type_code_e code, const mc_word_u word);
+mc_i128_s mc_vm_integer(const mc_type_code_e code, const mc_word_u word);
 
 /// 'value' wrapped to the integer type 'code', as a word.
 mc_word_u mc_vm_wrap(const mc_type_code_e code, const uint64_t value);
@@ -280,7 +281,7 @@ bool mc_vm_signed(const mc_type_code_e code);
 double mc_vm_round(const mc_type_code_e code, const double value);
 
 /// 'value' in decimal (for messages).
-const char* mc_vm_int_text(char buffer[48], const __int128 value);
+const char* mc_vm_int_text(char buffer[48], const mc_i128_s value);
 
 /// the constants of the module, made ready (fails on a broken module).
 void mc_vm_load_constants(mc_vm_s* const vm);

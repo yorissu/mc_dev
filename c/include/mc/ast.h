@@ -82,7 +82,7 @@ struct mc_node_s {
 		struct { mc_node_s* length; mc_node_s* element; } type_array;          // length null for '[_]'
 		struct { mc_node_s* element; bool mutable_; } type_reference;
 		struct { mc_nodes_s parameters; mc_node_s* result; } type_function;
-		struct { unsigned __int128 value; mc_scalar_e suffix; } integer;
+		struct { mc_i128_s value; mc_scalar_e suffix; } integer;
 		struct { double value; mc_scalar_e suffix; } float_;
 		struct { uint8_t value; } char_;
 		struct { mc_view_s data; bool c; } string;

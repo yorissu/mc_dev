@@ -12,6 +12,7 @@
 /// strings: "text", or "text"c with a terminating NUL.
 
 #include "mc/diag.h"
+#include "mc/int128.h"
 #include "mc/source.h"
 
 typedef enum {
@@ -49,7 +50,7 @@ typedef struct {
 	mc_token_kind_e   kind   ;
 	mc_span_s         span   ;
 	mc_view_s         text   ;
-	unsigned __int128 integer;   // integers and characters
+	mc_i128_s         integer;   // integers and characters
 	double            real   ;   // floats
 	mc_view_s         bytes  ;   // strings: the bytes after escapes (arena owned)
 	mc_scalar_e       suffix ;   // numbers: the type suffix, or none

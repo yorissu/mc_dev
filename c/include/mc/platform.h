@@ -31,6 +31,10 @@ bool mc_is_file(const char* const path);
 /// whether 'stream' is a terminal.
 bool mc_is_terminal(FILE* const stream);
 
+/// makes 'stream' write bytes as they are: windows turns '\\n' into '\\r\\n'
+/// in text mode, and programs print the same bytes on every system.
+void mc_binary_stream(FILE* const stream);
+
 /// the current directory (caller frees), or null.
 char* mc_current_directory(void);
 
@@ -43,5 +47,12 @@ void mc_remove_tree(const char* const path);
 
 /// the separator of path lists in environment variables (':' or ';').
 char mc_path_list_separator(void);
+
+/// whether 'c' separates the parts of a path: '/', and '\\' on windows.
+bool mc_is_path_separator(const char c);
+
+/// the length of the root that starts an absolute path ('/', or 'C:\\' on
+/// windows); 0 for a relative path.
+size_t mc_path_root(const char* const path);
 
 #endif

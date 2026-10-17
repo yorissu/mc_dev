@@ -11,6 +11,7 @@
 #include <windows.h>
 
 #include <direct.h>
+#include <fcntl.h>
 #include <io.h>
 #include <stdlib.h>
 #include <string.h>
@@ -74,6 +75,10 @@ bool mc_is_terminal(FILE* const stream) {
 	return _isatty(_fileno(stream)) != 0;
 }
 
+void mc_binary_stream(FILE* const stream) {
+	(void)_setmode(_fileno(stream), _O_BINARY);
+}
+
 char* mc_current_directory(void) {
 	char directory[4096];
 	if (NULL == _getcwd(directory, (int)sizeof(directory))) return NULL;
@@ -105,6 +110,17 @@ void mc_remove_tree(const char* const path) {
 	else {
 		(void)DeleteFileA(path);
 	}
+}
+
+bool mc_is_path_separator(const char c) {
+	return '/' == c || '\\' == c;
+}
+
+size_t mc_path_root(const char* const path) {
+	const bool letter = (path[0] >= 'a' && path[0] <= 'z') || (path[0] >= 'A' && path[0] <= 'Z');
+	if (letter && ':' == path[1] && mc_is_path_separator(path[2])) return 3;
+	// a path from the root of the current drive, or a network path
+	return mc_is_path_separator(path[0]) ? 1 : 0;
 }
 
 char mc_path_list_separator(void) {

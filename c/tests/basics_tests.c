@@ -41,13 +41,13 @@ cairo_test_new(format, float_repr_matches_python) {
 
 cairo_test_new(format, integers_of_128_bits) {
 	mc_string_s out = {0};
-	mc_format_int128(&out, -((__int128)1 << 100));
+	mc_format_int128(&out, mc_i128_negate(mc_i128_shift_left(mc_i128_from_uint(1), 100)));
 	cairo_assert_streq(mc_string_cstr(&out), "-1267650600228229401496703205376");
 	mc_string_clear(&out);
-	mc_format_int128(&out, 0);
+	mc_format_int128(&out, mc_i128_zero());
 	cairo_assert_streq(mc_string_cstr(&out), "0");
 	mc_string_clear(&out);
-	mc_format_uint128(&out, ~(unsigned __int128)0);
+	mc_format_uint128(&out, mc_i128_not(mc_i128_zero()));
 	cairo_assert_streq(mc_string_cstr(&out), "340282366920938463463374607431768211455");
 	mc_string_free(&out);
 }

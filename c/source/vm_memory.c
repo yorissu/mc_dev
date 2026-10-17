@@ -166,8 +166,8 @@ bool mc_vm_signed(const mc_type_code_e code) {
 	}
 }
 
-__int128 mc_vm_integer(const mc_type_code_e code, const mc_word_u word) {
-	return mc_vm_signed(code) ? (__int128)word.i : (__int128)word.u;
+mc_i128_s mc_vm_integer(const mc_type_code_e code, const mc_word_u word) {
+	return mc_vm_signed(code) ? mc_i128_from_int(word.i) : mc_i128_from_uint(word.u);
 }
 
 mc_word_u mc_vm_wrap(const mc_type_code_e code, const uint64_t value) {
@@ -190,19 +190,8 @@ double mc_vm_round(const mc_type_code_e code, const double value) {
 	return value;
 }
 
-const char* mc_vm_int_text(char buffer[48], const __int128 value) {
-	char digits[48];
-	size_t count = 0;
-	unsigned __int128 magnitude = (value < 0) ? (unsigned __int128)0 - (unsigned __int128)value : (unsigned __int128)value;
-	do {
-		digits[count++] = (char)('0' + (int)(magnitude % 10));
-		magnitude /= 10;
-	} while (magnitude > 0);
-	size_t length = 0;
-	if (value < 0) buffer[length++] = '-';
-	while (count > 0) buffer[length++] = digits[--count];
-	buffer[length] = '\0';
-	return buffer;
+const char* mc_vm_int_text(char buffer[48], const mc_i128_s value) {
+	return mc_i128_text(buffer, value);
 }
 
 // --- constants ---------------------------------------------------------------------------

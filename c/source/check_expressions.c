@@ -113,8 +113,8 @@ static void _mc_loose_one(mc_checker_s* const c, mc_node_s* const node, mc_conte
 static const mc_type_s* _mc_integer(mc_checker_s* const c, mc_node_s* const node) {
 	if (mc_scalar_none_ == node->as.integer.suffix) return mc_special_type(c, mc_special_untyped_integer);
 	const mc_type_s* const type = mc_scalar_type(c, node->as.integer.suffix);
-	const __int128 value = node->note.negative ? -(__int128)node->as.integer.value : (__int128)node->as.integer.value;
-	if (value < mc_type_minimum(type) || value > mc_type_maximum(type)) {
+	const mc_i128_s value = node->note.negative ? mc_i128_negate(node->as.integer.value) : node->as.integer.value;
+	if (!mc_type_holds(type, value)) {
 		mc_string_s text = {0}, low = {0}, high = {0};
 		mc_format_int128(&text, value);
 		mc_format_int128(&low, mc_type_minimum(type));
@@ -761,14 +761,14 @@ static void _mc_check_overflow(mc_checker_s* const c, mc_node_s* const node, con
 	const bool right_known = mc_try_value(c, right_node, &right);
 	if (!left_known || !right_known) return;
 	if (left.kind != mc_cvalue_integer || right.kind != mc_cvalue_integer) return;
-	if ((mc_operator_divide == operator_ || mc_operator_remainder == operator_) && 0 == right.as.integer) {
+	if ((mc_operator_divide == operator_ || mc_operator_remainder == operator_) && mc_i128_is_zero(right.as.integer)) {
 		mc_label_main(mc_error(c->diag, mc_E0704, node->span, "division by zero"), "the divisor is zero at compile time");
 		return;
 	}
-	if (context->wrap || context->wrapping > 0 || (_mc_is_shift(operator_) && right.as.integer < 0)) return;
-	__int128 exact = 0;
+	if (context->wrap || context->wrapping > 0 || (_mc_is_shift(operator_) && mc_i128_negative(right.as.integer))) return;
+	mc_i128_s exact = mc_i128_zero();
 	if (!mc_integer_arithmetic(operator_, left.as.integer, right.as.integer, &exact)) return;
-	if (exact < mc_type_minimum(type) || exact > mc_type_maximum(type)) {
+	if (!mc_type_holds(type, exact)) {
 		const mc_view_s text = mc_node_text(c, node);
 		mc_string_s wrapped = {0};
 		mc_format_int128(&wrapped, mc_integer_wrap(exact, type));
@@ -824,7 +824,7 @@ const mc_type_s* mc_binary_operation(mc_checker_s* const c, mc_node_s* const nod
 		}
 		if ((mc_operator_divide == operator_ || mc_operator_remainder == operator_) && !any_float) {
 			mc_cvalue_s divisor = {0};
-			if (mc_untyped_value(c, right_node, &divisor) && mc_cvalue_integer == divisor.kind && 0 == divisor.as.integer) {
+			if (mc_untyped_value(c, right_node, &divisor) && mc_cvalue_integer == divisor.kind && mc_i128_is_zero(divisor.as.integer)) {
 				mc_label_main(mc_error(c->diag, mc_E0704, node->span, "division by zero"), "the divisor is zero at compile time");
 				return _mc_error(c);
 			}
@@ -909,15 +909,16 @@ static void _mc_index_value(mc_checker_s* const c, mc_node_s* const node, mc_con
 	}
 	mc_cvalue_s value = {0};
 	if (mc_try_value(c, node, &value) && mc_cvalue_integer == value.kind) {
-		const __int128 index = value.as.integer;
+		const mc_i128_s index = value.as.integer;
 		const bool array = mc_type_array == target->kind;
-		const __int128 limit = array ? target->as.array.length : 0;
-		if (index < 0 || (array && (end ? index > limit : index >= limit))) {
+		const int64_t limit = array ? target->as.array.length : 0;
+		const int order = mc_i128_compare(index, mc_i128_from_int(limit));
+		if (mc_i128_negative(index) || (array && (end ? order > 0 : order >= 0))) {
 			if (array) {
-				mc_label_main(mc_error(c->diag, mc_E0706, node->span, "index %lld is out of bounds", (long long)index), "the array has %lld elements", (long long)limit);
+				mc_label_main(mc_error(c->diag, mc_E0706, node->span, "index %lld is out of bounds", (long long)mc_i128_to_int(index)), "the array has %lld elements", (long long)limit);
 			}
 			else {
-				mc_label_main(mc_error(c->diag, mc_E0706, node->span, "index %lld is out of bounds", (long long)index), "indexes cannot be negative");
+				mc_label_main(mc_error(c->diag, mc_E0706, node->span, "index %lld is out of bounds", (long long)mc_i128_to_int(index)), "indexes cannot be negative");
 			}
 		}
 	}
@@ -1012,7 +1013,7 @@ static const mc_type_s* _mc_cast(mc_checker_s* const c, mc_node_s* const node, m
 		const bool known = mc_untyped_value(c, operand_node, &value);
 		const bool integer = known && mc_cvalue_integer == value.kind;
 		if (mc_type_scalar == target->kind && _mc_accepts_literal(target, operand)
-				&& (!integer || mc_type_is_float(target) || (value.as.integer >= mc_type_minimum(target) && value.as.integer <= mc_type_maximum(target)))) {
+				&& (!integer || mc_type_is_float(target) || mc_type_holds(target, value.as.integer))) {
 			mc_finalize(c, operand_node, target);
 			operand = target;
 		}
@@ -1302,7 +1303,7 @@ const mc_type_s* mc_settle(mc_checker_s* const c, mc_node_s* const node, const m
 		const mc_type_s* const integer = mc_scalar_type(c, mc_scalar_int);
 		mc_cvalue_s value = {0};
 		if (mc_untyped_value(c, node, &value) && mc_cvalue_integer == value.kind
-				&& (value.as.integer < mc_type_minimum(integer) || value.as.integer > mc_type_maximum(integer))) {
+				&& !mc_type_holds(integer, value.as.integer)) {
 			mc_string_s text = {0};
 			mc_format_int128(&text, value.as.integer);
 			mc_help(mc_label_main(mc_error(c->diag, mc_E0511, node->span, "`%s` does not fit in `int`", mc_string_cstr(&text)), "too large for the default type"),
@@ -1332,7 +1333,7 @@ bool mc_coerce(mc_checker_s* const c, mc_node_s* const node, const mc_type_s* co
 	if (_mc_accepts_literal(target, actual)) {
 		mc_cvalue_s value = {0};
 		if (mc_untyped_value(c, node, &value) && mc_cvalue_integer == value.kind && mc_type_is_integer(target)
-				&& (value.as.integer < mc_type_minimum(target) || value.as.integer > mc_type_maximum(target))) {
+				&& !mc_type_holds(target, value.as.integer)) {
 			mc_string_s text = {0}, low = {0}, high = {0};
 			mc_format_int128(&text, value.as.integer);
 			mc_format_int128(&low, mc_type_minimum(target));

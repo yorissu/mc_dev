@@ -269,11 +269,11 @@ static void _mc_number(_mc_lexer_s* const l) {
 	}
 	else {
 		token.kind = mc_token_integer;
-		unsigned __int128 value = 0;
+		mc_i128_s value = mc_i128_zero();
 		for (size_t i = 0; i < cleaned_length; ++i) {
 			const char c = cleaned[i];
 			const uint32_t digit = (c >= '0' && c <= '9') ? (uint32_t)(c - '0') : (uint32_t)((c | 0x20) - 'a' + 10);
-			value = value * base + digit;
+			value = mc_i128_add(mc_i128_mul(value, mc_i128_from_uint(base)), mc_i128_from_uint(digit));
 		}
 		token.integer = value;
 		token.suffix = suffix;
@@ -389,7 +389,7 @@ static void _mc_character(_mc_lexer_s* const l) {
 			"expected exactly one character");
 		value = 0;
 	}
-	const mc_token_s token = { .kind = mc_token_char, .span = _mc_span(l, start, l->position), .integer = value, .suffix = mc_scalar_none_, };
+	const mc_token_s token = { .kind = mc_token_char, .span = _mc_span(l, start, l->position), .integer = mc_i128_from_uint(value), .suffix = mc_scalar_none_, };
 	_mc_push(l, token);
 }
 

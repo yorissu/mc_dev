@@ -14,7 +14,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 typedef struct {
 	bool           compiled   ;   // no errors, and compiled
@@ -27,11 +26,9 @@ typedef struct {
 	mc_module_bc_s module     ;
 } mc_test_run_s;
 
-/// writes 'text' to a new temporary directory as 'main.mc'; returns its path (caller frees with mc_test_remove).
-static inline char* mc_test_write(const char* const text) {
-	char directory[] = "/tmp/mc_tests_XXXXXX";
-	if (NULL == mkdtemp(directory)) return NULL;
-	char* const path = mc_format("%s/main.mc", directory);
+/// writes 'text' to the file 'name' of 'directory'; returns its path (caller frees).
+static inline char* mc_test_write_file(const char* const directory, const char* const name, const char* const text) {
+	char* const path = mc_format("%s/%s", directory, name);
 	FILE* const file = fopen(path, "wb");
 	if (file != NULL) {
 		(void)fputs(text, file);
@@ -40,12 +37,17 @@ static inline char* mc_test_write(const char* const text) {
 	return path;
 }
 
-static inline void mc_test_remove(char* const path) {
-	(void)unlink(path);
-	char* const slash = strrchr(path, '/');
-	*slash = '\0';
-	(void)rmdir(path);
-	mc_free(path);
+/// the whole content of the file 'path' (caller frees), or null.
+static inline char* mc_test_read_file(const char* const path) {
+	FILE* const file = fopen(path, "rb");
+	if (NULL == file) return NULL;
+	mc_string_s text = {0};
+	char buffer[4096];
+	size_t read = 0;
+	while ((read = fread(buffer, 1, sizeof(buffer), file)) > 0) mc_string_append(&text, mc_view_new(buffer, read));
+	(void)fclose(file);
+	if (NULL == text.data) mc_string_append_cstr(&text, "");
+	return mc_string_take(&text);
 }
 
 /// checks, compiles and runs the program 'text' with 'plugins' (null: the
@@ -53,7 +55,12 @@ static inline void mc_test_remove(char* const path) {
 static inline mc_test_run_s mc_test_run_with(const char* const text, const uint64_t limit, const mc_plugins_s* const plugins,
 											 const char* const include) {
 	mc_test_run_s run = {0};
-	char* const path = mc_test_write(text);
+	char* const directory = mc_temporary_directory();
+	if (NULL == directory) {
+		run.diagnostics = mc_strdup("cannot make a temporary directory");
+		return run;
+	}
+	char* const path = mc_test_write_file(directory, "main.mc", text);
 	mc_sources_s sources = {0};
 	mc_diag_s diag = { .sources = &sources, };
 	const char* const includes[1] = { include, };
@@ -70,21 +77,24 @@ static inline mc_test_run_s mc_test_run_with(const char* const text, const uint6
 	mc_program_free(program);
 	mc_diag_free(&diag);
 	mc_sources_free(&sources);
-	mc_test_remove(path);
+	mc_free(path);
 	if (run.compiled) {
-		char* buffer = NULL;
-		size_t size = 0;
-		FILE* const out = open_memstream(&buffer, &size);
+		// the output goes through a file: iso c has no stream into memory
+		char* const out_path = mc_format("%s/out.txt", directory);
+		FILE* const out = fopen(out_path, "wb");
 		const mc_vm_options_s vm_options = { .out = out, .limit = limit, .plugins = plugins, };
 		mc_vm_result_s result = {0};
-		run.finished = mc_vm_run(&run.module, &vm_options, &result);
-		(void)fclose(out);
-		run.out = buffer;
+		run.finished = out != NULL && mc_vm_run(&run.module, &vm_options, &result);
+		if (out != NULL) (void)fclose(out);
+		run.out = mc_test_read_file(out_path);
+		mc_free(out_path);
 		run.message = (result.message != NULL) ? mc_strdup(result.message) : NULL;
 		run.status = run.finished ? mc_vm_exit_status(&result) : 101;
 		run.allocations = result.allocations;
 		mc_vm_result_free(&result);
 	}
+	mc_remove_tree(directory);
+	mc_free(directory);
 	return run;
 }
 
@@ -99,7 +109,7 @@ static inline mc_test_run_s mc_test_run(const char* const text) {
 
 static inline void mc_test_run_free(mc_test_run_s* const run) {
 	mc_free(run->diagnostics);
-	free(run->out);
+	mc_free(run->out);
 	mc_free(run->message);
 	mc_module_bc_free(&run->module);
 }
