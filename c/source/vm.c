@@ -271,7 +271,7 @@ static void _mc_push_slice(mc_vm_s* const vm, const uint64_t handle, const uint6
 // --- calls -----------------------------------------------------------------------------------
 
 static void _mc_call(mc_vm_s* const vm, const int64_t index) {
-	if (vm->frames.count >= mc_call_depth_limit) mc_vm_fail(vm, "stack overflow: more than %d nested calls", mc_call_depth_limit);
+	if (vm->frames.count >= vm->call_depth) mc_vm_fail(vm, "stack overflow: more than %llu nested calls", (unsigned long long)vm->call_depth);
 	const mc_bc_function_s* const function = &vm->module->functions.data[index];
 	const mc_prepared_s* const prepared = &vm->prepared.data[index];
 	if (vm->frames.count == vm->frames.capacity) mc_vector_reserve(&vm->frames, vm->frames.capacity * 2 + 16);
@@ -1126,6 +1126,7 @@ bool mc_vm_run(const mc_module_bc_s* const module, const mc_vm_options_s* const 
 	jmp_buf stop;
 	mc_vm_s vm = { .module = module, .options = (options != NULL) ? options : &defaults, .stop = &stop, };
 	vm.out = (vm.options->out != NULL) ? vm.options->out : stdout;
+	vm.call_depth = (vm.options->call_depth > 0) ? vm.options->call_depth : mc_vm_call_depth_default;
 	if (0 == setjmp(stop)) _mc_start(&vm);
 	(void)fflush(vm.out);
 	result->steps = vm.steps;

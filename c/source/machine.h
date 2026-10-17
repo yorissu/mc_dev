@@ -178,6 +178,7 @@ struct mc_vm_s {
 	mc_string_s                  bytes      ;
 	uint64_t                     steps      ;   // instructions executed
 	uint64_t                     allocations;
+	uint64_t                     call_depth ;   // the limit of nested calls
 	bool                         returned   ;
 	mc_word_u                    result     ;
 	// stopping
@@ -185,7 +186,6 @@ struct mc_vm_s {
 	char*                        error      ;
 };
 
-#define mc_call_depth_limit 10000
 
 // vm.c
 /// stops the program with a runtime error.

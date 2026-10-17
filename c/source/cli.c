@@ -44,6 +44,8 @@ typedef struct {
 	bool                        werror  ;
 	bool                        stats   ;
 	uint64_t                    limit   ;
+	uint64_t                    eval_steps;
+	uint64_t                    call_depth;
 } _mc_options_s;
 
 /// what every command shares: the files read and the diagnostics about them.
@@ -163,6 +165,7 @@ static int _mc_ast(_mc_session_s* const s) {
 static mc_program_s* _mc_check_program(_mc_session_s* const s) {
 	const mc_check_options_s options = {
 		.include = s->options->include.data, .include_count = s->options->include.count, .stdlib = s->options->stdlib, .plugins = &s->plugins,
+		.eval_steps = s->options->eval_steps,
 	};
 	return mc_check(s->options->path, &s->sources, &s->diag, &options);
 }
@@ -282,8 +285,8 @@ static const struct {
 	{ "use of freed heap memory", "the memory was given back by `free` or `realloc` before this access" },
 	{ "use of a local array", "a slice of a local array must not outlive the call; use `alloc` for memory that outlives it" },
 	{ "write through a read-only slice", "slices of constants, string literals and arrays that are not `mut` are read-only" },
-	{ "stack overflow", "a function calls itself without reaching an end, or calls nest too deeply" },
-	{ "stopped after", "the instruction limit (`--limit`) was reached" },
+	{ "stack overflow", "a function calls itself without reaching an end, or calls nest too deeply; `--call-depth <n>` raises the limit" },
+	{ "stopped after", "the instruction limit (`--limit <n>`) was reached" },
 	{ "`free` of memory", "only a slice returned by `alloc` or `realloc` can be freed, and only once" },
 	{ "`realloc` of memory", "only a slice returned by `alloc` or `realloc` can be resized" },
 };
@@ -353,7 +356,7 @@ static int _mc_run(_mc_session_s* const s) {
 		return mc_status_error;
 	}
 	const mc_vm_options_s options = {
-		.out = stdout, .limit = s->options->limit, .plugins = &s->plugins,
+		.out = stdout, .limit = s->options->limit, .call_depth = s->options->call_depth, .plugins = &s->plugins,
 		.arguments = s->options->arguments.data, .argument_count = s->options->arguments.count,
 	};
 	mc_vm_result_s result = {0};
@@ -393,6 +396,7 @@ static int _mc_explain(_mc_session_s* const s) {
 
 #define mc_check_options                                                                       \
 	"  -I <dir>            also look for modules in <dir> (after the file's own directory)\n" \
+	"  --eval-steps <n>    the steps compile-time evaluation may take (default 1000000)\n"    \
 	"  --stdlib <dir>      the standard library (default: $MC_STDLIB, or the bundled one)\n" \
 	"  --plugin <file>     load a plugin (a shared library); repeatable\n"                      \
 	"  --plugin-dir <dir>  load every plugin in <dir>; repeatable (also: $MC_PLUGINS)\n"
@@ -410,6 +414,7 @@ static const _mc_command_s _mc_commands[] = {
 		"  `main :: (arguments: [][]u8)`, the file first ('--' ends mc's own options)",
 		mc_check_options
 		"  --limit <n>         stop after <n> instructions\n"
+		"  --call-depth <n>    the calls that may run at once (default 10000)\n"
 		"  --stats             print how many instructions ran\n", _mc_run, true, },
 	{ "explain", "explain a diagnostic code ('mc explain E0502'), or list them all", "", _mc_explain, false, },
 };
@@ -532,15 +537,20 @@ static int _mc_parse(_mc_options_s* const options, const int argc, const char* c
 		else if (0 == strcmp(argument, "--color=auto")) options->color = _mc_color_auto();
 		else if (0 == strcmp(argument, "--werror")) options->werror = true;
 		else if (0 == strcmp(argument, "--stats")) options->stats = true;
-		else if (0 == strcmp(argument, "--limit") && has_next) {
+		else if ((0 == strcmp(argument, "--limit") || 0 == strcmp(argument, "--eval-steps") || 0 == strcmp(argument, "--call-depth")) && has_next) {
 			char* end = NULL;
-			options->limit = strtoull(argv[++i], &end, 10);
-			if (NULL == end || *end != '\0') return _mc_usage("`--limit` needs a number, not `%s`", argv[i]);
+			const char* const text = argv[++i];
+			const unsigned long long value = strtoull(text, &end, 10);
+			if (NULL == end || *end != '\0' || '\0' == text[0] || '-' == text[0]) return _mc_usage("`%s` needs a number, not `%s`", argument, text);
+			if (0 == strcmp(argument, "--limit")) options->limit = value;
+			else if (0 == value) return _mc_usage("`%s` needs a number above 0", argument);
+			else if (0 == strcmp(argument, "--eval-steps")) options->eval_steps = value;
+			else options->call_depth = value;
 		}
 		else if ('-' == argument[0] && argument[1] != '\0') {
 			const bool needs_value = 0 == strcmp(argument, "-I") || 0 == strcmp(argument, "--stdlib") || 0 == strcmp(argument, "-o")
 				|| 0 == strcmp(argument, "--format") || 0 == strcmp(argument, "--limit") || 0 == strcmp(argument, "--plugin")
-				|| 0 == strcmp(argument, "--plugin-dir");
+				|| 0 == strcmp(argument, "--plugin-dir") || 0 == strcmp(argument, "--eval-steps") || 0 == strcmp(argument, "--call-depth");
 			if (needs_value) return _mc_usage("`%s` needs a value", argument);
 			return _mc_usage("unknown option `%s`", argument);
 		}

@@ -27,6 +27,7 @@
 typedef struct {
 	FILE*               out    ;   // what the program prints (stdout when null)
 	uint64_t            limit  ;   // stop after this many instructions; 0: no limit
+	uint64_t            call_depth;   // the calls that may be running at once; 0: the default, 10000
 	const mc_plugins_s* plugins;   // the plugin functions; null: only the built-in ones
 	const char* const*  arguments;   // the command line for 'main', the program first (it is read-only to the program)
 	size_t              argument_count;
@@ -49,6 +50,9 @@ typedef struct {
 	uint64_t                       steps     ;   // instructions executed
 	uint64_t                       allocations;  // heap blocks allocated
 } mc_vm_result_s;
+
+/// the default limit of nested calls.
+#define mc_vm_call_depth_default 10000
 
 /// runs the module's entry function; false when it stops with a runtime error
 /// (described in 'result').

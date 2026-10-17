@@ -70,10 +70,18 @@ typedef struct {
 
 typedef struct mc_frame_s mc_frame_s;
 
+/// a loop or a call that is running in an evaluation (for E0705).
+typedef struct {
+	const mc_node_s* node    ;   // the while, the for or the call
+	const char*      function;   // calls: the function called; loops: null
+} mc_running_s;
+
 typedef struct {
 	mc_checker_s*            checker;
 	mc_vector_of(mc_frame_s*) frames;
+	mc_vector_of(mc_running_s) running;   // innermost last
 	uint64_t                 steps  ;
+	uint64_t                 limit  ;   // of steps
 	bool                     quiet  ;
 	bool                     active ;
 	jmp_buf*                 stop   ;

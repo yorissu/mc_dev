@@ -183,7 +183,11 @@ typedef struct {
 	size_t                     include_count;
 	const char*                stdlib ;   // the standard library directory, or null
 	const struct mc_plugins_s* plugins;   // the plugins loaded; null: only the built-in ones
+	uint64_t                   eval_steps;   // the steps compile-time evaluation may take (0: the default, 1000000)
 } mc_check_options_s;
+
+/// the default number of steps compile-time evaluation may take.
+#define mc_eval_steps_default 1000000
 
 /// loads the program whose entry module is 'path' (and everything it
 /// imports) and checks it. errors go to 'diag'; the program is returned in

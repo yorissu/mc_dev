@@ -203,3 +203,10 @@ each one is easy to revisit.
   (for files that start with '-'). 'main' gets the file as given first.
   the command line is read-only constant memory: writing to it is a
   runtime error, and 'free' says it is not memory 'alloc' returned.
+- limits: '--eval-steps <n>' (check, mono, build, dis, run) and
+  '--call-depth <n>' (run) take numbers above 0; '--limit 0' still means
+  no limit. the compile-time limit of 100 nested calls stays fixed (it was
+  not asked to become an option).
+- E0705 points at the innermost loop or call still running when the step
+  limit is reached; for a recursive function that is the innermost
+  recursive call ('the call of `fib` runs more than 1000000 steps').

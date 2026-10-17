@@ -10,5 +10,5 @@ runtime error: stack overflow: more than 10000 nested calls
   = note: in `deep` at main.mc:5:34
   = note: called from `deep` at main.mc:5:34 (9998 times)
   = note: called from `main` at main.mc:6:32
-  = help: a function calls itself without reaching an end, or calls nest too deeply
+  = help: a function calls itself without reaching an end, or calls nest too deeply; `--call-depth <n>` raises the limit
 

@@ -882,6 +882,7 @@ mc_program_s* mc_check(const char* const path, mc_sources_s* const sources, mc_d
 	c->sources = sources;
 	c->options = options;
 	c->evaluator.checker = c;
+	c->evaluator.limit = (options->eval_steps > 0) ? options->eval_steps : mc_eval_steps_default;
 	program->checker = c;
 	mc_module_s* const entry = mc_load(c, path);
 	program->entry = entry;
@@ -921,6 +922,7 @@ void mc_program_free(mc_program_s* const program) {
 		mc_vector_free(&c->recursive_reported);
 		mc_vector_free(&c->roots);
 		mc_vector_free(&c->evaluator.frames);
+		mc_vector_free(&c->evaluator.running);
 		mc_vector_free(&c->plugin_types);
 		mc_free(c);
 	}

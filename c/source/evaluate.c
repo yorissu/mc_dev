@@ -5,7 +5,8 @@
 /// defaults and format strings must be known at compile time. the evaluator
 /// computes them from the checked tree, and it can run user functions with
 /// constant arguments (pure code: plugin functions cannot run at compile
-/// time). evaluation stops after a fixed number of steps.
+/// time). evaluation stops after a number of steps ('--eval-steps'); the
+/// error points at the innermost loop or call still running then.
 ///
 /// values: integers (128 bits, so untyped constants are exact), floats and
 /// bools; arrays and structs are lists (copied on assignment, like every
@@ -18,7 +19,6 @@
 #include <math.h>
 #include <string.h>
 
-#define _mc_step_limit 1000000
 #define _mc_call_depth_limit 100
 
 typedef struct {
@@ -188,11 +188,48 @@ mc_noreturn static void _mc_broken(mc_evaluator_s* const e) {
 	longjmp(*e->stop, 1);
 }
 
+/// stops: the evaluation took too many steps. the error points at the
+/// innermost loop or call that is still running.
+mc_noreturn static void _mc_too_long(mc_evaluator_s* const e, const mc_node_s* const node) {
+	if (!e->quiet) {
+		const mc_running_s* const innermost = (e->running.count > 0) ? &mc_vector_last(&e->running) : NULL;
+		const mc_node_s* const at = (innermost != NULL) ? innermost->node : node;
+		mc_diagnostic_s* const diagnostic = mc_error(e->checker->diag, mc_E0705, at->span, "compile-time evaluation takes too long");
+		const unsigned long long limit = (unsigned long long)e->limit;
+		if (NULL == innermost) {
+			mc_label_main(diagnostic, "stopped after %llu steps", limit);
+		}
+		else if (innermost->function != NULL) {
+			mc_label_main(diagnostic, "this call runs more than %llu steps", limit);
+			mc_note(diagnostic, "the call of %s runs more than %llu steps", innermost->function, limit);
+		}
+		else {
+			// the function the loop is in: the innermost call around it
+			const char* function = NULL;
+			for (size_t i = e->running.count; i-- > 0 && NULL == function;) function = e->running.data[i].function;
+			mc_label_main(diagnostic, "this loop runs more than %llu steps", limit);
+			if (function != NULL) mc_note(diagnostic, "the loop in %s runs more than %llu steps", function, limit);
+			else mc_note(diagnostic, "the loop runs more than %llu steps", limit);
+		}
+		mc_help(diagnostic, "raise the limit with `--eval-steps <n>` if the evaluation is meant to take this long");
+	}
+	e->problem = (mc_evaluation_s) { .status = mc_evaluation_failed, };
+	longjmp(*e->stop, 1);
+}
+
 static void _mc_step(mc_evaluator_s* const e, const mc_node_s* const node) {
 	e->steps += 1;
-	if (e->steps > _mc_step_limit) {
-		_mc_fail(e, mc_E0705, node, "stopped after 1000000 steps", "compile-time evaluation takes too long");
-	}
+	if (e->steps > e->limit) _mc_too_long(e, node);
+}
+
+/// a loop or a call starts running (and stops with _mc_stopped).
+static void _mc_running(mc_evaluator_s* const e, const mc_node_s* const node, const char* const function) {
+	const mc_running_s running = { .node = node, .function = function, };
+	mc_vector_push(&e->running, running);
+}
+
+static void _mc_stopped(mc_evaluator_s* const e) {
+	e->running.count -= 1;
 }
 
 // --- frames -------------------------------------------------------------------------
@@ -384,7 +421,9 @@ static mc_cvalue_s _mc_call(mc_evaluator_s* const e, const mc_cvalue_s function,
 	}
 	const size_t depth = e->frames.count;
 	mc_vector_push(&e->frames, frame);
+	_mc_running(e, node, name);
 	const _mc_signal_s signal = _mc_block(e, body);
+	_mc_stopped(e);
 	e->frames.count = depth;
 	if (_mc_flow_return == signal.flow) return signal.value;
 	if (_mc_flow_break == signal.flow || _mc_flow_continue == signal.flow) {
@@ -758,27 +797,40 @@ static _mc_signal_s _mc_statement(mc_evaluator_s* const e, const mc_node_s* cons
 			if (NULL == node->as.if_.otherwise) return _mc_normal();
 			if (mc_node_if == node->as.if_.otherwise->kind) return _mc_statement(e, node->as.if_.otherwise);
 			return _mc_block(e, node->as.if_.otherwise);
-		case mc_node_while:
+		case mc_node_while: {
+			_mc_running(e, node, NULL);
+			_mc_signal_s result = _mc_normal();
 			while (_mc_truthy(e, _mc_expression(e, node->as.while_.condition))) {
 				const _mc_signal_s signal = _mc_block(e, node->as.while_.body);
 				if (_mc_flow_break == signal.flow) break;
-				if (_mc_flow_return == signal.flow) return signal;
+				if (_mc_flow_return == signal.flow) {
+					result = signal;
+					break;
+				}
 			}
-			return _mc_normal();
+			_mc_stopped(e);
+			return result;
+		}
 		case mc_node_for: {
 			const mc_cvalue_s start = _mc_expression(e, node->as.for_.start);
 			const mc_cvalue_s end = _mc_expression(e, node->as.for_.end);
 			if (start.kind != mc_cvalue_integer || end.kind != mc_cvalue_integer || NULL == frame || NULL == node->note.variable) _mc_broken(e);
 			const __int128 step = (end.as.integer >= start.as.integer) ? 1 : -1;
 			const __int128 stop = node->as.for_.inclusive ? end.as.integer + step : end.as.integer;
+			_mc_running(e, node, NULL);
+			_mc_signal_s result = _mc_normal();
 			for (__int128 value = start.as.integer; value != stop; value += step) {
 				_mc_bind(e, frame, node->note.variable, _mc_integer(value));
 				const _mc_signal_s signal = _mc_block(e, node->as.for_.body);
 				if (_mc_flow_break == signal.flow) break;
-				if (_mc_flow_return == signal.flow) return signal;
+				if (_mc_flow_return == signal.flow) {
+					result = signal;
+					break;
+				}
 				_mc_step(e, node);
 			}
-			return _mc_normal();
+			_mc_stopped(e);
+			return result;
 		}
 		case mc_node_return: {
 			_mc_signal_s signal = { .flow = _mc_flow_return, };
@@ -800,13 +852,14 @@ static _mc_signal_s _mc_statement(mc_evaluator_s* const e, const mc_node_s* cons
 static mc_evaluation_s _mc_run(mc_evaluator_s* const e, const mc_node_s* const node) {
 	jmp_buf here;
 	jmp_buf* const outer = e->stop;
-	const size_t frames = e->frames.count;
+	const size_t frames = e->frames.count, running = e->running.count;
 	e->stop = &here;
 	mc_evaluation_s result = { .status = mc_evaluation_ok, };
 	if (0 == setjmp(here)) result.value = _mc_expression(e, node);
 	else result = e->problem;
 	e->stop = outer;
 	e->frames.count = frames;
+	e->running.count = running;
 	return result;
 }
 
@@ -824,6 +877,7 @@ mc_evaluation_s mc_evaluate(mc_evaluator_s* const e, const mc_node_s* const node
 	}
 	e->active = true;
 	e->frames.count = 0;
+	e->running.count = 0;
 	e->steps = 0;
 	e->quiet = quiet;
 	const mc_evaluation_s result = _mc_run(e, node);
