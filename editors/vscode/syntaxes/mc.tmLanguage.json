@@ -1,0 +1,304 @@
+
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "mc",
+	"scopeName": "source.mc",
+	"patterns": [
+		{ "include": "#comments" },
+		{ "include": "#attributes" },
+		{ "include": "#strings" },
+		{ "include": "#characters" },
+		{ "include": "#numbers" },
+		{ "include": "#declarations" },
+		{ "include": "#keywords" },
+		{ "include": "#types" },
+		{ "include": "#calls" },
+		{ "include": "#operators" },
+		{ "include": "#punctuation" }
+	],
+	"repository": {
+		"comments": {
+			"patterns": [
+				{
+					"name": "comment.line.number-sign.mc",
+					"match": "#.*$"
+				},
+				{
+					"name": "comment.line.double-slash.mc",
+					"match": "//.*$"
+				},
+				{ "include": "#block-comment" }
+			]
+		},
+		"block-comment": {
+			"name": "comment.block.mc",
+			"begin": "/\\*",
+			"end": "\\*/",
+			"patterns": [
+				{ "include": "#block-comment" }
+			]
+		},
+		"attributes": {
+			"patterns": [
+				{
+					"comment": "an operator function: [op._+_], [op.-_], [op._[_]]",
+					"match": "(\\[)(op)(\\.)(\\S*?)(\\])(?=\\s|$)",
+					"captures": {
+						"1": { "name": "punctuation.definition.attribute.begin.mc" },
+						"2": { "name": "entity.other.attribute-name.mc" },
+						"3": { "name": "punctuation.accessor.mc" },
+						"4": { "name": "keyword.operator.pattern.mc" },
+						"5": { "name": "punctuation.definition.attribute.end.mc" }
+					}
+				},
+				{
+					"comment": "[wrap], [uninit], [plugin], [plugin = \"math\"]",
+					"match": "(\\[)\\s*(wrap|uninit|plugin)\\s*(?:(=)\\s*(\"[^\"]*\"))?\\s*(\\])",
+					"captures": {
+						"1": { "name": "punctuation.definition.attribute.begin.mc" },
+						"2": { "name": "entity.other.attribute-name.mc" },
+						"3": { "name": "keyword.operator.assignment.mc" },
+						"4": { "name": "string.quoted.double.mc" },
+						"5": { "name": "punctuation.definition.attribute.end.mc" }
+					}
+				}
+			]
+		},
+		"strings": {
+			"name": "string.quoted.double.mc",
+			"begin": "\"",
+			"end": "(\")(c)?",
+			"beginCaptures": {
+				"0": { "name": "punctuation.definition.string.begin.mc" }
+			},
+			"endCaptures": {
+				"1": { "name": "punctuation.definition.string.end.mc" },
+				"2": { "name": "storage.modifier.c-string.mc" }
+			},
+			"patterns": [
+				{ "include": "#escapes" },
+				{
+					"name": "constant.character.escape.brace.mc",
+					"match": "\\{\\{|\\}\\}"
+				},
+				{
+					"comment": "format placeholders: {} and {:spec}",
+					"name": "constant.other.placeholder.mc",
+					"match": "\\{(:[^{}\"]*)?\\}"
+				}
+			]
+		},
+		"characters": {
+			"name": "string.quoted.single.mc",
+			"match": "'(?:\\\\(?:x[0-9a-fA-F]{2}|[nt0r\\\\\"'])|[^'\\\\\\n])'",
+			"captures": {
+				"0": { "patterns": [ { "include": "#escapes" } ] }
+			}
+		},
+		"escapes": {
+			"patterns": [
+				{
+					"name": "constant.character.escape.mc",
+					"match": "\\\\(?:x[0-9a-fA-F]{2}|[nt0r\\\\\"'])"
+				},
+				{
+					"name": "invalid.illegal.escape.mc",
+					"match": "\\\\."
+				}
+			]
+		},
+		"numbers": {
+			"patterns": [
+				{
+					"comment": "hexadecimal, octal and binary integers, with an integer suffix: 0xff, 0o17, 0b1010u8",
+					"name": "constant.numeric.integer.mc",
+					"match": "\\b0(?:[xX][0-9a-fA-F_]+|[oO][0-7_]+|[bB][01_]+)(?:[su](?:8|16|32|64)|u?int)?\\b"
+				},
+				{
+					"comment": "floats: 1.5, 2e10, 1.5f32, 2.0float",
+					"name": "constant.numeric.float.mc",
+					"match": "\\b[0-9][0-9_]*(?:\\.[0-9][0-9_]*(?:[eE][+-]?[0-9][0-9_]*)?|[eE][+-]?[0-9][0-9_]*)(?:f32|f64|float)?\\b"
+				},
+				{
+					"comment": "decimal integers with an optional type suffix: 42, 255u8, 1_000, 3f64",
+					"name": "constant.numeric.integer.mc",
+					"match": "\\b[0-9][0-9_]*(?:[su](?:8|16|32|64)|u?int|f32|f64|float)?\\b"
+				}
+			]
+		},
+		"declarations": {
+			"patterns": [
+				{
+					"comment": "a function: name<T> :: () or :: (mut name: (not a constant made with a cast, X :: (s8)200)",
+					"match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(<[^<>:]*>)?\\s*(::)(?=\\s*\\((?:\\s*\\)|\\s*(?:mut\\s+)?[A-Za-z_][A-Za-z0-9_]*\\s*:))",
+					"captures": {
+						"1": { "name": "entity.name.function.mc" },
+						"2": { "patterns": [ { "include": "#generic-parameters" } ] },
+						"3": { "name": "keyword.operator.declaration.mc" }
+					}
+				},
+				{
+					"comment": "a struct: Name<T> :: {",
+					"match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(<[^<>:]*>)?\\s*(::)(?=\\s*\\{)",
+					"captures": {
+						"1": { "name": "entity.name.type.struct.mc" },
+						"2": { "patterns": [ { "include": "#generic-parameters" } ] },
+						"3": { "name": "keyword.operator.declaration.mc" }
+					}
+				},
+				{
+					"comment": "a constant: NAME :: value",
+					"match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(::)",
+					"captures": {
+						"1": { "name": "variable.other.constant.mc" },
+						"2": { "name": "keyword.operator.declaration.mc" }
+					}
+				}
+			]
+		},
+		"generic-parameters": {
+			"patterns": [
+				{
+					"name": "entity.name.type.parameter.mc",
+					"match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b"
+				},
+				{
+					"name": "punctuation.separator.comma.mc",
+					"match": ","
+				}
+			]
+		},
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.control.mc",
+					"match": "\\b(?:if|else|while|for|in|return|break|continue)\\b"
+				},
+				{
+					"name": "keyword.control.import.mc",
+					"match": "\\b(?:import|from|as)\\b"
+				},
+				{
+					"name": "storage.modifier.mc",
+					"match": "\\b(?:pub|mut)\\b"
+				},
+				{
+					"name": "storage.type.let.mc",
+					"match": "\\blet\\b"
+				},
+				{
+					"name": "constant.language.boolean.mc",
+					"match": "\\b(?:true|false)\\b"
+				},
+				{
+					"name": "constant.language.null.mc",
+					"match": "\\bnull\\b"
+				},
+				{
+					"name": "keyword.other.intrinsic.mc",
+					"match": "\\b(?:sizeof|lenof|assert)\\b"
+				},
+				{
+					"name": "variable.language.discard.mc",
+					"match": "\\b_\\b"
+				}
+			]
+		},
+		"types": {
+			"patterns": [
+				{
+					"name": "storage.type.primitive.mc",
+					"match": "\\b(?:s8|s16|s32|s64|u8|u16|u32|u64|int|uint|f32|f64|float|bool)\\b"
+				},
+				{
+					"comment": "by convention, types start with a capital and have a lower-case letter, or are one capital (T); constants are all capitals",
+					"name": "entity.name.type.mc",
+					"match": "\\b(?:[A-Z][A-Za-z0-9_]*[a-z][A-Za-z0-9_]*|[A-Z])\\b"
+				},
+				{
+					"name": "variable.other.constant.mc",
+					"match": "\\b[A-Z][A-Z0-9_]+\\b"
+				}
+			]
+		},
+		"calls": {
+			"patterns": [
+				{
+					"match": "\\b([a-z_][A-Za-z0-9_]*)\\s*(?=(?:<[^<>()]*>)?\\()",
+					"captures": {
+						"1": { "name": "entity.name.function.call.mc" }
+					}
+				}
+			]
+		},
+		"operators": {
+			"patterns": [
+				{
+					"name": "keyword.operator.arrow.mc",
+					"match": "->"
+				},
+				{
+					"name": "keyword.operator.variadic.mc",
+					"match": "\\.\\.\\."
+				},
+				{
+					"name": "keyword.operator.range.mc",
+					"match": "\\.\\.=?"
+				},
+				{
+					"name": "keyword.operator.assignment.compound.mc",
+					"match": "<<=|>>=|[-+*/%&|^]="
+				},
+				{
+					"name": "keyword.operator.comparison.mc",
+					"match": "==|!=|<=|>="
+				},
+				{
+					"name": "keyword.operator.logical.mc",
+					"match": "&&|\\|\\||!"
+				},
+				{
+					"comment": "a reference: (x: &T), f(&x), f(mut &x)",
+					"name": "keyword.operator.reference.mc",
+					"match": "(?:(?<=[:(,])|(?<=[:(,]\\s)|(?<=\\bmut\\s))&"
+				},
+				{
+					"name": "keyword.operator.bitwise.mc",
+					"match": "<<|>>|[&|^~]"
+				},
+				{
+					"name": "keyword.operator.arithmetic.mc",
+					"match": "[-+*/%]"
+				},
+				{
+					"name": "keyword.operator.comparison.mc",
+					"match": "[<>]"
+				},
+				{
+					"name": "keyword.operator.assignment.mc",
+					"match": "="
+				}
+			]
+		},
+		"punctuation": {
+			"patterns": [
+				{
+					"name": "punctuation.terminator.statement.mc",
+					"match": ";"
+				},
+				{
+					"name": "punctuation.separator.comma.mc",
+					"match": ","
+				},
+				{
+					"name": "punctuation.accessor.mc",
+					"match": "\\."
+				},
+				{
+					"name": "punctuation.separator.colon.mc",
+					"match": ":"
+				}
+			]
+		}
+	}
+}

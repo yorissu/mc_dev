@@ -1,0 +1,37 @@
+
+{
+	"name": "mc-language",
+	"displayName": "mc",
+	"description": "Syntax highlighting for mc (modernized c) source files.",
+	"version": "0.1.0",
+	"publisher": "mc",
+	"license": "UNLICENSED",
+	"engines": {
+		"vscode": "^1.60.0"
+	},
+	"categories": [
+		"Programming Languages"
+	],
+	"contributes": {
+		"languages": [
+			{
+				"id": "mc",
+				"aliases": [
+					"mc",
+					"modernized c"
+				],
+				"extensions": [
+					".mc"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "mc",
+				"scopeName": "source.mc",
+				"path": "./syntaxes/mc.tmLanguage.json"
+			}
+		]
+	}
+}

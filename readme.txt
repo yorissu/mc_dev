@@ -45,6 +45,7 @@ layout
 	stdlib/          memory (alloc/realloc/free/copy), io (print, println,
 	                 write, write_line), option, result
 	examples/        example programs
+	editors/vscode/  syntax highlighting for visual studio code
 	questions.txt    questions about the language, with the answers, and the
 	                 decisions of the rework
 
