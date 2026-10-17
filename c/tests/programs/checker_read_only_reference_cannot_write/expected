@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:2:18: error[E0508]: cannot assign to `v`
+== run (status 1)
+-- stderr
+main.mc:2:18: error[E0508]: cannot assign to `v`

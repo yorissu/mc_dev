@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:2:20: error[E0206]: the body of `if` without braces cannot be a declaration
+== run (status 1)
+-- stderr
+main.mc:2:20: error[E0206]: the body of `if` without braces cannot be a declaration

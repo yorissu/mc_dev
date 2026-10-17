@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:2:40: error[E0507]: cannot apply `<` to `u8` and `s8`
+== run (status 1)
+-- stderr
+main.mc:2:40: error[E0507]: cannot apply `<` to `u8` and `s8`

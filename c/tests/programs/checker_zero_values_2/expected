@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:3:23: error[E0526]: `H` has no zero value
+== run (status 1)
+-- stderr
+main.mc:3:23: error[E0526]: `H` has no zero value

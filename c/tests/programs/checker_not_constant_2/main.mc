@@ -1,0 +1,3 @@
+
+f :: (n: int) { let a: [n]int = {}; }
+pub main :: () {}

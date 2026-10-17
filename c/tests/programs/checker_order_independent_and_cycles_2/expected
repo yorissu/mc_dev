@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:2:1: error[E0702]: constant `A` depends on itself
+== run (status 1)
+-- stderr
+main.mc:2:1: error[E0702]: constant `A` depends on itself

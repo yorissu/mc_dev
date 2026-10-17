@@ -1,0 +1,6 @@
+== check (status 0)
+== run (status 101)
+-- stdout
+3
+-- stderr
+main.mc:5:51: runtime error: index 3 is out of bounds (length 3)

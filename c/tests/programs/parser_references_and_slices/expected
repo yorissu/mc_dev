@@ -1,0 +1,18 @@
+== check (status 1)
+-- stderr
+main.mc:2:11: error[E0501]: cannot find `g`
+main.mc:2:14: error[E0501]: cannot find `x`
+main.mc:2:22: error[E0501]: cannot find `y`
+main.mc:2:28: error[E0506]: cannot infer the type of this literal
+main.mc:2:43: error[E0501]: cannot find `a`
+main.mc:2:56: error[E0501]: cannot find `a`
+main.mc:2:67: error[E0501]: cannot find `a`
+== run (status 1)
+-- stderr
+main.mc:2:11: error[E0501]: cannot find `g`
+main.mc:2:14: error[E0501]: cannot find `x`
+main.mc:2:22: error[E0501]: cannot find `y`
+main.mc:2:28: error[E0506]: cannot infer the type of this literal
+main.mc:2:43: error[E0501]: cannot find `a`
+main.mc:2:56: error[E0501]: cannot find `a`
+main.mc:2:67: error[E0501]: cannot find `a`

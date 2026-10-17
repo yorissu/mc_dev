@@ -1,0 +1,8 @@
+== check (status 1)
+-- stderr
+main.mc:2:2: error[E0403]: `extern` needs the name of the C function
+main.mc:2:10: error[E0404]: `f` has no body
+== run (status 1)
+-- stderr
+main.mc:2:2: error[E0403]: `extern` needs the name of the C function
+main.mc:2:10: error[E0404]: `f` has no body

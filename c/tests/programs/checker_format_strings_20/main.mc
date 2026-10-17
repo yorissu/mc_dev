@@ -1,0 +1,3 @@
+
+f :: () { println(); }
+pub main :: () {}

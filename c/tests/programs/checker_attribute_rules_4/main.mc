@@ -1,0 +1,3 @@
+
+[builtin] f :: () {}
+pub main :: () {}

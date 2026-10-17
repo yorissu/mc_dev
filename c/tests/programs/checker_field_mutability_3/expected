@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:3:37: error[E0508]: cannot assign to `p.x`
+== run (status 1)
+-- stderr
+main.mc:3:37: error[E0508]: cannot assign to `p.x`

@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:3:11: error[E0521]: `g` is not generic
+== run (status 1)
+-- stderr
+main.mc:3:11: error[E0521]: `g` is not generic

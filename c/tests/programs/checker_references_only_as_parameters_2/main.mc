@@ -1,0 +1,3 @@
+
+S :: { let r: &int; }
+pub main :: () {}

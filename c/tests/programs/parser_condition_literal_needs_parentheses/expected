@@ -1,0 +1,8 @@
+== check (status 1)
+-- stderr
+main.mc:2:14: error[E0501]: cannot find `p`
+main.mc:2:21: error[E0501]: cannot find `P`
+== run (status 1)
+-- stderr
+main.mc:2:14: error[E0501]: cannot find `p`
+main.mc:2:21: error[E0501]: cannot find `P`

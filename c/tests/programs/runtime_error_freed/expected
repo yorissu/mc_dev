@@ -1,0 +1,12 @@
+== check (status 0)
+== run (status 101)
+-- stderr
+runtime error: use of freed heap memory
+ --> main.mc:5:87
+  |
+5 | pub main :: () -> int { let data = alloc<int>(3); data[0] = 1; _ = free(data); return data[0]; }
+  |                                                                                       ^^^^^^^ here
+  |
+  = note: in `main` at main.mc:5:87
+  = help: the memory was given back by `free` or `realloc` before this access
+

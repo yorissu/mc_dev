@@ -1,0 +1,18 @@
+== check (status 0)
+-- stderr
+main.mc:15:10: warning[W0503]: variable `numbers` is `mut` but never changed
+== run (status 0)
+-- stdout
+{3, 5, 7}
+true
+9
+2.5
+{x: 1, y: 2}
+true
+true
+true
+6
+20
+101
+-- stderr
+main.mc:15:10: warning[W0503]: variable `numbers` is `mut` but never changed

@@ -1,0 +1,3 @@
+
+f :: (c: bool) -> int { let a: int; if c { a = 1; } else { return 0; } return a; }
+pub main :: () {}

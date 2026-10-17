@@ -1,0 +1,3 @@
+
+mine :: (values: ...) {}
+pub main :: () {}

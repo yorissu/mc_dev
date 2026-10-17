@@ -1,0 +1,5 @@
+
+from io import print, println
+FORMAT :: "{} {}";
+f :: () { println(FORMAT, 1, true); }
+pub main :: () {}

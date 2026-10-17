@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:3:19: error[E0506]: generic function `id` needs type arguments here
+== run (status 1)
+-- stderr
+main.mc:3:19: error[E0506]: generic function `id` needs type arguments here

@@ -1,0 +1,13 @@
+== check (status 0)
+== run (status 101)
+-- stderr
+runtime error: division by zero
+ --> main.mc:6:63
+  |
+6 | pub main :: () -> int { return apply((x: int) -> int { return 10 / x; }, 0); }
+  |                                                               ^^^^^^ here
+  |
+  = note: in `lambda at main.mc:6` at main.mc:6:63
+  = note: called from `apply` at main.mc:5:52
+  = note: called from `main` at main.mc:6:32
+

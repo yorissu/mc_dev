@@ -1,0 +1,8 @@
+== check (status 1)
+-- stderr
+main.mc:2:46: error[E0501]: cannot find `swap`
+main.mc:2:19: warning[W0503]: variable `s` is `mut` but never changed
+== run (status 1)
+-- stderr
+main.mc:2:46: error[E0501]: cannot find `swap`
+main.mc:2:19: warning[W0503]: variable `s` is `mut` but never changed

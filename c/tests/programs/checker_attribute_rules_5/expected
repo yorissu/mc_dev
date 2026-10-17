@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:2:1: error[E0404]: `f` has no body
+== run (status 1)
+-- stderr
+main.mc:2:1: error[E0404]: `f` has no body

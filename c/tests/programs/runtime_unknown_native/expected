@@ -1,0 +1,4 @@
+== check (status 0)
+== run (status 101)
+-- stderr
+runtime error: unknown extern function `nobody_has_this`

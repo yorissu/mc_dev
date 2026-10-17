@@ -1,0 +1,3 @@
+
+f :: () -> Point { return { z: 1, x: 1, }; }
+pub main :: () {}

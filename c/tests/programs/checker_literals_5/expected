@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:3:27: error[E0525]: struct literals need field names
+== run (status 1)
+-- stderr
+main.mc:3:27: error[E0525]: struct literals need field names

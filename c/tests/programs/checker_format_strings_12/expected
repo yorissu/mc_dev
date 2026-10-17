@@ -1,0 +1,10 @@
+== check (status 1)
+-- stderr
+main.mc:2:26: error[E0501]: cannot find `println`
+main.mc:2:59: error[E0501]: cannot find `print`
+main.mc:2:75: error[E0501]: cannot find `println`
+== run (status 1)
+-- stderr
+main.mc:2:26: error[E0501]: cannot find `println`
+main.mc:2:59: error[E0501]: cannot find `print`
+main.mc:2:75: error[E0501]: cannot find `println`

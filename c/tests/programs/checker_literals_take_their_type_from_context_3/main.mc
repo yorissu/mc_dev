@@ -1,0 +1,13 @@
+
+			f :: () {
+				let a: u8 = 255;
+				let b: f32 = 1;
+				let c: f64 = 2.5;
+				let d = 3;
+				let e = 1.5;
+				let g: s8 = -128;
+				let h: int = 'a';
+				_ = a; _ = b; _ = c; _ = d; _ = e; _ = g; _ = h;
+			}
+
+pub main :: () {}

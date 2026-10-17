@@ -1,0 +1,3 @@
+
+[uninit] f :: () {}
+pub main :: () {}

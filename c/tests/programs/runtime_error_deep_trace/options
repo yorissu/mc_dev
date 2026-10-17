@@ -1,0 +1,2 @@
+flags: --format human
+commands: check run dis mcb

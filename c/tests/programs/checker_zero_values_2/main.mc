@@ -1,0 +1,4 @@
+
+H :: { let call: (int) -> int; }
+f :: () -> H { return {}; }
+pub main :: () {}

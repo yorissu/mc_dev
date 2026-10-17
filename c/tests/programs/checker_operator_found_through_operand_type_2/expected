@@ -1,0 +1,10 @@
+== check (status 1)
+-- stderr
+main.mc:2:1: error[E0301]: module `geo.shapes` not found
+main.mc:3:20: error[E0501]: cannot find `Point`
+main.mc:3:35: error[E0501]: cannot find `make`
+== run (status 1)
+-- stderr
+main.mc:2:1: error[E0301]: module `geo.shapes` not found
+main.mc:3:20: error[E0501]: cannot find `Point`
+main.mc:3:35: error[E0501]: cannot find `make`

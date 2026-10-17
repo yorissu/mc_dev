@@ -1,0 +1,4 @@
+
+from io import print, println
+f :: () { println(); }
+pub main :: () {}

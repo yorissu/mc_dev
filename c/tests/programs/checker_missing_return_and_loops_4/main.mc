@@ -1,0 +1,3 @@
+
+f :: () { break; }
+pub main :: () {}

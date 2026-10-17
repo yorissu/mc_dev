@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:4:25: error[E0523]: this has no value
+== run (status 1)
+-- stderr
+main.mc:4:25: error[E0523]: this has no value

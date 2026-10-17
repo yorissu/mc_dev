@@ -1,0 +1,3 @@
+
+pub thing :: () {}
+pub main :: () {}

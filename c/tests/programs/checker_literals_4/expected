@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:3:29: error[E0512]: `Point` has no field `z`
+== run (status 1)
+-- stderr
+main.mc:3:29: error[E0512]: `Point` has no field `z`

@@ -1,0 +1,3 @@
+
+f :: (n: uint) { for i in 0..n { _ = i; } for j in 10..0 { _ = j; } }
+pub main :: () {}

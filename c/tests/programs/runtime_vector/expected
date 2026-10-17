@@ -1,0 +1,14 @@
+== check (status 1)
+-- stderr
+main.mc:5:1: error[E0301]: module `vector` not found
+main.mc:7:14: error[E0501]: cannot find `vector_create`
+main.mc:8:19: error[E0501]: cannot find `vector_append`
+main.mc:10:2: error[E0501]: cannot find `vector_free`
+main.mc:7:10: warning[W0503]: variable `v` is `mut` but never changed
+== run (status 1)
+-- stderr
+main.mc:5:1: error[E0301]: module `vector` not found
+main.mc:7:14: error[E0501]: cannot find `vector_create`
+main.mc:8:19: error[E0501]: cannot find `vector_append`
+main.mc:10:2: error[E0501]: cannot find `vector_free`
+main.mc:7:10: warning[W0503]: variable `v` is `mut` but never changed

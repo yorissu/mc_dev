@@ -1,0 +1,4 @@
+
+g :: () -> int { return 1; }
+f :: () { g(); }
+pub main :: () {}

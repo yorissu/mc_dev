@@ -1,0 +1,80 @@
+== check (status 0)
+== run (status 101)
+-- stderr
+runtime error: index 5 is out of bounds (length 2)
+ --> main.mc:5:42
+  |
+5 | level3 :: (items: []int) -> int { return items[5]; }
+  |                                          ^^^^^^^^ here
+  |
+  = note: in `level3` at main.mc:5:42
+  = note: called from `level2` at main.mc:6:42
+  = note: called from `level1` at main.mc:7:94
+  = note: called from `level1` at main.mc:7:47 (4 times)
+  = note: called from `main` at main.mc:8:32
+
+== dis (status 0)
+-- stdout
+constant 0: 4
+constant 1: 0
+constant 2: 1
+constant 3: {0, 0}
+constant 4: 5
+
+function 0 main: 0 parameter(s), 0 local(s), returns a value  (entry)
+     0  CONST 0                      main.mc:8        4
+     1  CALL [1, 1]                  main.mc:8        level1
+     2  RETURN                       main.mc:8
+     3  NONE                         main.mc:8
+     4  RETURN                       main.mc:8
+
+function 1 level1: 1 parameter(s), 2 local(s), returns a value
+     0  LOAD 0                       main.mc:7
+     1  CONST 1                      main.mc:7        0
+     2  GT_INT                       main.mc:7
+     3  JUMP_IF_FALSE 9              main.mc:7
+     4  LOAD 0                       main.mc:7
+     5  CONST 2                      main.mc:7        1
+     6  SUB_INT                      main.mc:7
+     7  CALL [1, 1]                  main.mc:7        level1
+     8  RETURN                       main.mc:7
+     9  CONST 3                      main.mc:7        {0, 0}
+    10  STORE_NEW 1                  main.mc:7
+    11  LOC_LOCAL 1                  main.mc:7
+    12  SLICE_LOC 8                  main.mc:7
+    13  CALL [2, 1]                  main.mc:7        level2
+    14  RETURN                       main.mc:7
+    15  NONE                         main.mc:7
+    16  RETURN                       main.mc:7
+
+function 2 level2: 1 parameter(s), 1 local(s), returns a value
+     0  LOAD 0                       main.mc:6
+     1  CALL [3, 1]                  main.mc:6        level3
+     2  CONST 2                      main.mc:6        1
+     3  ADD_INT                      main.mc:6
+     4  RETURN                       main.mc:6
+     5  NONE                         main.mc:6
+     6  RETURN                       main.mc:6
+
+function 3 level3: 1 parameter(s), 1 local(s), returns a value
+     0  LOAD 0                       main.mc:5
+     1  CONST 4                      main.mc:5        5
+     2  INDEX_SLICE                  main.mc:5
+     3  RETURN                       main.mc:5
+     4  NONE                         main.mc:5
+     5  RETURN                       main.mc:5
+
+== mcb (status 101)
+-- stderr
+runtime error: index 5 is out of bounds (length 2)
+ --> main.mc:5:42
+  |
+5 | level3 :: (items: []int) -> int { return items[5]; }
+  |                                          ^^^^^^^^ here
+  |
+  = note: in `level3` at main.mc:5:42
+  = note: called from `level2` at main.mc:6:42
+  = note: called from `level1` at main.mc:7:94
+  = note: called from `level1` at main.mc:7:47 (4 times)
+  = note: called from `main` at main.mc:8:32
+

@@ -1,0 +1,3 @@
+
+f :: (a: Point, b: Point) -> bool { return a == b; }
+pub main :: () {}

@@ -1,0 +1,3 @@
+
+f :: () -> uint { let s = "hello"; let c = "hi"c; return lenof(s) + lenof(c[..]); }
+pub main :: () {}

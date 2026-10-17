@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:3:46: error[E0507]: cannot apply `==` to `Point` and `Point`
+== run (status 1)
+-- stderr
+main.mc:3:46: error[E0507]: cannot apply `==` to `Point` and `Point`

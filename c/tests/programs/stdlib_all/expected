@@ -1,0 +1,165 @@
+== check (status 0)
+== run (status 101)
+-- stdout
+true false 5 7
+true false oops!
+raw line
+-- stderr
+../../../../stdlib/option.mc:22:2: runtime error: unwrap of an empty option
+== dis (status 0)
+-- stdout
+constant 0: 5
+constant 1: {123, 125, 32, 123, 125, 32, 123, 125, 32, 123, 125}
+constant 2: 7
+constant 3: false
+constant 4: 0
+constant 5: 3
+constant 6: {111, 111, 112, 115, 33}
+constant 7: {123, 125, 32, 123, 125, 32, 123, 125}
+constant 8: {0, 0, 0, 0, 0}
+constant 9: {114, 97, 119, 32}
+constant 10: {108, 105, 110, 101}
+constant 11: {false, 0}
+constant 12: true
+constant 13: {false, 0}
+constant 14: 'unwrap of an empty option'
+constant 15: {false, 0, {0, 0, 0, 0, 0}}
+constant 16: {false, 0, {0, 0, 0, 0, 0}}
+
+function 0 main: 0 parameter(s), 4 local(s), returns a value  (entry)
+     0  CONST 0                      main.mc:10       5
+     1  CALL [1, 1]                  main.mc:10       some<int>
+     2  STORE_NEW 0                  main.mc:10
+     3  CALL [2, 0]                  main.mc:11       none<int>
+     4  STORE_NEW 1                  main.mc:11
+     5  CONST 1                      main.mc:12       {123, 125, 32, 123, 125, 32, 123, 125...
+     6  TEMP_LOC                     main.mc:12
+     7  SLICE_LOC 24                 main.mc:12
+     8  LOC_LOCAL 0                  main.mc:12
+     9  CALL [3, 1]                  main.mc:12       is_some<int>
+    10  LOC_LOCAL 1                  main.mc:12
+    11  CALL [3, 1]                  main.mc:12       is_some<int>
+    12  LOC_LOCAL 0                  main.mc:12
+    13  CALL [4, 1]                  main.mc:12       unwrap<int>
+    14  LOC_LOCAL 1                  main.mc:12
+    15  CONST 2                      main.mc:12       7
+    16  CALL [5, 2]                  main.mc:12       value_or<int>
+    17  CALL_BUILTIN [0, 5]          main.mc:12       builtin println
+    18  POP                          main.mc:12
+    19  CONST 5                      main.mc:13       3
+    20  CALL [6, 1]                  main.mc:13       ok<int, [5]u8>
+    21  STORE_NEW 2                  main.mc:13
+    22  CONST 6                      main.mc:14       {111, 111, 112, 115, 33}
+    23  CALL [7, 1]                  main.mc:14       fail<int, [5]u8>
+    24  STORE_NEW 3                  main.mc:14
+    25  CONST 7                      main.mc:15       {123, 125, 32, 123, 125, 32, 123, 125}
+    26  TEMP_LOC                     main.mc:15
+    27  SLICE_LOC 24                 main.mc:15
+    28  LOC_LOCAL 2                  main.mc:15
+    29  CALL [8, 1]                  main.mc:15       is_ok<int, [5]u8>
+    30  LOC_LOCAL 3                  main.mc:15
+    31  CALL [8, 1]                  main.mc:15       is_ok<int, [5]u8>
+    32  LOAD 3                       main.mc:15
+    33  FIELD 2                      main.mc:15
+    34  CALL_BUILTIN [1, 4]          main.mc:15       builtin println
+    35  POP                          main.mc:15
+    36  CONST 9                      main.mc:16       {114, 97, 119, 32}
+    37  TEMP_LOC                     main.mc:16
+    38  SLICE_LOC 24                 main.mc:16
+    39  CALL_NATIVE [0, 1]           main.mc:16       extern mc_write
+    40  POP                          main.mc:16
+    41  CONST 10                     main.mc:17       {108, 105, 110, 101}
+    42  TEMP_LOC                     main.mc:17
+    43  SLICE_LOC 24                 main.mc:17
+    44  CALL_NATIVE [1, 1]           main.mc:17       extern mc_write_line
+    45  POP                          main.mc:17
+    46  LOC_LOCAL 1                  main.mc:18
+    47  CALL [4, 1]                  main.mc:18       unwrap<int>
+    48  POP                          main.mc:18
+    49  CONST 4                      main.mc:19       0
+    50  RETURN                       main.mc:19
+    51  NONE                         main.mc:20
+    52  RETURN                       main.mc:20
+
+function 1 some<int>: 1 parameter(s), 1 local(s), returns a value
+     0  CONST 11                     option.mc:10     {false, 0}
+     1  CONST 12                     option.mc:10     true
+     2  SET_FIELD 0                  option.mc:10
+     3  LOAD 0                       option.mc:10
+     4  SET_FIELD 1                  option.mc:10
+     5  RETURN                       option.mc:10
+     6  NONE                         option.mc:11
+     7  RETURN                       option.mc:11
+
+function 2 none<int>: 0 parameter(s), 0 local(s), returns a value
+     0  CONST 13                     option.mc:14     {false, 0}
+     1  RETURN                       option.mc:14
+     2  NONE                         option.mc:15
+     3  RETURN                       option.mc:15
+
+function 3 is_some<int>: 1 parameter(s), 1 local(s), returns a value
+     0  LOAD_DEREF 0                 option.mc:18
+     1  FIELD 0                      option.mc:18
+     2  RETURN                       option.mc:18
+     3  NONE                         option.mc:19
+     4  RETURN                       option.mc:19
+
+function 4 unwrap<int>: 1 parameter(s), 1 local(s), returns a value
+     0  LOAD_DEREF 0                 option.mc:22
+     1  FIELD 0                      option.mc:22
+     2  JUMP_IF_TRUE 4               option.mc:22
+     3  ASSERT_FAIL 14               option.mc:22     'unwrap of an empty option'
+     4  NONE                         option.mc:22
+     5  POP                          option.mc:22
+     6  LOAD_DEREF 0                 option.mc:23
+     7  FIELD 1                      option.mc:23
+     8  RETURN                       option.mc:23
+     9  NONE                         option.mc:24
+    10  RETURN                       option.mc:24
+
+function 5 value_or<int>: 2 parameter(s), 2 local(s), returns a value
+     0  LOAD_DEREF 0                 option.mc:27
+     1  FIELD 0                      option.mc:27
+     2  JUMP_IF_FALSE 6              option.mc:27
+     3  LOAD_DEREF 0                 option.mc:28
+     4  FIELD 1                      option.mc:28
+     5  RETURN                       option.mc:28
+     6  LOAD 1                       option.mc:30
+     7  RETURN                       option.mc:30
+     8  NONE                         option.mc:31
+     9  RETURN                       option.mc:31
+
+function 6 ok<int, [5]u8>: 1 parameter(s), 1 local(s), returns a value
+     0  CONST 15                     result.mc:11     {false, 0, {0, 0, 0, 0, 0}}
+     1  CONST 12                     result.mc:11     true
+     2  SET_FIELD 0                  result.mc:11
+     3  LOAD 0                       result.mc:11
+     4  SET_FIELD 1                  result.mc:11
+     5  RETURN                       result.mc:11
+     6  NONE                         result.mc:12
+     7  RETURN                       result.mc:12
+
+function 7 fail<int, [5]u8>: 1 parameter(s), 1 local(s), returns a value
+     0  CONST 16                     result.mc:15     {false, 0, {0, 0, 0, 0, 0}}
+     1  CONST 3                      result.mc:15     false
+     2  SET_FIELD 0                  result.mc:15
+     3  LOAD 0                       result.mc:15
+     4  SET_FIELD 2                  result.mc:15
+     5  RETURN                       result.mc:15
+     6  NONE                         result.mc:16
+     7  RETURN                       result.mc:16
+
+function 8 is_ok<int, [5]u8>: 1 parameter(s), 1 local(s), returns a value
+     0  LOAD_DEREF 0                 result.mc:19
+     1  FIELD 0                      result.mc:19
+     2  RETURN                       result.mc:19
+     3  NONE                         result.mc:20
+     4  RETURN                       result.mc:20
+
+== mcb (status 101)
+-- stdout
+true false 5 7
+true false oops!
+raw line
+-- stderr
+../../../../stdlib/option.mc:22:2: runtime error: unwrap of an empty option

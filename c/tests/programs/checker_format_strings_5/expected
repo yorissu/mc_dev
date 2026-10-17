@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:3:19: error[E0530]: invalid format string
+== run (status 1)
+-- stderr
+main.mc:3:19: error[E0530]: invalid format string

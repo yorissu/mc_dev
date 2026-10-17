@@ -1,0 +1,3 @@
+
+from geo.shapes import Point, make
+pub twice :: () -> Point { return make(); }

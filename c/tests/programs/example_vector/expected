@@ -1,0 +1,264 @@
+== check (status 0)
+== run (status 0)
+== dis (status 0)
+-- stdout
+constant 0: 4
+constant 1: 11
+constant 2: 12
+constant 3: 13
+constant 4: {0.0, 0.0}
+constant 5: 10.0
+constant 6: 11.0
+constant 7: {0.0, 0.0}
+constant 8: 12.0
+constant 9: 13.0
+constant 10: {0.0, 0.0}
+constant 11: 14.0
+constant 12: 15.0
+constant 13: 0
+constant 14: 'assertion failed: lenof(data) > 0'
+constant 15: {slice {}, 0}
+constant 16: 1
+constant 17: 2
+constant 18: 'assertion failed: lenof(vector.data) > 0'
+constant 19: 0.0
+constant 20: {0.0, 0.0}
+constant 21: {slice {}, 0}
+
+function 0 main: 0 parameter(s), 2 local(s)  (entry)
+     0  CONST 0                      vector.mc:9      4
+     1  CALL [1, 1]                  main.mc:11       vector_create<int>
+     2  STORE_NEW 0                  main.mc:11
+     3  LOC_LOCAL 0                  main.mc:12
+     4  CONST 1                      main.mc:12       11
+     5  TEMP_LOC                     main.mc:12
+     6  CALL [2, 2]                  main.mc:12       vector_append<int>
+     7  POP                          main.mc:12
+     8  LOC_LOCAL 0                  main.mc:13
+     9  CONST 2                      main.mc:13       12
+    10  TEMP_LOC                     main.mc:13
+    11  CALL [2, 2]                  main.mc:13       vector_append<int>
+    12  POP                          main.mc:13
+    13  LOC_LOCAL 0                  main.mc:14
+    14  CONST 3                      main.mc:14       13
+    15  TEMP_LOC                     main.mc:14
+    16  CALL [2, 2]                  main.mc:14       vector_append<int>
+    17  POP                          main.mc:14
+    18  LOC_LOCAL 0                  main.mc:15
+    19  CALL [3, 1]                  main.mc:15       vector_free<int>
+    20  POP                          main.mc:15
+    21  CONST 0                      vector.mc:9      4
+    22  CALL [4, 1]                  main.mc:18       vector_create<Point2d>
+    23  STORE_NEW 1                  main.mc:18
+    24  LOC_LOCAL 1                  main.mc:19
+    25  CONST 4                      main.mc:19       {0.0, 0.0}
+    26  CONST 5                      main.mc:19       10.0
+    27  SET_FIELD 0                  main.mc:19
+    28  CONST 6                      main.mc:19       11.0
+    29  SET_FIELD 1                  main.mc:19
+    30  TEMP_LOC                     main.mc:19
+    31  CALL [5, 2]                  main.mc:19       vector_append<Point2d>
+    32  POP                          main.mc:19
+    33  LOC_LOCAL 1                  main.mc:20
+    34  CONST 7                      main.mc:20       {0.0, 0.0}
+    35  CONST 8                      main.mc:20       12.0
+    36  SET_FIELD 0                  main.mc:20
+    37  CONST 9                      main.mc:20       13.0
+    38  SET_FIELD 1                  main.mc:20
+    39  TEMP_LOC                     main.mc:20
+    40  CALL [5, 2]                  main.mc:20       vector_append<Point2d>
+    41  POP                          main.mc:20
+    42  LOC_LOCAL 1                  main.mc:21
+    43  CONST 10                     main.mc:21       {0.0, 0.0}
+    44  CONST 11                     main.mc:21       14.0
+    45  SET_FIELD 0                  main.mc:21
+    46  CONST 12                     main.mc:21       15.0
+    47  SET_FIELD 1                  main.mc:21
+    48  TEMP_LOC                     main.mc:21
+    49  CALL [5, 2]                  main.mc:21       vector_append<Point2d>
+    50  POP                          main.mc:21
+    51  LOC_LOCAL 1                  main.mc:22
+    52  CALL [6, 1]                  main.mc:22       vector_free<Point2d>
+    53  POP                          main.mc:22
+    54  NONE                         main.mc:24
+    55  RETURN                       main.mc:24
+
+function 1 vector_create<int>: 1 parameter(s), 2 local(s), returns a value
+     0  LOAD 0                       vector.mc:10
+     1  CALL_BUILTIN [0, 1]          vector.mc:10     builtin alloc
+     2  STORE_NEW 1                  vector.mc:10
+     3  LOAD 1                       vector.mc:11
+     4  LEN_SLICE                    vector.mc:11
+     5  CONST 13                     vector.mc:11     0
+     6  GT_UINT                      vector.mc:11
+     7  JUMP_IF_TRUE 9               vector.mc:11
+     8  ASSERT_FAIL 14               vector.mc:11     'assertion failed: lenof(data) > 0'
+     9  NONE                         vector.mc:11
+    10  POP                          vector.mc:11
+    11  CONST 15                     vector.mc:12     {slice {}, 0}
+    12  LOAD 1                       vector.mc:12
+    13  SET_FIELD 0                  vector.mc:12
+    14  RETURN                       vector.mc:12
+    15  NONE                         vector.mc:13
+    16  RETURN                       vector.mc:13
+
+function 2 vector_append<int>: 2 parameter(s), 3 local(s)
+     0  LOAD_DEREF 0                 vector.mc:22
+     1  FIELD 0                      vector.mc:22
+     2  LEN_SLICE                    vector.mc:22
+     3  STORE_NEW 2                  vector.mc:22
+     4  LOAD_DEREF 0                 vector.mc:23
+     5  FIELD 1                      vector.mc:23
+     6  CONST 16                     vector.mc:23     1
+     7  ADD_UINT                     vector.mc:23
+     8  LOAD 2                       vector.mc:23
+     9  GT_UINT                      vector.mc:23
+    10  JUMP_IF_FALSE 29             vector.mc:23
+    11  LOAD 0                       vector.mc:24
+    12  LOC_FIELD 0                  vector.mc:24
+    13  LOAD_DEREF 0                 vector.mc:24
+    14  FIELD 0                      vector.mc:24
+    15  LOAD 2                       vector.mc:24
+    16  CONST 17                     vector.mc:24     2
+    17  MUL_UINT                     vector.mc:24
+    18  CALL_BUILTIN [1, 2]          vector.mc:24     builtin realloc
+    19  STORE_LOC                    vector.mc:24
+    20  LOAD_DEREF 0                 vector.mc:25
+    21  FIELD 0                      vector.mc:25
+    22  LEN_SLICE                    vector.mc:25
+    23  CONST 13                     vector.mc:25     0
+    24  GT_UINT                      vector.mc:25
+    25  JUMP_IF_TRUE 27              vector.mc:25
+    26  ASSERT_FAIL 18               vector.mc:25     'assertion failed: lenof(vector.data)...
+    27  NONE                         vector.mc:25
+    28  POP                          vector.mc:25
+    29  LOAD_DEREF 0                 vector.mc:27
+    30  FIELD 0                      vector.mc:27
+    31  LOAD_DEREF 0                 vector.mc:27
+    32  FIELD 1                      vector.mc:27
+    33  LOC_INDEX_SLICE              vector.mc:27
+    34  LOAD_DEREF 1                 vector.mc:27
+    35  STORE_LOC                    vector.mc:27
+    36  LOAD 0                       vector.mc:28
+    37  LOC_FIELD 1                  vector.mc:28
+    38  DUP                          vector.mc:28
+    39  LOAD_LOC                     vector.mc:28
+    40  CONST 16                     vector.mc:28     1
+    41  ADD_UINT                     vector.mc:28
+    42  STORE_LOC                    vector.mc:28
+    43  NONE                         vector.mc:29
+    44  RETURN                       vector.mc:29
+
+function 3 vector_free<int>: 1 parameter(s), 1 local(s)
+     0  LOAD_DEREF 0                 vector.mc:16
+     1  FIELD 0                      vector.mc:16
+     2  LEN_SLICE                    vector.mc:16
+     3  CONST 13                     vector.mc:16     0
+     4  GT_UINT                      vector.mc:16
+     5  JUMP_IF_TRUE 7               vector.mc:16
+     6  ASSERT_FAIL 18               vector.mc:16     'assertion failed: lenof(vector.data)...
+     7  NONE                         vector.mc:16
+     8  POP                          vector.mc:16
+     9  LOAD 0                       vector.mc:17
+    10  LOC_FIELD 0                  vector.mc:17
+    11  LOAD_DEREF 0                 vector.mc:17
+    12  FIELD 0                      vector.mc:17
+    13  CALL_BUILTIN [2, 1]          vector.mc:17     builtin free
+    14  STORE_LOC                    vector.mc:17
+    15  LOAD 0                       vector.mc:18
+    16  LOC_FIELD 1                  vector.mc:18
+    17  CONST 13                     vector.mc:18     0
+    18  STORE_LOC                    vector.mc:18
+    19  NONE                         vector.mc:19
+    20  RETURN                       vector.mc:19
+
+function 4 vector_create<Point2d>: 1 parameter(s), 2 local(s), returns a value
+     0  LOAD 0                       vector.mc:10
+     1  CALL_BUILTIN [3, 1]          vector.mc:10     builtin alloc
+     2  STORE_NEW 1                  vector.mc:10
+     3  LOAD 1                       vector.mc:11
+     4  LEN_SLICE                    vector.mc:11
+     5  CONST 13                     vector.mc:11     0
+     6  GT_UINT                      vector.mc:11
+     7  JUMP_IF_TRUE 9               vector.mc:11
+     8  ASSERT_FAIL 14               vector.mc:11     'assertion failed: lenof(data) > 0'
+     9  NONE                         vector.mc:11
+    10  POP                          vector.mc:11
+    11  CONST 21                     vector.mc:12     {slice {}, 0}
+    12  LOAD 1                       vector.mc:12
+    13  SET_FIELD 0                  vector.mc:12
+    14  RETURN                       vector.mc:12
+    15  NONE                         vector.mc:13
+    16  RETURN                       vector.mc:13
+
+function 5 vector_append<Point2d>: 2 parameter(s), 3 local(s)
+     0  LOAD_DEREF 0                 vector.mc:22
+     1  FIELD 0                      vector.mc:22
+     2  LEN_SLICE                    vector.mc:22
+     3  STORE_NEW 2                  vector.mc:22
+     4  LOAD_DEREF 0                 vector.mc:23
+     5  FIELD 1                      vector.mc:23
+     6  CONST 16                     vector.mc:23     1
+     7  ADD_UINT                     vector.mc:23
+     8  LOAD 2                       vector.mc:23
+     9  GT_UINT                      vector.mc:23
+    10  JUMP_IF_FALSE 29             vector.mc:23
+    11  LOAD 0                       vector.mc:24
+    12  LOC_FIELD 0                  vector.mc:24
+    13  LOAD_DEREF 0                 vector.mc:24
+    14  FIELD 0                      vector.mc:24
+    15  LOAD 2                       vector.mc:24
+    16  CONST 17                     vector.mc:24     2
+    17  MUL_UINT                     vector.mc:24
+    18  CALL_BUILTIN [4, 2]          vector.mc:24     builtin realloc
+    19  STORE_LOC                    vector.mc:24
+    20  LOAD_DEREF 0                 vector.mc:25
+    21  FIELD 0                      vector.mc:25
+    22  LEN_SLICE                    vector.mc:25
+    23  CONST 13                     vector.mc:25     0
+    24  GT_UINT                      vector.mc:25
+    25  JUMP_IF_TRUE 27              vector.mc:25
+    26  ASSERT_FAIL 18               vector.mc:25     'assertion failed: lenof(vector.data)...
+    27  NONE                         vector.mc:25
+    28  POP                          vector.mc:25
+    29  LOAD_DEREF 0                 vector.mc:27
+    30  FIELD 0                      vector.mc:27
+    31  LOAD_DEREF 0                 vector.mc:27
+    32  FIELD 1                      vector.mc:27
+    33  LOC_INDEX_SLICE              vector.mc:27
+    34  LOAD_DEREF 1                 vector.mc:27
+    35  STORE_LOC                    vector.mc:27
+    36  LOAD 0                       vector.mc:28
+    37  LOC_FIELD 1                  vector.mc:28
+    38  DUP                          vector.mc:28
+    39  LOAD_LOC                     vector.mc:28
+    40  CONST 16                     vector.mc:28     1
+    41  ADD_UINT                     vector.mc:28
+    42  STORE_LOC                    vector.mc:28
+    43  NONE                         vector.mc:29
+    44  RETURN                       vector.mc:29
+
+function 6 vector_free<Point2d>: 1 parameter(s), 1 local(s)
+     0  LOAD_DEREF 0                 vector.mc:16
+     1  FIELD 0                      vector.mc:16
+     2  LEN_SLICE                    vector.mc:16
+     3  CONST 13                     vector.mc:16     0
+     4  GT_UINT                      vector.mc:16
+     5  JUMP_IF_TRUE 7               vector.mc:16
+     6  ASSERT_FAIL 18               vector.mc:16     'assertion failed: lenof(vector.data)...
+     7  NONE                         vector.mc:16
+     8  POP                          vector.mc:16
+     9  LOAD 0                       vector.mc:17
+    10  LOC_FIELD 0                  vector.mc:17
+    11  LOAD_DEREF 0                 vector.mc:17
+    12  FIELD 0                      vector.mc:17
+    13  CALL_BUILTIN [5, 1]          vector.mc:17     builtin free
+    14  STORE_LOC                    vector.mc:17
+    15  LOAD 0                       vector.mc:18
+    16  LOC_FIELD 1                  vector.mc:18
+    17  CONST 13                     vector.mc:18     0
+    18  STORE_LOC                    vector.mc:18
+    19  NONE                         vector.mc:19
+    20  RETURN                       vector.mc:19
+
+== mcb (status 0)

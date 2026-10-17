@@ -1,0 +1,3 @@
+
+f :: (a: f64) -> u8 { return (u8)a; }
+pub main :: () {}

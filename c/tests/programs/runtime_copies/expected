@@ -1,0 +1,7 @@
+== check (status 0)
+== run (status 0)
+-- stdout
+{x: 1, y: 2}
+{x: 10, y: 2}
+{items: {0, 5, 0}, corner: {x: 0, y: 0}}
+{items: {0, 6, 0}, corner: {x: 0, y: 7}}

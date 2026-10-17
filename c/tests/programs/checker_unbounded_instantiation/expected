@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:2:40: error[E0527]: too many nested instantiations of `deep`
+== run (status 1)
+-- stderr
+main.mc:2:40: error[E0527]: too many nested instantiations of `deep`

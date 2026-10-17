@@ -1,0 +1,19 @@
+
+			from option import *
+			from result import Result, ok, fail
+			first :: (s: []int) -> Option<int> {
+				if lenof(s) == 0 { return none(); }
+				return some(s[0]);
+			}
+			parse :: (c: u8) -> Result<int, int> {
+				if c < '0' || c > '9' { return fail(1); }
+				return ok((int)(c - '0'));
+			}
+			f :: () -> int {
+				let o = first({ 1, 2 });
+				let r = parse('7');
+				if !r.ok { return r.error; }
+				return value_or(&o, 0) + unwrap(&o) + r.value;
+			}
+
+pub main :: () {}

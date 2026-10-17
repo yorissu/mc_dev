@@ -1,0 +1,4 @@
+
+from io import print, println, write, write_line
+from memory import alloc, realloc, free, copy
+pub main :: () { let data = alloc<int>(1); let old = data; _ = realloc(data, 8); _ = old[0]; }

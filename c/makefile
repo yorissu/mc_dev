@@ -3,7 +3,10 @@
 #
 #   make [CONFIG=debug|release]   build the compiler: build/<config>/mc
 #   make test                     build and run the unit tests
-#   make check                    unit tests, then the differential tests against the python implementation
+#   make check                    unit tests, then the golden tests (tests/programs)
+#   make golden                   rewrite the golden expectations (review the diff!)
+#   make differential             the old comparison with the python implementation (needs python3)
+#   make bench                    time the programs of bench/ with the release build
 #   make clean                    remove the build directory
 #
 # the standard library is ../stdlib (the one the python implementation uses);
@@ -28,7 +31,7 @@ LDFLAGS := $(filter -fsanitize=%,$(FLAGS_$(CONFIG)))
 LIBRARY := $(patsubst %.c,$(BUILD)/%.o,$(filter-out source/main.c,$(sort $(wildcard source/*.c))))
 TESTS   := $(patsubst %.c,$(BUILD)/%.o,$(sort $(wildcard tests/*.c)))
 
-.PHONY: all test check clean
+.PHONY: all test check golden differential bench clean
 
 all: $(BUILD)/mc
 
@@ -36,7 +39,17 @@ test: $(BUILD)/mc_tests
 	$<
 
 check: test $(BUILD)/mc
+	tests/golden.sh $(BUILD)/mc
+
+golden: $(BUILD)/mc
+	tests/golden.sh $(BUILD)/mc --update
+
+differential: $(BUILD)/mc
 	python3 tests/differential.py $(BUILD)/mc
+
+bench:
+	$(MAKE) CONFIG=release build/release/mc
+	bench/bench.sh build/release/mc
 
 clean:
 	rm -rf build

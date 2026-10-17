@@ -1,0 +1,6 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+part :: (items: []int, low: int, high: int) -> []int { return items[low..high]; }
+pub main :: () -> int { let items: [3]int = { 1, 2, 3, }; println("{}", part(items[..], 1, 3)); return (int)lenof(part(items[..], 2, 1)); }

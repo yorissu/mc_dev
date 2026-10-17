@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:3:15: error[E0506]: cannot infer the type argument `T` of `make`
+== run (status 1)
+-- stderr
+main.mc:3:15: error[E0506]: cannot infer the type argument `T` of `make`

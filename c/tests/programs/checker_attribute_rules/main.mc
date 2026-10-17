@@ -1,0 +1,3 @@
+
+[unknown] f :: () {}
+pub main :: () {}

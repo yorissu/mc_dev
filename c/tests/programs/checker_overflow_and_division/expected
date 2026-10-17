@@ -1,0 +1,6 @@
+== check (status 0)
+-- stderr
+main.mc:2:6: warning[W0701]: `250u8 + 10u8` overflows `u8`
+== run (status 0)
+-- stderr
+main.mc:2:6: warning[W0701]: `250u8 + 10u8` overflows `u8`

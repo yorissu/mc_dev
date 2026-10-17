@@ -1,0 +1,3 @@
+
+f :: () { let a = 1; let r = &a; }
+pub main :: () {}

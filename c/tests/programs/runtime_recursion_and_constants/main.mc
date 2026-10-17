@@ -1,0 +1,8 @@
+
+from io import print, println, write, write_line
+from memory import alloc, realloc, free, copy
+
+fib :: (n: int) -> int { if n < 2 { return n; } return fib(n - 1) + fib(n - 2); }
+SQUARES :: squares();
+squares :: () -> [5]int { let mut t: [5]int = {}; for i in 0..5 { t[i] = i * i; } return t; }
+pub main :: () { println("{}", fib(20)); println("{}", SQUARES); println("{}", SQUARES[..][4]); }

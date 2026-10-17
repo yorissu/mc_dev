@@ -1,0 +1,5 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+pub main :: () { let x = 2; assert(x == 3); }

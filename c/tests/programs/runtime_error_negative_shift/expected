@@ -1,0 +1,6 @@
+== check (status 0)
+== run (status 101)
+-- stdout
+16
+-- stderr
+main.mc:5:43: runtime error: negative shift count -2

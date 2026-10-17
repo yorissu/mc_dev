@@ -1,0 +1,6 @@
+== check (status 0)
+== run (status 0)
+-- stdout
+{width: 80, name: term, on: true}
+80
+{0.0, 0.0}

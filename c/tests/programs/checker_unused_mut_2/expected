@@ -1,0 +1,6 @@
+== check (status 0)
+-- stderr
+main.mc:2:7: warning[W0503]: parameter `a` is `mut` but never changed
+== run (status 0)
+-- stderr
+main.mc:2:7: warning[W0503]: parameter `a` is `mut` but never changed

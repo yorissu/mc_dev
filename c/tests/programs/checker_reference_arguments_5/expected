@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:4:21: error[E0508]: cannot pass a temporary value as `mut &`
+== run (status 1)
+-- stderr
+main.mc:4:21: error[E0508]: cannot pass a temporary value as `mut &`

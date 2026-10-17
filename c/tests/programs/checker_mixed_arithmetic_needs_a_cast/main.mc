@@ -1,0 +1,3 @@
+
+f :: (a: s32, b: int) -> int { return a + b; }
+pub main :: () {}

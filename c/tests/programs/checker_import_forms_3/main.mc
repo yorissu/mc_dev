@@ -1,0 +1,4 @@
+
+from geo.shapes import make, Point as P
+f :: () -> P { return make(); }
+pub main :: () {}

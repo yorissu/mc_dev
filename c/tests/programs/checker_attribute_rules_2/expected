@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:2:2: error[E0403]: `uninit` cannot be used on a function
+== run (status 1)
+-- stderr
+main.mc:2:2: error[E0403]: `uninit` cannot be used on a function

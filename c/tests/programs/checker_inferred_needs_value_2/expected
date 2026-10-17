@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mc:2:19: error[E0506]: cannot infer the type of `null`
+== run (status 1)
+-- stderr
+main.mc:2:19: error[E0506]: cannot infer the type of `null`
