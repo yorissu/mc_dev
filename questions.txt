@@ -163,7 +163,8 @@ questions that came up during the rework. each says what mc does today.
 25. the python implementation. tests/differential.py still runs, but the
     two implementations now differ on purpose (plugins, layout, format
     specifiers, .mcb). remove the python implementation and the
-    differential test, once nobody needs them?
+    differential test, once nobody needs them? - Remove it.
+    DONE: mc/, tests/ and c/tests/differential.py are gone.
 
 
 decided during the rework
@@ -293,9 +294,8 @@ each one is easy to revisit.
 - commits: the rework prompt says not to commit unless told to; this
   session's environment asked for the work to be committed and pushed to
   the branch 'claude/determined-allen-1hnnqt', so every task is one commit
-  there (nothing on the main branch).
-- the python implementation was left as it was (the prompt says not to
-  change it), but stdlib/io.mc and stdlib/memory.mc now declare '[plugin]'
-  functions, which it does not know: it cannot run programs that import
-  them any more, and 36 of its unit tests fail. with the stdlib of before
-  the rework ('git show 379b053:stdlib/io.mc') all 116 pass. see 25.
+  there; at the end the user asked for it to be merged into 'main'.
+- the python implementation: removed at the end of the rework, as the user
+  asked (with its unit tests and the differential test). it could not use
+  the '[plugin]' stdlib anyway; commit 379b053 has it, with the stdlib it
+  understood, if it is ever needed again.

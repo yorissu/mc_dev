@@ -3,10 +3,9 @@ mc - the c implementation
 =========================
 
 the compiler and virtual machine of the mc language, in c11. it started as a
-port of the python implementation (../mc), which it matched byte for byte;
-since then it has moved on (plugins, a c-like memory layout, binary
-bytecode, format specifiers, command-line arguments for 'main'), and the
-python implementation is no longer the reference.
+port of a python implementation, which it matched byte for byte (that one
+is gone now); since then it has gained plugins, a c-like memory layout,
+binary bytecode, format specifiers and command-line arguments for 'main'.
 
 it builds with gcc or clang (linux, macos, wsl, mingw) and with msvc
 (windows). it needs nothing but the c library (and libdl on linux, for
@@ -53,7 +52,6 @@ testing
 	make check                  unit tests, then the golden tests
 	make golden                 rewrite the golden expectations (review the diff before committing it)
 	make bench                  time the programs of bench/ with the release build
-	make differential           the old comparison with the python implementation (needs python3)
 
 any CONFIG works with them: 'make CONFIG=release check', 'make
 CONFIG=portable check', 'make CC=clang CONFIG=clang check'.
@@ -75,9 +73,9 @@ color) with 'expected'. 'options' has lines
 	tests/golden.sh build/debug/mc [--update] [name...]
 
 the names say what a program is about: checker_*, parser_* and stdlib_* came
-from the python test suites, runtime_* hit every runtime error and the
-machine's layout, language_* the newer language features, plugin_* the
-plugins, example_* the examples. a change of behaviour on purpose is a 'make
+from the test suites of the old python implementation, runtime_* hit every
+runtime error and the machine's layout, language_* the newer language
+features, plugin_* the plugins, example_* the examples. a change of behaviour on purpose is a 'make
 golden' and a reviewed diff; never regenerate to hide a change.
 
 unit tests: one file per area (basics, front, machine, plugin, int128),
@@ -196,7 +194,6 @@ of one stage share among themselves is an internal header in source/.
 	tests/*_tests.c            unit tests (they register themselves with cairo)
 	tests/helpers.h            runs a program from its source text
 	tests/golden.sh            the golden tests; tests/programs/ their programs
-	tests/differential.py      the old comparison with the python implementation
 
 
 tables: how to extend it

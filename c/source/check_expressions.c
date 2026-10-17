@@ -756,7 +756,7 @@ static void _mc_check_overflow(mc_checker_s* const c, mc_node_s* const node, con
 							   mc_node_s* const right_node, const mc_type_s* const type, mc_context_s* const context) {
 	if (!mc_type_is_integer(type) || mc_type_scalar != type->kind) return;
 	mc_cvalue_s left = {0}, right = {0};
-	// both are probed, like the python implementation (probes count as evaluation steps)
+	// both are probed, even when the left one is unknown (probes count as evaluation steps)
 	const bool left_known = mc_try_value(c, left_node, &left);
 	const bool right_known = mc_try_value(c, right_node, &right);
 	if (!left_known || !right_known) return;

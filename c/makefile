@@ -7,11 +7,10 @@
 #   make plugins                  build the example plugins: build/<config>/plugins/<name>.so
 #   make check                    unit tests, then the golden tests (tests/programs)
 #   make golden                   rewrite the golden expectations (review the diff!)
-#   make differential             the old comparison with the python implementation (needs python3)
 #   make bench                    time the programs of bench/ with the release build
 #   make clean                    remove the build directory
 #
-# the standard library is ../stdlib (the one the python implementation uses);
+# the standard library is ../stdlib;
 # 'mc --stdlib <dir>' or the MC_STDLIB environment variable choose another.
 
 CONFIG ?= debug
@@ -55,7 +54,7 @@ endif
 
 PLUGINS := $(patsubst examples/plugins/%/,$(BUILD)/plugins/%$(SHARED),$(sort $(dir $(wildcard examples/plugins/*/*.c))))
 
-.PHONY: all test check golden differential bench plugins clean
+.PHONY: all test check golden bench plugins clean
 
 all: $(BUILD)/mc
 
@@ -74,9 +73,6 @@ plugins: $(PLUGINS)
 $(BUILD)/plugins/%$(SHARED): examples/plugins/%/*.c include/mc/plugin.h
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -fPIC -shared -fvisibility=hidden $(filter %.c,$^) -o $@ $(LDFLAGS) -lm
-
-differential: $(BUILD)/mc
-	python3 tests/differential.py $(BUILD)/mc
 
 bench:
 	$(MAKE) CONFIG=release build/release/mc
