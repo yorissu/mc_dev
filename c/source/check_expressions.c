@@ -195,6 +195,7 @@ const mc_type_s* mc_symbol_value(mc_checker_s* const c, mc_symbol_s* const symbo
 				}
 			}
 			node->note.instance = instance;
+			mc_plugin_use(c, info, node->span);
 			return mc_instance_type(c->program, instance);
 		}
 		case mc_symbol_struct: {
@@ -304,6 +305,7 @@ static const mc_type_s* _mc_specialize(mc_checker_s* const c, mc_node_s* const n
 		mc_instance_s* const instance = mc_instance(c, info, arguments.data, arguments.count, context, node->span);
 		if (instance != NULL) {
 			node->note.instance = instance;
+			mc_plugin_use(c, info, node->span);
 			result = mc_instance_type(c->program, instance);
 		}
 	}
@@ -435,40 +437,9 @@ static bool _mc_overlaps(const mc_place_s* const first, const mc_place_s* const 
 	return true;
 }
 
-/// the number of '{}' in a format string; false (with 'problem') when it is invalid.
-static bool _mc_format_placeholders(const mc_view_s data, size_t* const count, const char** const problem) {
-	*count = 0;
-	for (size_t index = 0; index < data.length;) {
-		const char character = data.data[index];
-		const char following = (index + 1 < data.length) ? data.data[index + 1] : '\0';
-		const bool has_following = index + 1 < data.length;
-		if ('{' == character) {
-			if (has_following && '{' == following) { index += 2; continue; }
-			if (has_following && '}' == following) { *count += 1; index += 2; continue; }
-			*problem = "`{` must be followed by `}` (format options are not supported yet)";
-			return false;
-		}
-		if ('}' == character) {
-			if (has_following && '}' == following) { index += 2; continue; }
-			*problem = "a single `}` must be written `}}`";
-			return false;
-		}
-		index += 1;
-	}
-	return true;
-}
-
-static void _mc_cvalue_bytes(const mc_cvalue_s* const value, mc_string_s* const out) {
-	if (mc_cvalue_list == value->kind) {
-		for (size_t i = 0; i < value->as.list->count; ++i) mc_string_append_char(out, (char)value->as.list->items[i].as.integer);
-	}
-	else if (mc_cvalue_slice == value->kind && value->as.slice.list != NULL) {
-		for (int64_t i = 0; i < value->as.slice.length; ++i) mc_string_append_char(out, (char)value->as.slice.list->items[value->as.slice.start + i].as.integer);
-	}
-}
-
-/// checks the values given for '...'; when the parameter before it is a
-/// '[]u8', it is a format string whose '{}' must match the values.
+/// checks the values given for '...' and records their types on the call;
+/// when the parameter before it is a '[]u8', it is a format string, which
+/// must be known at compile time (the plugin's check reads it).
 static void _mc_variadic_arguments(mc_checker_s* const c, mc_node_s* const node, const mc_type_s* const* const parameters, const size_t count,
 								   mc_context_s* const context) {
 	const mc_nodes_s* const arguments = &node->as.call.arguments;
@@ -497,21 +468,9 @@ static void _mc_variadic_arguments(mc_checker_s* const c, mc_node_s* const node,
 		return;
 	}
 	format->note.format = true;
+	// what the format says is the plugin's to check; it must be known to be checked
 	mc_cvalue_s value = {0};
-	if (!mc_require_constant(c, format, context, "the format string", &value)) return;
-	mc_string_s data = {0};
-	_mc_cvalue_bytes(&value, &data);
-	size_t placeholders = 0;
-	const char* problem = NULL;
-	if (!_mc_format_placeholders(mc_string_view(&data), &placeholders, &problem)) {
-		mc_help(mc_label_main(mc_error(c->diag, mc_E0530, format->span, "invalid format string"), "%s", problem),
-			"`{}` is replaced by the next value; write `{{` and `}}` for braces");
-	}
-	else if (placeholders != types->count) {
-		mc_label(mc_label_main(mc_error(c->diag, mc_E0530, node->span, "the format string has %zu placeholder(s), but %zu value(s) are given",
-			placeholders, types->count), "they must match"), format->span, "%zu `{}`", placeholders);
-	}
-	mc_string_free(&data);
+	(void)mc_require_constant(c, format, context, "the format string", &value);
 }
 
 static void _mc_arguments(mc_checker_s* const c, mc_node_s* const node, const mc_type_s* const* parameters, size_t count,
@@ -659,6 +618,7 @@ static const mc_type_s* _mc_call(mc_checker_s* const c, mc_node_s* const node, m
 		node->note.instance = instance;
 		_mc_arguments(c, node, instance->parameters.data, instance->parameters.count, &instance->node->as.function.parameters, context,
 			mc_instance_name(c, instance));
+		if (mc_function_is_plugin(instance->function)) mc_plugin_check_call(c, node, instance);
 		return (instance->result != NULL) ? instance->result : mc_special_type(c, mc_special_nothing);
 	}
 	if (symbol != NULL && mc_symbol_struct == symbol->kind) {
@@ -788,6 +748,7 @@ static const mc_type_s* _mc_operator_call(mc_checker_s* const c, mc_node_s* cons
 		if (mc_type_is_untyped(types[p]) || mc_type_is_special(types[p], mc_special_null)) mc_coerce(c, operands[p], types[p], chosen->parameters.data[p]);
 	}
 	node->note.operator_call = chosen;
+	mc_plugin_use(c, chosen->function, node->span);
 	return chosen->result;
 }
 

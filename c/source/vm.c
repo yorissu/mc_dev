@@ -24,12 +24,15 @@
 #include <stdarg.h>
 #include <string.h>
 
-void mc_vm_fail(mc_vm_s* const vm, const char* const format, ...) {
-	va_list args; va_start(args, format);
+void mc_vm_vfail(mc_vm_s* const vm, const char* const format, va_list args) {
 	mc_free(vm->error);
 	vm->error = mc_vformat(format, args);
-	va_end(args);
 	longjmp(*vm->stop, 1);
+}
+
+void mc_vm_fail(mc_vm_s* const vm, const char* const format, ...) {
+	va_list args; va_start(args, format);
+	mc_vm_vfail(vm, format, args);
 }
 
 /// the decoded operations: the general one, and fast cases.
@@ -156,7 +159,7 @@ static mc_word_u _mc_cast(mc_vm_s* const vm, const mc_instruction_s* const instr
 	if (_mc_is_float(source)) {
 		if (!isfinite(value.f)) {
 			mc_string_s text = {0};
-			mc_vm_format_float(&text, value.f, 64);
+			mc_format_float_value(&text, value.f, 64);
 			char buffer[64];
 			(void)snprintf(buffer, sizeof(buffer), "%s", mc_string_cstr(&text));
 			mc_string_free(&text);
@@ -316,14 +319,6 @@ static void _mc_call(mc_vm_s* const vm, const int64_t index) {
 	if (vm->capacity - vm->sp < prepared->max_stack + 2) mc_vm_reserve(vm, prepared->max_stack + 2);
 }
 
-static void _mc_intrinsic(mc_vm_s* const vm, const int64_t index, const int64_t words) {
-	mc_word_u result[2] = { { .u = 0, }, { .u = 0, }, };
-	const mc_word_u* const arguments = vm->stack + vm->sp - words;
-	const size_t count = vm->intrinsics.data[index](vm, &vm->module->intrinsics.data[index], arguments, result);
-	vm->sp -= (size_t)words;
-	for (size_t i = 0; i < count; ++i) _mc_push(vm, result[i]);
-}
-
 static void _mc_return(mc_vm_s* const vm, const int64_t words) {
 	mc_frame_s* const frame = _mc_frame(vm);
 	const size_t base = frame->stack_base;
@@ -337,18 +332,6 @@ static void _mc_return(mc_vm_s* const vm, const int64_t words) {
 	vm->frames.count -= 1;
 }
 
-/// words of the arguments and of the result of an intrinsic.
-static uint64_t _mc_intrinsic_arguments(const mc_vm_s* const vm, const mc_bc_intrinsic_s* const intrinsic) {
-	uint64_t words = 0;
-	for (size_t i = 0; i < intrinsic->parameters.count; ++i) words += mc_vm_type_words(vm, intrinsic->parameters.data[i]);
-	for (size_t i = 0; i < intrinsic->variadic.count; ++i) words += mc_vm_type_words(vm, intrinsic->variadic.data[i]);
-	return words;
-}
-
-static uint64_t _mc_intrinsic_result(const mc_vm_s* const vm, const mc_bc_intrinsic_s* const intrinsic) {
-	return (intrinsic->result >= 0) ? mc_vm_type_words(vm, intrinsic->result) : 0;
-}
-
 /// a call of a function value: the value sits below the arguments.
 static void _mc_call_value(mc_vm_s* const vm, const int64_t words, const int64_t result) {
 	const size_t slot = vm->sp - 1 - (size_t)words;
@@ -357,12 +340,12 @@ static void _mc_call_value(mc_vm_s* const vm, const int64_t words, const int64_t
 	vm->sp -= 1;
 	const uint64_t index = function.u & ~((uint64_t)1 << 63);
 	if (function.u >> 63) {
-		if (index >= vm->intrinsics.count) mc_vm_fail(vm, "a call of a function value that is not one");
+		if (index >= vm->links.count) mc_vm_fail(vm, "a call of a function value that is not one");
 		const mc_bc_intrinsic_s* const intrinsic = &vm->module->intrinsics.data[index];
-		if (_mc_intrinsic_arguments(vm, intrinsic) != (uint64_t)words || _mc_intrinsic_result(vm, intrinsic) != (uint64_t)result) {
+		if (mc_vm_intrinsic_arguments(vm, intrinsic) != (uint64_t)words || mc_vm_intrinsic_result(vm, intrinsic) != (uint64_t)result) {
 			mc_vm_fail(vm, "a call of a function value of another type (the module is broken)");
 		}
-		_mc_intrinsic(vm, (int64_t)index, words);
+		mc_vm_call_plugin(vm, (int64_t)index, words);
 		return;
 	}
 	if (index >= vm->module->functions.count) mc_vm_fail(vm, "a call of a function value that is not one");
@@ -603,7 +586,7 @@ static void _mc_step(mc_vm_s* const vm, mc_frame_s* const frame, const mc_instru
 		}
 		case mc_op_CALL:           _mc_call(vm, a); break;
 		case mc_op_CALL_VALUE:     _mc_call_value(vm, a, instruction->b); break;
-		case mc_op_CALL_INTRINSIC: _mc_intrinsic(vm, a, instruction->b); break;
+		case mc_op_CALL_INTRINSIC: mc_vm_call_plugin(vm, a, instruction->b); break;
 		case mc_op_FUNCTION:       _mc_push(vm, (mc_word_u) { .u = (uint64_t)a, }); break;
 		case mc_op_INTRINSIC:      _mc_push(vm, (mc_word_u) { .u = (uint64_t)a | ((uint64_t)1 << 63), }); break;
 		case mc_op_RETURN:         _mc_return(vm, a); break;
@@ -981,8 +964,8 @@ static bool _mc_effect(const mc_vm_s* const vm, const mc_bc_function_s* const fu
 		case mc_op_CALL_INTRINSIC: {
 			const mc_bc_intrinsic_s* const intrinsic = &vm->module->intrinsics.data[a];
 			*pop = (uint64_t)b;
-			*push = _mc_intrinsic_result(vm, intrinsic);
-			return b >= 0 && _mc_intrinsic_arguments(vm, intrinsic) == (uint64_t)b && *push <= 2;
+			*push = mc_vm_intrinsic_result(vm, intrinsic);
+			return b >= 0 && mc_vm_intrinsic_arguments(vm, intrinsic) == (uint64_t)b && *push <= 2;
 		}
 		case mc_op_FUNCTION:
 		case mc_op_INTRINSIC: *push = 1; return true;
@@ -1076,12 +1059,8 @@ static void _mc_verify(mc_vm_s* const vm, const int64_t index) {
 
 static void _mc_load(mc_vm_s* const vm) {
 	const mc_module_bc_s* const module = vm->module;
-	for (size_t i = 0; i < module->intrinsics.count; ++i) {
-		const mc_intrinsic_f intrinsic = mc_vm_find_intrinsic(module->intrinsics.data[i].name);
-		if (NULL == intrinsic) mc_vm_fail(vm, "unknown intrinsic `%s`", module->intrinsics.data[i].name);
-		mc_vector_push(&vm->intrinsics, intrinsic);
-	}
 	mc_vm_load_constants(vm);
+	mc_vm_link(vm, (vm->options->plugins != NULL) ? vm->options->plugins : mc_plugins_default());
 	if (module->entry < 0 || (size_t)module->entry >= module->functions.count) mc_vm_fail(vm, "the module has no entry function");
 	// the words of every function's arguments first: calls are checked against them
 	for (size_t i = 0; i < module->functions.count; ++i) {
@@ -1151,7 +1130,7 @@ bool mc_vm_run(const mc_module_bc_s* const module, const mc_vm_options_s* const 
 	for (size_t i = 0; i < vm.prepared.count; ++i) mc_free(vm.prepared.data[i].code);
 	mc_vector_free(&vm.prepared);
 	mc_vector_free(&vm.frames);
-	mc_vector_free(&vm.intrinsics);
+	mc_vm_unlink(&vm);
 	mc_string_free(&vm.buffer);
 	mc_string_free(&vm.bytes);
 	return !result->failed;

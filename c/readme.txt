@@ -138,10 +138,11 @@ python CODES table), then report it with mc_error / mc_warning:
 	mc_label(d, other->span, "a secondary label");
 	mc_note(d, "a note"); mc_help(d, "advice");
 
-a new builtin or native: write the function in source/vm_builtins.c and add a
-row to _mc_intrinsics there, under its qualified name ('module.function');
-declare it in a module of stdlib/ with '[builtin]' or '[extern = "name"]'.
-the checker enforces the signature, so the function can trust its arguments.
+a new function of the standard library implemented in c: add it to the
+'std' plugin (source/plugins/std*.c, registered in std.c under its
+qualified name 'module.function') and declare it in a module of stdlib/
+with '[plugin]'. a function of a user's own is a plugin of its own; see
+'plugins' below and examples/plugins/math.
 
 a new instruction: add it to opcodes.def, emit it in source/compiler.c, give
 its stack effect to _mc_effect and run it in _mc_step (source/vm.c), with a

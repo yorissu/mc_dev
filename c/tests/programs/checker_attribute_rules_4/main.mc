@@ -1,3 +1,3 @@
 
-[builtin] f :: () {}
+[plugin] f :: () {}
 pub main :: () {}

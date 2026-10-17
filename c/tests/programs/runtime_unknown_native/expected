@@ -1,4 +1,6 @@
-== check (status 0)
-== run (status 101)
+== check (status 1)
 -- stderr
-runtime error: unknown intrinsic `main.missing`
+main.mc:5:22: error[E0416]: no plugin provides `main.missing`
+== run (status 1)
+-- stderr
+main.mc:5:22: error[E0416]: no plugin provides `main.missing`

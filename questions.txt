@@ -151,3 +151,31 @@ each one is easy to revisit.
   access through a slice or location is bounds-checked against its block,
   so a damaged '.mcb' file is refused or stopped with a message instead of
   crashing.
+- plugins: the qualified name of a '[plugin]' function is the dotted name
+  its module was first imported by ('memory.alloc', 'math.sqrt'), and
+  'main' for the entry file ('main.f'). a file outside the standard
+  library gets the name of its import ('import tools.math' gives
+  'tools.math.sqrt').
+- plugins are loaded from $MC_PLUGINS (a list of files and directories,
+  separated by ':' or ';' on windows), then from '--plugin <file>' and
+  '--plugin-dir <dir>' in the order given; a directory loads every file
+  with the platform's library ending (.so, .dylib, .dll). two plugins that
+  provide the same function are an error (E0603) rather than one winning.
+- the built-in plugin is named 'std'. '[plugin = "std"]' works like any
+  other plugin name.
+- new diagnostic codes: E0416 (no plugin provides a function that is used;
+  also when a '.mcb' file is run and a plugin is missing), E0531 and W0531
+  (errors and warnings a plugin's check reports without a code of its
+  own), E0603 (a plugin cannot be loaded). a check may report with any
+  existing code; the 'std' check of formats uses E0530.
+- a '[plugin]' function that is declared but never used needs no plugin.
+- a plugin function's check runs only on calls whose arguments have no
+  errors, and only on direct calls (not through function values).
+- plugin functions can be used as values (apply(math.sqrt, 2.0)); variadic
+  ones cannot (as before for builtins: E0529).
+- the plugin api gives a plugin the bytes of slices and of struct and
+  array arguments (c layout), and decodes slices and function values
+  stored in memory for it ('mc_plugin_slice_at', 'mc_plugin_function_name_at').
+  calling an mc function value from a plugin is not in this version of
+  the api.
+- 'mono' marks plugin functions with ' [plugin]' (was ' [builtin]').

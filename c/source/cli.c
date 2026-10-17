@@ -11,6 +11,8 @@
 #include "mc/diag.h"
 #include "mc/format.h"
 #include "mc/parser.h"
+#include "mc/platform.h"
+#include "mc/plugins.h"
 #include "mc/printer.h"
 #include "mc/program.h"
 #include "mc/vm.h"
@@ -19,7 +21,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #define mc_version "0.1.0"
 
@@ -34,6 +35,7 @@ typedef struct {
 	const char*                 command ;
 	const char*                 path    ;
 	mc_vector_of(const char*)   include ;
+	mc_vector_of(const char*)   plugins ;   // --plugin and --plugin-dir, in order
 	const char*                 stdlib  ;
 	const char*                 output  ;
 	mc_diag_format_e            format  ;
@@ -49,6 +51,7 @@ typedef struct {
 	mc_sources_s   sources;
 	mc_diag_s      diag   ;
 	mc_arena_s     arena  ;
+	mc_plugins_s   plugins;
 } _mc_session_s;
 
 typedef int (*_mc_command_f)(_mc_session_s* const session);
@@ -158,7 +161,7 @@ static int _mc_ast(_mc_session_s* const s) {
 
 static mc_program_s* _mc_check_program(_mc_session_s* const s) {
 	const mc_check_options_s options = {
-		.include = s->options->include.data, .include_count = s->options->include.count, .stdlib = s->options->stdlib,
+		.include = s->options->include.data, .include_count = s->options->include.count, .stdlib = s->options->stdlib, .plugins = &s->plugins,
 	};
 	return mc_check(s->options->path, &s->sources, &s->diag, &options);
 }
@@ -337,7 +340,18 @@ static int _mc_run(_mc_session_s* const s) {
 		mc_diag_free(&s->diag);
 		s->diag = (mc_diag_s) { .sources = &s->sources, };
 	}
-	const mc_vm_options_s options = { .out = stdout, .limit = s->options->limit, };
+	// every plugin function the program calls must be there before it starts
+	for (size_t i = 0; i < module.intrinsics.count; ++i) {
+		const char* const name = module.intrinsics.data[i].name;
+		if (mc_plugins_find(&s->plugins, name) != NULL) continue;
+		mc_help(mc_error(&s->diag, mc_E0416, mc_no_span, "no plugin provides `%s`", name), "load a plugin that provides it with `--plugin <file>`");
+	}
+	if (mc_diag_has_errors(&s->diag)) {
+		mc_module_bc_free(&module);
+		_mc_report(s);
+		return mc_status_error;
+	}
+	const mc_vm_options_s options = { .out = stdout, .limit = s->options->limit, .plugins = &s->plugins, };
 	mc_vm_result_s result = {0};
 	const bool finished = mc_vm_run(&module, &options, &result);
 	(void)fflush(stdout);
@@ -375,7 +389,9 @@ static int _mc_explain(_mc_session_s* const s) {
 
 #define mc_check_options                                                                       \
 	"  -I <dir>            also look for modules in <dir> (after the file's own directory)\n" \
-	"  --stdlib <dir>      the standard library (default: $MC_STDLIB, or the bundled one)\n"
+	"  --stdlib <dir>      the standard library (default: $MC_STDLIB, or the bundled one)\n" \
+	"  --plugin <file>     load a plugin (a shared library); repeatable\n"                      \
+	"  --plugin-dir <dir>  load every plugin in <dir>; repeatable (also: $MC_PLUGINS)\n"
 
 static const _mc_command_s _mc_commands[] = {
 	{ "tokens", "print the tokens of a file", "", _mc_tokens, true, },
@@ -431,7 +447,40 @@ static int _mc_usage(const char* const format, ...) {
 
 static bool _mc_color_auto(void) {
 	const char* const no_color = getenv("NO_COLOR");
-	return isatty(fileno(stderr)) && (NULL == no_color || '\0' == no_color[0]);
+	return mc_is_terminal(stderr) && (NULL == no_color || '\0' == no_color[0]);
+}
+
+/// loads one plugin path (a file or a directory) into the session.
+static bool _mc_load_plugin(_mc_session_s* const s, const char* const path) {
+	char* error = NULL;
+	if (mc_plugins_load(&s->plugins, path, &error)) return true;
+	mc_help(mc_error(&s->diag, mc_E0603, mc_no_span, "%s", error), "a plugin is a shared library with an `mc_plugin_init` function (see mc/plugin.h)");
+	mc_free(error);
+	return false;
+}
+
+/// the plugins of $MC_PLUGINS (a list of files and directories), then of
+/// '--plugin' and '--plugin-dir'; false (reported) when one cannot be loaded.
+static bool _mc_load_plugins(_mc_session_s* const s) {
+	bool loaded = true;
+	const char* const list = getenv("MC_PLUGINS");
+	if (list != NULL) {
+		const char separator = mc_path_list_separator();
+		const char* start = list;
+		for (const char* cursor = list;; ++cursor) {
+			if (*cursor != separator && *cursor != '\0') continue;
+			if (cursor > start) {
+				char* const path = mc_format("%.*s", (int)(cursor - start), start);
+				loaded = _mc_load_plugin(s, path) && loaded;
+				mc_free(path);
+			}
+			if ('\0' == *cursor) break;
+			start = cursor + 1;
+		}
+	}
+	for (size_t i = 0; i < s->options->plugins.count; ++i) loaded = _mc_load_plugin(s, s->options->plugins.data[i]) && loaded;
+	if (!loaded) _mc_report(s);
+	return loaded;
 }
 
 /// parses the arguments; returns -1 to go on, or the status to exit with.
@@ -448,6 +497,7 @@ static int _mc_parse(_mc_options_s* const options, const int argc, const char* c
 		else if (0 == strcmp(argument, "-I") && has_next) mc_vector_push(&options->include, argv[++i]);
 		else if (0 == strncmp(argument, "-I", 2) && argument[2] != '\0') mc_vector_push(&options->include, argument + 2);
 		else if (0 == strcmp(argument, "--stdlib") && has_next) options->stdlib = argv[++i];
+		else if ((0 == strcmp(argument, "--plugin") || 0 == strcmp(argument, "--plugin-dir")) && has_next) mc_vector_push(&options->plugins, argv[++i]);
 		else if (0 == strcmp(argument, "-o") && has_next) options->output = argv[++i];
 		else if (0 == strcmp(argument, "--format") && has_next) {
 			const char* const format = argv[++i];
@@ -467,7 +517,8 @@ static int _mc_parse(_mc_options_s* const options, const int argc, const char* c
 		}
 		else if ('-' == argument[0] && argument[1] != '\0') {
 			const bool needs_value = 0 == strcmp(argument, "-I") || 0 == strcmp(argument, "--stdlib") || 0 == strcmp(argument, "-o")
-				|| 0 == strcmp(argument, "--format") || 0 == strcmp(argument, "--limit");
+				|| 0 == strcmp(argument, "--format") || 0 == strcmp(argument, "--limit") || 0 == strcmp(argument, "--plugin")
+				|| 0 == strcmp(argument, "--plugin-dir");
 			if (needs_value) return _mc_usage("`%s` needs a value", argument);
 			return _mc_usage("unknown option `%s`", argument);
 		}
@@ -501,11 +552,16 @@ int mc_cli_main(const int argc, const char* const argv[]) {
 	if (command != NULL) {
 		_mc_session_s session = { .options = &options, };
 		session.diag.sources = &session.sources;
-		status = command->run(&session);
+		mc_plugins_init(&session.plugins);
+		if (command->file && _mc_load_plugins(&session)) status = command->run(&session);
+		else if (command->file) status = mc_status_error;
+		else status = command->run(&session);
+		mc_plugins_free(&session.plugins);
 		mc_diag_free(&session.diag);
 		mc_arena_free(&session.arena);
 		mc_sources_free(&session.sources);
 	}
 	mc_vector_free(&options.include);
+	mc_vector_free(&options.plugins);
 	return status;
 }

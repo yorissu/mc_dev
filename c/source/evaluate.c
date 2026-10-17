@@ -4,8 +4,8 @@
 /// constants ('NAME :: value;'), array lengths, default arguments, field
 /// defaults and format strings must be known at compile time. the evaluator
 /// computes them from the checked tree, and it can run user functions with
-/// constant arguments (pure code: builtin and extern functions cannot run at
-/// compile time). evaluation stops after a fixed number of steps.
+/// constant arguments (pure code: plugin functions cannot run at compile
+/// time). evaluation stops after a fixed number of steps.
 ///
 /// values: integers (128 bits, so untyped constants are exact), floats and
 /// bools; arrays and structs are lists (copied on assignment, like every
@@ -362,9 +362,8 @@ static mc_cvalue_s _mc_call(mc_evaluator_s* const e, const mc_cvalue_s function,
 		mc_instance_s* const instance = function.as.function.instance;
 		const mc_function_s* const info = instance->function;
 		name = _mc_text(e, "`%s`", mc_instance_name(e->checker, instance));
-		if (mc_function_is_external(info)) {
-			const bool builtin = mc_attribute_find(&info->node->as.function.attributes, "builtin") != NULL;
-			_mc_not_constant(e, node, "calls %s, an %s function, which cannot run at compile time", name, builtin ? "builtin" : "extern");
+		if (mc_function_is_plugin(info)) {
+			_mc_not_constant(e, node, "calls %s, a plugin function, which cannot run at compile time", name);
 		}
 		if (mc_instance_pending == instance->state) mc_check_instance(e->checker, instance);
 		if (instance->state != mc_instance_checked) _mc_not_constant(e, node, "calls %s while it is still being checked", name);

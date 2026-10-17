@@ -1,3 +1,3 @@
 
-[extern] f :: () -> int;
+[plugin = 5] f :: () -> int;
 pub main :: () {}

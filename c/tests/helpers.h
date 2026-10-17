@@ -6,6 +6,8 @@
 
 #include "mc/compiler.h"
 #include "mc/diag.h"
+#include "mc/platform.h"
+#include "mc/plugins.h"
 #include "mc/program.h"
 #include "mc/vm.h"
 
@@ -46,13 +48,16 @@ static inline void mc_test_remove(char* const path) {
 	mc_free(path);
 }
 
-/// checks, compiles and runs the program 'text' (instruction limit 'limit', 0: none).
-static inline mc_test_run_s mc_test_run_limited(const char* const text, const uint64_t limit) {
+/// checks, compiles and runs the program 'text' with 'plugins' (null: the
+/// built-in ones) and the module directory 'include' (or null).
+static inline mc_test_run_s mc_test_run_with(const char* const text, const uint64_t limit, const mc_plugins_s* const plugins,
+											 const char* const include) {
 	mc_test_run_s run = {0};
 	char* const path = mc_test_write(text);
 	mc_sources_s sources = {0};
 	mc_diag_s diag = { .sources = &sources, };
-	const mc_check_options_s options = { .stdlib = MC_DEFAULT_STDLIB, };
+	const char* const includes[1] = { include, };
+	const mc_check_options_s options = { .stdlib = MC_DEFAULT_STDLIB, .plugins = plugins, .include = includes, .include_count = (include != NULL) ? 1 : 0, };
 	mc_program_s* const program = mc_check(path, &sources, &diag, &options);
 	if (!mc_diag_has_errors(&diag)) {
 		char* error = NULL;
@@ -70,7 +75,7 @@ static inline mc_test_run_s mc_test_run_limited(const char* const text, const ui
 		char* buffer = NULL;
 		size_t size = 0;
 		FILE* const out = open_memstream(&buffer, &size);
-		const mc_vm_options_s vm_options = { .out = out, .limit = limit, };
+		const mc_vm_options_s vm_options = { .out = out, .limit = limit, .plugins = plugins, };
 		mc_vm_result_s result = {0};
 		run.finished = mc_vm_run(&run.module, &vm_options, &result);
 		(void)fclose(out);
@@ -81,6 +86,11 @@ static inline mc_test_run_s mc_test_run_limited(const char* const text, const ui
 		mc_vm_result_free(&result);
 	}
 	return run;
+}
+
+/// checks, compiles and runs the program 'text' (instruction limit 'limit', 0: none).
+static inline mc_test_run_s mc_test_run_limited(const char* const text, const uint64_t limit) {
+	return mc_test_run_with(text, limit, NULL, NULL);
 }
 
 static inline mc_test_run_s mc_test_run(const char* const text) {

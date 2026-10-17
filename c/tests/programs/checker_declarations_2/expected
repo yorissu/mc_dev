@@ -1,6 +1,6 @@
 == check (status 1)
 -- stderr
-main.mc:2:10: error[E0415]: only `[builtin]` and `[extern]` functions can take `...`
+main.mc:2:10: error[E0415]: only `[plugin]` functions can take `...`
 == run (status 1)
 -- stderr
-main.mc:2:10: error[E0415]: only `[builtin]` and `[extern]` functions can take `...`
+main.mc:2:10: error[E0415]: only `[plugin]` functions can take `...`

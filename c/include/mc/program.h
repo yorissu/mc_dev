@@ -83,6 +83,7 @@ struct mc_function_s {
 	mc_context_s*  parent   ;   // the enclosing context of a local function
 	mc_instances_s instances;
 	bool           operator_;   // registered as an operator function
+	bool           plugin_checked;   // '[plugin]': whether a plugin provides it was checked
 };
 
 typedef enum {
@@ -177,9 +178,10 @@ typedef struct {
 } mc_program_s;
 
 typedef struct {
-	const char* const* include;   // extra module directories
-	size_t             include_count;
-	const char*        stdlib ;   // the standard library directory, or null
+	const char* const*         include;   // extra module directories
+	size_t                     include_count;
+	const char*                stdlib ;   // the standard library directory, or null
+	const struct mc_plugins_s* plugins;   // the plugins loaded; null: only the built-in ones
 } mc_check_options_s;
 
 /// loads the program whose entry module is 'path' (and everything it
@@ -196,8 +198,8 @@ void mc_instance_text(mc_string_s* const out, const mc_instance_s* const instanc
 /// the type of a function value of 'instance'.
 const mc_type_s* mc_instance_type(mc_program_s* const program, const mc_instance_s* const instance);
 
-/// whether the function is '[builtin]' or '[extern]'.
-bool mc_function_is_external(const mc_function_s* const function);
+/// whether the function is '[plugin]' (provided by a plugin).
+bool mc_function_is_plugin(const mc_function_s* const function);
 
 /// the qualified name of a function: its module's dotted name and its own
 /// ('memory.alloc'); 'main' is the module name of the entry file.

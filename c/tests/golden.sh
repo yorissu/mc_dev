@@ -9,7 +9,8 @@
 # optional file 'options' holds lines 'commands: check run dis mcb' (the
 # default is 'check run'; 'mcb' builds a bytecode file and runs it),
 # 'args: ...' (arguments after the file for 'run') and 'flags: ...' (more
-# options for every command). 'expected' holds what
+# options for every command; '@plugins@' is the directory of the example
+# plugins built beside <mc>, '@shared@' the file ending of plugins). 'expected' holds what
 # each command printed: its exit status, stdout and stderr (the short
 # format, without color). --update rewrites the expectations instead of
 # comparing; review the diff before committing it.
@@ -35,6 +36,12 @@ fi
 here="$(cd "$(dirname "$0")" && pwd)"
 programs="$here/programs"
 stdlib="../../../../stdlib"
+plugins="$(dirname "$mc")/plugins"
+case "$(uname -s)" in
+	Darwin) shared=".dylib" ;;
+	MINGW*|MSYS*|CYGWIN*) shared=".dll" ;;
+	*) shared=".so" ;;
+esac
 scratch="$(mktemp -d "${TMPDIR:-/tmp}/mc_golden_XXXXXX")"
 trap 'rm -rf "$scratch"' EXIT
 
@@ -60,7 +67,7 @@ option() {
 describe() {
 	commands="$(option commands)"
 	[ -n "$commands" ] || commands="check run"
-	flags="$(option flags)"
+	flags="$(option flags | sed "s|@plugins@|$plugins|g; s|@shared@|$shared|g")"
 	args="$(option args)"
 	for command in $commands; do
 		extra=""

@@ -143,7 +143,7 @@ void mc_program_text(mc_program_s* const program, mc_string_s* const out) {
 					mc_string_append_cstr(out, " -> ");
 					mc_type_text(out, instance->result);
 				}
-				if (mc_function_is_external(info)) mc_string_append_cstr(out, " [builtin]");
+				if (mc_function_is_plugin(info)) mc_string_append_cstr(out, " [plugin]");
 				mc_string_append_char(out, '\n');
 				if (instance->node->as.function.body != NULL) {
 					mc_string_s tree = {0};

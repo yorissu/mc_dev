@@ -3,6 +3,6 @@
 			f :: (x: int, mut y: &S) -> int { return x; }
 			g :: () {}
 			C :: (1 + 2) * 3;
-			[builtin] h<T> :: (n: uint) -> []T;
+			[plugin] h<T> :: (n: uint) -> []T;
 
 pub main :: () {}

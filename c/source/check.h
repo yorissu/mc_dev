@@ -122,6 +122,14 @@ struct mc_context_s {
 
 // --- the checker -----------------------------------------------------------------
 
+struct mc_plugin_type_s;
+
+/// a checker type and its handle for plugin checks.
+typedef struct {
+	const mc_type_s*         type  ;
+	struct mc_plugin_type_s* handle;
+} mc_checker_plugin_type_s;
+
 struct mc_checker_s {
 	mc_program_s*                program  ;
 	mc_arena_s*                  arena    ;
@@ -136,6 +144,7 @@ struct mc_checker_s {
 	mc_vector_of(mc_context_s*)  contexts ;   // every context, freed at the end
 	const mc_check_options_s*    options  ;
 	mc_vector_of(const char*)    roots    ;   // module search directories
+	mc_vector_of(mc_checker_plugin_type_s) plugin_types;   // type handles given to plugin checks
 };
 
 /// a place an assignment writes to.
@@ -151,8 +160,7 @@ typedef struct {
 
 /// the attributes a declaration or statement has (null when absent).
 typedef struct {
-	const mc_node_s* builtin;
-	const mc_node_s* extern_;
+	const mc_node_s* plugin ;
 	const mc_node_s* op     ;
 	const mc_node_s* wrap   ;
 	const mc_node_s* uninit ;
@@ -217,6 +225,12 @@ bool mc_coerce(mc_checker_s* const c, mc_node_s* const node, const mc_type_s* co
 const mc_type_s* mc_settle(mc_checker_s* const c, mc_node_s* const node, const mc_type_s* const actual);
 void mc_finalize(mc_checker_s* const c, mc_node_s* const node, const mc_type_s* const target);
 bool mc_untyped_value(mc_checker_s* const c, const mc_node_s* const node, mc_cvalue_s* const value);
+
+// check_plugins.c
+/// a '[plugin]' function is used at 'span': reports (once) when no plugin provides it.
+void mc_plugin_use(mc_checker_s* const c, mc_function_s* const function, const mc_span_s span);
+/// a call of a '[plugin]' function, its arguments checked: runs the plugin's check.
+void mc_plugin_check_call(mc_checker_s* const c, mc_node_s* const node, mc_instance_s* const instance);
 
 // variable sets
 bool mc_set_contains(const mc_variable_set_s* const set, const mc_variable_s* const variable);

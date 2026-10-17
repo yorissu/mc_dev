@@ -1,0 +1,20 @@
+== check (status 1)
+-- stderr
+main.mc:13:22: error[E0416]: no plugin provides `math.sqrt`
+main.mc:13:38: error[E0416]: no plugin provides `math.pow`
+main.mc:13:59: error[E0416]: no plugin provides `math.floor`
+main.mc:14:49: error[E0416]: no plugin provides `math.cos`
+main.mc:15:15: error[E0416]: no plugin provides `math.steps`
+main.mc:16:2: error[E0416]: no plugin provides `math.scale`
+main.mc:17:27: error[E0416]: no plugin provides `math.sum`
+main.mc:20:16: error[E0416]: no plugin provides `math.length`
+== run (status 1)
+-- stderr
+main.mc:13:22: error[E0416]: no plugin provides `math.sqrt`
+main.mc:13:38: error[E0416]: no plugin provides `math.pow`
+main.mc:13:59: error[E0416]: no plugin provides `math.floor`
+main.mc:14:49: error[E0416]: no plugin provides `math.cos`
+main.mc:15:15: error[E0416]: no plugin provides `math.steps`
+main.mc:16:2: error[E0416]: no plugin provides `math.scale`
+main.mc:17:27: error[E0416]: no plugin provides `math.sum`
+main.mc:20:16: error[E0416]: no plugin provides `math.length`

@@ -63,13 +63,30 @@ void mc_format_float_g(mc_string_s* const out, const double value, const int pre
 	mc_string_appendf(out, "%.*g", precision, value);
 }
 
-void mc_format_f32(mc_string_s* const out, const float value) {
+void mc_format_f32(mc_string_s* const out, const double value) {
 	char text[64];
 	for (int precision = 1; precision < 10; ++precision) {
-		(void)snprintf(text, sizeof(text), "%.*g", precision, (double)value);
-		if (strtof(text, NULL) == value) break;
+		(void)snprintf(text, sizeof(text), "%.*g", precision, value);
+		if ((double)(float)strtod(text, NULL) == value) break;
 	}
 	mc_string_append_cstr(out, text);
+}
+
+void mc_format_float_value(mc_string_s* const out, const double value, const int bits) {
+	if (isnan(value)) {
+		mc_string_append_cstr(out, "nan");
+		return;
+	}
+	if (isinf(value)) {
+		mc_string_append_cstr(out, value > 0 ? "inf" : "-inf");
+		return;
+	}
+	const size_t start = out->length;
+	if (32 == bits) mc_format_f32(out, value);
+	else mc_format_float_repr(out, value);
+	bool marked = false;
+	for (size_t i = start; i < out->length; ++i) marked = marked || 'e' == out->data[i] || '.' == out->data[i] || 'n' == out->data[i];
+	if (!marked) mc_string_append_cstr(out, ".0");
 }
 
 void mc_format_uint128(mc_string_s* const out, unsigned __int128 value) {

@@ -1,6 +1,6 @@
 == check (status 1)
 -- stderr
-main.mc:3:19: error[E0409]: operator functions cannot be variadic
+main.mc:3:18: error[E0409]: operator functions cannot be variadic
 == run (status 1)
 -- stderr
-main.mc:3:19: error[E0409]: operator functions cannot be variadic
+main.mc:3:18: error[E0409]: operator functions cannot be variadic

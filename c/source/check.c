@@ -10,13 +10,13 @@
 
 #define _mc_instantiation_limit 64
 
-static const char* const _mc_known_attributes = "builtin, extern, op, uninit, wrap";
+static const char* const _mc_known_attributes = "op, plugin, uninit, wrap";
 
 static const struct {
 	const char* where;
 	const char* allowed;
 } _mc_allowed_attributes[] = {
-	{ "function",  " builtin extern op wrap " },
+	{ "function",  " op plugin wrap " },
 	{ "struct",    " " },
 	{ "constant",  " wrap " },
 	{ "field",     " " },
@@ -94,9 +94,8 @@ bool mc_function_is_generic(const mc_function_s* const info) {
 	return info->node->as.function.generics.count > 0;
 }
 
-bool mc_function_is_external(const mc_function_s* const function) {
-	const mc_nodes_s* const attributes = &function->node->as.function.attributes;
-	return mc_attribute_find(attributes, "builtin") != NULL || mc_attribute_find(attributes, "extern") != NULL;
+bool mc_function_is_plugin(const mc_function_s* const function) {
+	return mc_attribute_find(&function->node->as.function.attributes, "plugin") != NULL;
 }
 
 char* mc_function_qualified_name(const mc_function_s* const function) {
@@ -430,7 +429,7 @@ mc_attribute_set_s mc_attributes(mc_checker_s* const c, const mc_nodes_s* const 
 		const mc_node_s* const attribute = attributes->data[i];
 		const mc_view_s name = attribute->as.attribute.name;
 		const mc_attribute_value_e value = attribute->as.attribute.value_kind;
-		if (!_mc_word_in(" builtin extern op wrap uninit ", name)) {
+		if (!_mc_word_in(" op plugin wrap uninit ", name)) {
 			mc_note(mc_label_main(mc_error(c->diag, mc_E0402, attribute->span, "unknown attribute `" mc_view_fmt "`", mc_view_arg(name)),
 				"not an attribute"), "attributes: %s", _mc_known_attributes);
 			continue;
@@ -440,24 +439,23 @@ mc_attribute_set_s mc_attributes(mc_checker_s* const c, const mc_nodes_s* const 
 				"not applicable here");
 			continue;
 		}
-		const mc_node_s** const slot = mc_view_eq_cstr(name, "builtin") ? &found.builtin : mc_view_eq_cstr(name, "extern") ? &found.extern_
-			: mc_view_eq_cstr(name, "op") ? &found.op : mc_view_eq_cstr(name, "wrap") ? &found.wrap : &found.uninit;
+		const mc_node_s** const slot = mc_view_eq_cstr(name, "plugin") ? &found.plugin : mc_view_eq_cstr(name, "op") ? &found.op
+			: mc_view_eq_cstr(name, "wrap") ? &found.wrap : &found.uninit;
 		if (*slot != NULL) {
 			mc_label_main(mc_error(c->diag, mc_E0403, attribute->span, "attribute `" mc_view_fmt "` is given twice", mc_view_arg(name)), "repeated");
 			continue;
 		}
-		if (mc_view_eq_cstr(name, "extern") && value != mc_attribute_value_string && value != mc_attribute_value_name) {
-			mc_label_main(mc_error(c->diag, mc_E0403, attribute->span, "`extern` needs the name of the C function"), "write `extern = \"name\"`");
+		if (mc_view_eq_cstr(name, "plugin") && value != mc_attribute_value_none && value != mc_attribute_value_string
+				&& value != mc_attribute_value_name) {
+			mc_label_main(mc_error(c->diag, mc_E0403, attribute->span, "`plugin` takes the name of a plugin, or nothing"),
+				"write `plugin` or `plugin = \"name\"`");
 			continue;
 		}
-		if ((mc_view_eq_cstr(name, "builtin") || mc_view_eq_cstr(name, "wrap") || mc_view_eq_cstr(name, "uninit")) && value != mc_attribute_value_none) {
+		if ((mc_view_eq_cstr(name, "wrap") || mc_view_eq_cstr(name, "uninit")) && value != mc_attribute_value_none) {
 			mc_label_main(mc_error(c->diag, mc_E0403, attribute->span, "`" mc_view_fmt "` takes no value", mc_view_arg(name)), "remove the value");
 			continue;
 		}
 		*slot = attribute;
-	}
-	if (found.builtin != NULL && found.extern_ != NULL) {
-		mc_label_main(mc_error(c->diag, mc_E0403, found.extern_->span, "a function cannot be both `builtin` and `extern`"), "choose one");
 	}
 	return found;
 }
@@ -565,14 +563,14 @@ void mc_function_declaration(mc_checker_s* const c, mc_function_s* const info, m
 	mc_node_s* const node = info->node;
 	_mc_duplicate_generics(c, &node->as.function.generics);
 	const mc_attribute_set_s found = mc_attributes(c, &node->as.function.attributes, "function");
-	const bool bodyless = found.builtin != NULL || found.extern_ != NULL;
+	const bool bodyless = found.plugin != NULL;
 	if (bodyless && node->as.function.body != NULL) {
-		mc_label_main(mc_error(c->diag, mc_E0405, node->as.function.body->span, "`" mc_view_fmt "` is `%s` and cannot have a body",
-			mc_view_arg(node->as.function.name), found.builtin != NULL ? "builtin" : "extern"), "remove the body");
+		mc_label_main(mc_error(c->diag, mc_E0405, node->as.function.body->span, "`" mc_view_fmt "` is provided by a plugin and cannot have a body",
+			mc_view_arg(node->as.function.name)), "remove the body");
 	}
 	if (!bodyless && NULL == node->as.function.body) {
 		mc_help(mc_label_main(mc_error(c->diag, mc_E0404, node->as.function.name_span, "`" mc_view_fmt "` has no body", mc_view_arg(node->as.function.name)),
-			"expected `{ ... }`"), "only `[builtin]` and `[extern = \"name\"]` functions are declared without a body");
+			"expected `{ ... }`"), "only `[plugin]` functions, which a plugin provides, are declared without a body");
 	}
 	const mc_node_s* seen_default = NULL;
 	const mc_nodes_s* const parameters = &node->as.function.parameters;
@@ -596,7 +594,7 @@ void mc_function_declaration(mc_checker_s* const c, mc_function_s* const info, m
 		const mc_node_s* const parameter = parameters->data[i];
 		if (!parameter->as.param.variadic) continue;
 		if (!bodyless) {
-			mc_help(mc_label_main(mc_error(c->diag, mc_E0415, parameter->span, "only `[builtin]` and `[extern]` functions can take `...`"),
+			mc_help(mc_label_main(mc_error(c->diag, mc_E0415, parameter->span, "only `[plugin]` functions can take `...`"),
 				"variadic parameter"), "take a slice instead: `values: []T`");
 		}
 		else if (i != parameters->count - 1) {
@@ -907,6 +905,7 @@ void mc_program_free(mc_program_s* const program) {
 		mc_vector_free(&c->recursive_reported);
 		mc_vector_free(&c->roots);
 		mc_vector_free(&c->evaluator.frames);
+		mc_vector_free(&c->plugin_types);
 		mc_free(c);
 	}
 	for (size_t i = 0; i < program->modules.count; ++i) {

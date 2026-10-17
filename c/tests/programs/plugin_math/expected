@@ -1,0 +1,105 @@
+== check (status 0)
+== run (status 9)
+-- stdout
+1.4142135623730951 1024.0 -3
+4.0 1.0
+{2.0, 3.0, 4.0, 5.0} 14.0
+5.0
+== dis (status 0)
+-- stdout
+constant 0: {123, 125, 32, 123, 125, 32, 123, 125}
+constant 1: 2.0
+constant 2: 10.0
+constant 3: -2.5
+constant 4: {123, 125, 32, 123, 125}
+constant 5: 16.0
+constant 6: 0.0
+constant 7: 1.0
+constant 8: 0.5
+constant 9: 4
+constant 10: 3.0
+constant 11: 4.0
+constant 12: {123, 125}
+constant 13: 99.0
+
+intrinsic 0: math.sqrt
+intrinsic 1: math.pow
+intrinsic 2: math.floor
+intrinsic 3: io.println (...: f64 f64 int)
+intrinsic 4: math.cos
+intrinsic 5: io.println (...: f64 f64)
+intrinsic 6: math.steps
+intrinsic 7: math.scale
+intrinsic 8: math.sum
+intrinsic 9: io.println (...: []f64 f64)
+intrinsic 10: memory.free<f64>
+intrinsic 11: math.length
+intrinsic 12: io.println (...: f64)
+
+function 0 main: 0 parameter(s), 32 byte(s) of frame, returns a value  (entry)
+     0  LOC_CONST 0                      main.mc:13       {123, 125, 32, 123, 125, 32, 123, 125}
+     1  SLICE_LOC_INT_INT [8, 8, 1]      main.mc:13
+     2  CONST 1                          main.mc:13       2.0
+     3  CALL_INTRINSIC [0, 1]            main.mc:13       math.sqrt
+     4  CONST 1                          main.mc:13       2.0
+     5  CONST 2                          main.mc:13       10.0
+     6  CALL_INTRINSIC [1, 2]            main.mc:13       math.pow
+     7  CONST 3                          main.mc:13       -2.5
+     8  CALL_INTRINSIC [2, 1]            main.mc:13       math.floor
+     9  CALL_INTRINSIC [3, 5]            main.mc:13       io.println
+    10  LOC_CONST 4                      main.mc:14       {123, 125, 32, 123, 125}
+    11  SLICE_LOC_INT_INT [8, 5, 1]      main.mc:14
+    12  INTRINSIC 0                      main.mc:14       math.sqrt
+    13  CONST 5                          main.mc:14       16.0
+    14  CALL 1                           main.mc:14       apply
+    15  INTRINSIC 4                      main.mc:14       math.cos
+    16  CONST 6                          main.mc:14       0.0
+    17  CALL 1                           main.mc:14       apply
+    18  CALL_INTRINSIC [5, 4]            main.mc:14       io.println
+    19  CONST 7                          main.mc:15       1.0
+    20  CONST 8                          main.mc:15       0.5
+    21  CONST 9                          main.mc:15       4
+    22  CALL_INTRINSIC [6, 3]            main.mc:15       math.steps
+    23  STORE_SLICE 0                    main.mc:15
+    24  LOAD_SLICE 0                     main.mc:16
+    25  CONST 1                          main.mc:16       2.0
+    26  CALL_INTRINSIC [7, 3]            main.mc:16       math.scale
+    27  LOC_CONST 4                      main.mc:17       {123, 125, 32, 123, 125}
+    28  SLICE_LOC_INT_INT [8, 5, 1]      main.mc:17
+    29  LOAD_SLICE 0                     main.mc:17
+    30  LOAD_SLICE 0                     main.mc:17
+    31  CALL_INTRINSIC [8, 2]            main.mc:17       math.sum
+    32  CALL_INTRINSIC [9, 5]            main.mc:17       io.println
+    33  LOAD_SLICE 0                     main.mc:18
+    34  CALL_INTRINSIC [10, 2]           main.mc:18       memory.free
+    35  POP 2                            main.mc:18
+    36  ZERO 2                           main.mc:19
+    37  CONST 10                         main.mc:19       3.0
+    38  SET_FIELD_F64 [0, 2]             main.mc:19
+    39  CONST 11                         main.mc:19       4.0
+    40  SET_FIELD_F64 [8, 2]             main.mc:19
+    41  STORE_BYTES [16, 16]             main.mc:19
+    42  LOC_CONST 12                     main.mc:20       {123, 125}
+    43  SLICE_LOC_INT_INT [8, 2, 1]      main.mc:20
+    44  LOAD_BYTES [16, 16]              main.mc:20
+    45  CALL_INTRINSIC [11, 2]           main.mc:20       math.length
+    46  CALL_INTRINSIC [12, 3]           main.mc:20       io.println
+    47  CONST 13                         main.mc:21       99.0
+    48  CALL_INTRINSIC [0, 1]            main.mc:21       math.sqrt
+    49  CALL_INTRINSIC [2, 1]            main.mc:21       math.floor
+    50  RETURN 1                         main.mc:21
+    51  RETURN 0                         main.mc:22
+
+function 1 apply: 2 parameter(s), 16 byte(s) of frame, returns a value
+     0  LOAD_FN 0                        main.mc:9
+     1  LOAD_F64 8                       main.mc:9
+     2  CALL_VALUE [1, 1]                main.mc:9
+     3  RETURN 1                         main.mc:9
+     4  RETURN 0                         main.mc:10
+
+== mcb (status 9)
+-- stdout
+1.4142135623730951 1024.0 -3
+4.0 1.0
+{2.0, 3.0, 4.0, 5.0} 14.0
+5.0

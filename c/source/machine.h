@@ -6,7 +6,7 @@
 ///
 ///   vm.c           loading a module, the instruction loop, runtime errors
 ///   vm_memory.c    blocks and handles, frames, constants, values in memory
-///   vm_builtins.c  intrinsics and printing values
+///   vm_plugins.c   calls of plugin functions (intrinsics): the run-time plugin api
 ///
 /// the design (see also bytecode.h):
 ///
@@ -36,8 +36,10 @@
 ///   rest is freed when the machine stops.
 
 #include "mc/vm.h"
+#include "plugin_host.h"
 
 #include <setjmp.h>
+#include <stdarg.h>
 #include <string.h>
 
 typedef union {
@@ -132,11 +134,17 @@ typedef struct {
 
 typedef struct mc_vm_s mc_vm_s;
 
-/// an intrinsic: reads its arguments from 'arguments' (words, as the
-/// operand stack holds them), writes its result (at most two words) to
-/// 'result' and returns how many words it wrote.
-typedef size_t (*mc_intrinsic_f)(mc_vm_s* const vm, const mc_bc_intrinsic_s* const intrinsic, const mc_word_u* const arguments,
-								 mc_word_u* const result);
+/// an intrinsic linked to the plugin function that provides it.
+typedef struct {
+	const mc_plugin_function_s* function    ;
+	const mc_bc_intrinsic_s*    intrinsic   ;
+	size_t                      count       ;   // arguments, the values for '...' included
+	size_t                      fixed       ;
+	const mc_plugin_type_s**    types       ;   // of every argument
+	size_t*                     offsets     ;   // the first word of every argument
+	const mc_plugin_type_s*     result      ;   // null: none
+	uint64_t                    result_words;
+} mc_vm_link_s;
 
 /// a constant, ready to use: its words on the operand stack and its block
 /// (for locations of it; made on first use).
@@ -161,7 +169,9 @@ struct mc_vm_s {
 	// memory
 	mc_blocks_s                  blocks[mc_block_kind_count_];
 	mc_vector_of(mc_vm_constant_s) constants;
-	mc_vector_of(mc_intrinsic_f) intrinsics ;
+	mc_vector_of(mc_vm_link_s)   links      ;   // per intrinsic
+	mc_plugin_type_s*            types      ;   // a handle per type descriptor
+	mc_vector_of(uint8_t)        scratch    ;   // plugin arguments in memory
 	mc_vector_of(mc_prepared_s)  prepared   ;   // per function
 	mc_vector_of(uint8_t*)       zeros      ;   // the zero value of every type, made on first use (null: all zero bytes)
 	mc_string_s                  buffer     ;   // what an intrinsic prints
@@ -180,6 +190,7 @@ struct mc_vm_s {
 // vm.c
 /// stops the program with a runtime error.
 mc_noreturn void mc_vm_fail(mc_vm_s* const vm, const char* const format, ...) mc_printf_like(2, 3);
+mc_noreturn void mc_vm_vfail(mc_vm_s* const vm, const char* const format, va_list args) mc_printf_like(2, 0);
 
 // vm_memory.c
 /// a new block of 'kind' over 'data' (the entry is reused when one is free).
@@ -282,16 +293,17 @@ const uint8_t* mc_vm_zero(mc_vm_s* const vm, const int64_t type);
 
 void mc_vm_free_memory(mc_vm_s* const vm);
 
-// vm_builtins.c
-mc_intrinsic_f mc_vm_find_intrinsic(const char* const name);
+// vm_plugins.c
+/// links every intrinsic of the module to its plugin function (stops when one is missing).
+void mc_vm_link(mc_vm_s* const vm, const mc_plugins_s* const plugins);
+void mc_vm_unlink(mc_vm_s* const vm);
 
-/// the value at 'memory' as print shows it, by the type descriptor 'type'.
-void mc_vm_format(mc_vm_s* const vm, mc_string_s* const out, const uint8_t* const memory, const int64_t type, const int depth);
+/// calls intrinsic 'index': its arguments are the top 'words' words of the
+/// stack, and its result replaces them.
+void mc_vm_call_plugin(mc_vm_s* const vm, const int64_t index, const int64_t words);
 
-/// writes what the program prints.
-void mc_vm_print(mc_vm_s* const vm, const mc_string_s* const text);
-
-/// a float as print shows it ('bits' 32 for f32).
-void mc_vm_format_float(mc_string_s* const out, const double value, const int bits);
+/// words of the arguments and of the result of an intrinsic.
+uint64_t mc_vm_intrinsic_arguments(const mc_vm_s* const vm, const mc_bc_intrinsic_s* const intrinsic);
+uint64_t mc_vm_intrinsic_result(const mc_vm_s* const vm, const mc_bc_intrinsic_s* const intrinsic);
 
 #endif

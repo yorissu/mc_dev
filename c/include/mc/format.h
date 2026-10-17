@@ -16,7 +16,12 @@ void mc_format_float_repr(mc_string_s* const out, const double value);
 void mc_format_float_g(mc_string_s* const out, const double value, const int precision);
 
 /// an f32 value: the shortest 'g' text that reads back as the same f32.
-void mc_format_f32(mc_string_s* const out, const float value);
+void mc_format_f32(mc_string_s* const out, const double value);
+
+/// a float as 'print' shows it: the shortest text that reads back as the
+/// same value (of 'bits' 32 or 64), always with a '.' or an exponent
+/// ('1.0', '0.1', '1e+20', 'inf', 'nan').
+void mc_format_float_value(mc_string_s* const out, const double value, const int bits);
 
 /// a 128-bit integer in decimal.
 void mc_format_int128(mc_string_s* const out, const __int128 value);

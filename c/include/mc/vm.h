@@ -15,17 +15,19 @@
 /// freed when their call returns, heap blocks by 'free' (and all the rest
 /// when the program ends).
 ///
-/// functions the machine does not run itself ('[builtin]' and '[extern]'
-/// functions) are intrinsics, called by their qualified name; they are
-/// listed in source/vm_builtins.c.
+/// functions the machine does not run itself ('[plugin]' functions) are
+/// intrinsics: they are linked by their qualified name to the plugin
+/// functions that provide them before the program starts.
 
 #include "mc/bytecode.h"
+#include "mc/plugins.h"
 
 #include <stdio.h>
 
 typedef struct {
-	FILE*    out  ;   // what the program prints (stdout when null)
-	uint64_t limit;   // stop after this many instructions; 0: no limit
+	FILE*               out    ;   // what the program prints (stdout when null)
+	uint64_t            limit  ;   // stop after this many instructions; 0: no limit
+	const mc_plugins_s* plugins;   // the plugin functions; null: only the built-in ones
 } mc_vm_options_s;
 
 /// one call of a runtime error's trace.

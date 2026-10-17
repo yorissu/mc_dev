@@ -193,9 +193,11 @@ static void _mc_describe_all(_mc_compiler_s* const c, const mc_type_s* const* co
 }
 
 /// the intrinsic table entry of a use of an external function.
-static int64_t _mc_intrinsic(_mc_compiler_s* const c, const mc_instance_s* const instance, const mc_type_list_s* const variadic) {
+static int64_t _mc_intrinsic(_mc_compiler_s* const c, const mc_instance_s* const instance, const mc_type_list_s* const variadic,
+							 const mc_node_s* const call) {
 	mc_bc_intrinsic_s entry = { .name = mc_function_qualified_name(instance->function), .result = -1, };
 	if (instance->result != NULL) entry.result = _mc_describe(c, instance->result);
+	if (call != NULL) for (uint32_t i = 0; i < call->note.flag_count; ++i) mc_vector_push(&entry.flags, call->note.flags[i]);
 	_mc_describe_all(c, instance->arguments, instance->argument_count, &entry.arguments);
 	_mc_describe_all(c, instance->parameters.data, instance->parameters.count, &entry.parameters);
 	if (variadic != NULL) _mc_describe_all(c, variadic->data, variadic->count, &entry.variadic);
@@ -206,11 +208,14 @@ static int64_t _mc_intrinsic(_mc_compiler_s* const c, const mc_instance_s* const
 		for (size_t t = 0; same && t < entry.arguments.count; ++t) same = other->arguments.data[t] == entry.arguments.data[t];
 		for (size_t t = 0; same && t < entry.parameters.count; ++t) same = other->parameters.data[t] == entry.parameters.data[t];
 		for (size_t t = 0; same && t < entry.variadic.count; ++t) same = other->variadic.data[t] == entry.variadic.data[t];
+		same = same && other->flags.count == entry.flags.count;
+		for (size_t t = 0; same && t < entry.flags.count; ++t) same = other->flags.data[t] == entry.flags.data[t];
 		if (same) {
 			mc_free(entry.name);
 			mc_vector_free(&entry.arguments);
 			mc_vector_free(&entry.parameters);
 			mc_vector_free(&entry.variadic);
+			mc_vector_free(&entry.flags);
 			return (int64_t)i;
 		}
 	}
@@ -337,8 +342,8 @@ static mc_bc_constant_s _mc_convert(_mc_compiler_s* const c, const mc_cvalue_s* 
 					return (mc_bc_constant_s) { .kind = mc_constant_function, .type = -1, .integer = (uint64_t)_mc_function(c, value->as.function.lambda, true), };
 				}
 				const mc_instance_s* const instance = value->as.function.instance;
-				if (mc_function_is_external(instance->function)) {
-					return (mc_bc_constant_s) { .kind = mc_constant_intrinsic, .type = -1, .integer = (uint64_t)_mc_intrinsic(c, instance, NULL), };
+				if (mc_function_is_plugin(instance->function)) {
+					return (mc_bc_constant_s) { .kind = mc_constant_intrinsic, .type = -1, .integer = (uint64_t)_mc_intrinsic(c, instance, NULL, NULL), };
 				}
 				return (mc_bc_constant_s) { .kind = mc_constant_function, .type = -1, .integer = (uint64_t)_mc_function(c, instance, false), };
 			}
@@ -584,13 +589,15 @@ static void _mc_zero_value(_mc_function_s* const f, const mc_type_s* const type)
 
 // --- calls -------------------------------------------------------------------------------
 
-static void _mc_emit_call(_mc_function_s* const f, const mc_instance_s* const instance, const int64_t words, const mc_type_list_s* const variadic) {
-	if (mc_function_is_external(instance->function)) _mc_emit_ab(f, mc_op_CALL_INTRINSIC, _mc_intrinsic(f->c, instance, variadic), words);
+static void _mc_emit_call(_mc_function_s* const f, const mc_instance_s* const instance, const int64_t words, const mc_node_s* const call) {
+	if (mc_function_is_plugin(instance->function)) {
+		_mc_emit_ab(f, mc_op_CALL_INTRINSIC, _mc_intrinsic(f->c, instance, (call != NULL) ? call->note.variadic : NULL, call), words);
+	}
 	else _mc_emit_a(f, mc_op_CALL, _mc_function(f->c, instance, false));
 }
 
 static void _mc_function_value(_mc_function_s* const f, const mc_instance_s* const instance) {
-	if (mc_function_is_external(instance->function)) _mc_emit_a(f, mc_op_INTRINSIC, _mc_intrinsic(f->c, instance, NULL));
+	if (mc_function_is_plugin(instance->function)) _mc_emit_a(f, mc_op_INTRINSIC, _mc_intrinsic(f->c, instance, NULL, NULL));
 	else _mc_emit_a(f, mc_op_FUNCTION, _mc_function(f->c, instance, false));
 }
 
@@ -851,7 +858,7 @@ static void _mc_call(_mc_function_s* const f, const mc_node_s* const node) {
 			_mc_value(f, arguments->data[i]);
 			words += _mc_words(f->c, arguments->data[i]->note.type);
 		}
-		_mc_emit_call(f, instance, words, node->note.variadic);
+		_mc_emit_call(f, instance, words, node);
 		return;
 	}
 	if (instance != NULL) {
@@ -866,7 +873,7 @@ static void _mc_call(_mc_function_s* const f, const mc_node_s* const node) {
 				words += _mc_words(f->c, instance->parameters.data[i]);
 			}
 		}
-		_mc_emit_call(f, instance, words, NULL);
+		_mc_emit_call(f, instance, words, node);
 		return;
 	}
 	const mc_node_s* const callee = node->as.call.callee;

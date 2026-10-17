@@ -1,0 +1,1 @@
+flags: --plugin @plugins@/math@shared@ -I ../../../examples/plugins/math

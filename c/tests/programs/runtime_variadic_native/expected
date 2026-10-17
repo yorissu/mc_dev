@@ -1,4 +1,6 @@
-== check (status 0)
-== run (status 101)
+== check (status 1)
 -- stderr
-runtime error: unknown intrinsic `main.collect`
+main.mc:5:32: error[E0416]: no plugin provides `main.collect`
+== run (status 1)
+-- stderr
+main.mc:5:32: error[E0416]: no plugin provides `main.collect`

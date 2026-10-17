@@ -1,0 +1,38 @@
+# math: the functions of the example plugin 'math' (math.c, beside this
+# file). load it with '--plugin <the built library>'.
+
+[plugin = "math"]
+pub sqrt :: (x: f64) -> f64;
+
+[plugin = "math"]
+pub sin :: (x: f64) -> f64;
+
+[plugin = "math"]
+pub cos :: (x: f64) -> f64;
+
+[plugin = "math"]
+pub pow :: (x: f64, y: f64) -> f64;
+
+# the largest integer not above x.
+[plugin = "math"]
+pub floor :: (x: f64) -> int;
+
+[plugin = "math"]
+pub sum :: (values: []f64) -> f64;
+
+# multiplies every value by 'factor', in place.
+[plugin = "math"]
+pub scale :: (values: []f64, factor: f64);
+
+# 'count' numbers from 'start' by 'step', on the heap: free them.
+[plugin = "math"]
+pub steps :: (start: f64, step: f64, count: uint) -> []f64;
+
+pub Point :: {
+	let x: f64;
+	let y: f64;
+}
+
+# the distance of a point from the origin.
+[plugin = "math"]
+pub length :: (point: Point) -> f64;

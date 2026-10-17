@@ -3,6 +3,7 @@
 #
 #   make [CONFIG=debug|release]   build the compiler: build/<config>/mc
 #   make test                     build and run the unit tests
+#   make plugins                  build the example plugins: build/<config>/plugins/<name>.so
 #   make check                    unit tests, then the golden tests (tests/programs)
 #   make golden                   rewrite the golden expectations (review the diff!)
 #   make differential             the old comparison with the python implementation (needs python3)
@@ -25,24 +26,44 @@ FLAGS_release := -O2 -DNDEBUG
 
 STDLIB  := $(abspath ../stdlib)
 CFLAGS  := -std=c11 $(WARNINGS) $(FLAGS_$(CONFIG)) -Iinclude -D_POSIX_C_SOURCE=200809L -MMD -MP \
-	-DMC_DEFAULT_STDLIB='"$(STDLIB)"'
+	-DMC_DEFAULT_STDLIB='"$(STDLIB)"' -DMC_TEST_PLUGINS='"$(abspath $(BUILD)/plugins)"'
 LDFLAGS := $(filter -fsanitize=%,$(FLAGS_$(CONFIG)))
 
-LIBRARY := $(patsubst %.c,$(BUILD)/%.o,$(filter-out source/main.c,$(sort $(wildcard source/*.c))))
+LIBRARY := $(patsubst %.c,$(BUILD)/%.o,$(filter-out source/main.c,$(sort $(wildcard source/*.c source/plugins/*.c))))
 TESTS   := $(patsubst %.c,$(BUILD)/%.o,$(sort $(wildcard tests/*.c)))
 
-.PHONY: all test check golden differential bench clean
+ifeq ($(OS),Windows_NT)
+LIBS   := -lm
+SHARED := .dll
+else ifeq ($(shell uname -s),Darwin)
+LIBS   := -lm
+SHARED := .dylib
+else
+LIBS   := -lm -ldl
+SHARED := .so
+endif
+
+PLUGINS := $(patsubst examples/plugins/%/,$(BUILD)/plugins/%$(SHARED),$(sort $(dir $(wildcard examples/plugins/*/*.c))))
+
+.PHONY: all test check golden differential bench plugins clean
 
 all: $(BUILD)/mc
 
-test: $(BUILD)/mc_tests
+test: $(BUILD)/mc_tests plugins
 	$<
 
-check: test $(BUILD)/mc
+check: test $(BUILD)/mc plugins
 	tests/golden.sh $(BUILD)/mc
 
-golden: $(BUILD)/mc
+golden: $(BUILD)/mc plugins
 	tests/golden.sh $(BUILD)/mc --update
+
+plugins: $(PLUGINS)
+
+# a plugin is every .c file of examples/plugins/<name>/, as one shared library.
+$(BUILD)/plugins/%$(SHARED): examples/plugins/%/*.c include/mc/plugin.h
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -fPIC -shared -fvisibility=hidden $(filter %.c,$^) -o $@ $(LDFLAGS) -lm
 
 differential: $(BUILD)/mc
 	python3 tests/differential.py $(BUILD)/mc
@@ -55,10 +76,10 @@ clean:
 	rm -rf build
 
 $(BUILD)/mc: $(BUILD)/source/main.o $(LIBRARY)
-	$(CC) $(LDFLAGS) $^ -o $@ -lm
+	$(CC) $(LDFLAGS) $^ -o $@ $(LIBS)
 
 $(BUILD)/mc_tests: $(TESTS) $(LIBRARY)
-	$(CC) $(LDFLAGS) $^ -o $@ -lm
+	$(CC) $(LDFLAGS) $^ -o $@ $(LIBS)
 
 # cairo truncates long operands of its failure reports on purpose.
 $(BUILD)/tests/%.o: tests/%.c
@@ -69,4 +90,4 @@ $(BUILD)/source/%.o: source/%.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 
--include $(wildcard $(BUILD)/*/*.d)
+-include $(wildcard $(BUILD)/*/*.d $(BUILD)/*/*/*.d)

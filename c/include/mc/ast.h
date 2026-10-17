@@ -66,6 +66,8 @@ typedef struct {
 	bool                    negative     ;   // an integer literal under a unary minus
 	bool                    format       ;   // the format string of a variadic call
 	mc_type_list_s*         variadic     ;   // the types of the values of a variadic call
+	uint32_t*               flags        ;   // a plugin function's call: what its check marked on each argument
+	uint32_t                flag_count   ;
 	uint64_t                size         ;   // sizeof
 	void*                   symbol       ;   // a local declaration's symbol
 } mc_annotation_s;
