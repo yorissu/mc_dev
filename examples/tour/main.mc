@@ -1,0 +1,108 @@
+
+# a tour of mc: modules, generics, operator functions, references, slices,
+# lambdas, constants evaluated at compile time and the standard library.
+
+import geometry as geo
+from option import *
+from memory import alloc, free
+from io import print, println
+
+# --- constants: evaluated by the compiler, user functions included ---------
+
+factorial :: (n: uint) -> uint {
+	let mut result: uint = 1;
+	for i in n..0 {
+		result *= i;
+	}
+	return result;
+}
+
+FACTORIAL_10 :: factorial(10);
+TABLE_SIZE :: 4 * 4;
+SQUARES :: squares();
+
+squares :: () -> [TABLE_SIZE]u32 {
+	let mut table: [TABLE_SIZE]u32 = {};
+	for i in 0..TABLE_SIZE {
+		table[i] = (u32)(i * i);
+	}
+	return table;
+}
+
+# --- generics: blueprints, instantiated per use ------------------------------
+
+Pair<A, B> :: {
+	let first: A;
+	let second: B;
+}
+
+max<T> :: (a: T, b: T) -> T {
+	if a > b {
+		return a;
+	}
+	return b;
+}
+
+swap<T> :: (mut a: &T, mut b: &T) {
+	let saved = a;
+	a = b;
+	b = saved;
+}
+
+# the largest element, or none for an empty slice.
+largest<T> :: (items: []T) -> Option<T> {
+	if lenof(items) == 0 {
+		return none();
+	}
+	let mut best = items[0];
+	for i in 1..lenof(items) {
+		best = max(best, items[i]);
+	}
+	return some(best);
+}
+
+# --- lambdas: function values without captures -------------------------------
+
+apply_all :: (items: []int, f: (int) -> int) {
+	for i in 0..lenof(items) {
+		items[i] = f(items[i]);
+	}
+}
+
+pub main :: () -> int {
+	assert(FACTORIAL_10 == 3628800);
+	assert(SQUARES[3] == 9);
+
+	println("10! = {}", FACTORIAL_10);
+	println("squares: {}", SQUARES[..]);
+
+	let mut a = 1;
+	let mut b = 2;
+	swap(mut &a, mut &b);
+
+	let pair: Pair<int, f32> = { first: max(a, b), second: max(1.5f32, 0.5), };
+	println("pair: {}", pair);
+
+	let mut position: geo.Vec2 = { x: 3, y: 4, };
+	let velocity: geo.Vec2 = { x: 1, y: 0, };
+	position = position + 2 * velocity - -velocity;
+	print("position {} ", position);
+	geo.normalize(mut &position);
+	println("becomes {}", position);
+
+	let numbers: [_]int = { 3, 9, 4, };
+	let biggest = largest(numbers[..]);
+
+	let heap: []int = alloc<int>(8);
+	OFFSET :: 100;
+	apply_all(heap, (x: int) -> int { return x + OFFSET; });
+	println("{{heap}}: {}, ...", heap[0..3]);
+	_ = free(heap);
+
+	let greeting = "hello"c;
+	println("{}, {} bytes", greeting, lenof(greeting));
+	if lenof(greeting) != 6 || !is_some(&biggest) {
+		return 1;
+	}
+	return value_or(&biggest, 0) + pair.first + (int)pair.second;
+}

@@ -1,0 +1,21 @@
+
+/// the operator patterns of '[op...]' functions: name, pattern, operands.
+/// derived operators ('!=', '>', '<=', '>=', 'a op= b') are not listed: they
+/// are built from these.
+
+mc_operator_pattern(add, "_+_", 2)
+mc_operator_pattern(subtract, "_-_", 2)
+mc_operator_pattern(multiply, "_*_", 2)
+mc_operator_pattern(divide, "_/_", 2)
+mc_operator_pattern(remainder, "_%_", 2)
+mc_operator_pattern(equal, "_==_", 2)
+mc_operator_pattern(less, "_<_", 2)
+mc_operator_pattern(bit_and, "_&_", 2)
+mc_operator_pattern(bit_or, "_|_", 2)
+mc_operator_pattern(bit_xor, "_^_", 2)
+mc_operator_pattern(shift_left, "_<<_", 2)
+mc_operator_pattern(shift_right, "_>>_", 2)
+mc_operator_pattern(negate, "-_", 1)
+mc_operator_pattern(not, "!_", 1)
+mc_operator_pattern(bit_not, "~_", 1)
+mc_operator_pattern(index, "_[_]", 2)

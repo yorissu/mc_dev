@@ -1,0 +1,108 @@
+
+open questions for future reworks
+=================================
+
+questions that came up while finishing the python implementation and porting
+it to c. nothing here blocks anything: each one lists what both
+implementations do today, so the answer only decides whether to change it.
+
+
+the language
+------------
+
+1. unicode in identifiers. names are ascii letters, digits and '_' today;
+   other characters are E0101. allow unicode letters (as python and c23 do)? - NO
+
+2. format specifiers. print and println know '{}', '{{' and '}}' only. add
+   '{:x}', '{:08.3}', '{:>10}' and similar, checked at compile time like the
+   placeholders already are? - YES
+
+3. attributes on statements. '[wrap]' and '[uninit]' work on lets,
+   assignments and expression statements. should any statement (a block, a
+   loop) take them, so '[wrap]' can cover a whole loop? - I suppose, yes?
+
+4. field-level 'mut'. a field marked 'mut' can be written through a non-mut
+   variable of the struct? today a field is writable when both the variable
+   and the field allow it. is that the intended meaning, or should 'mut' on a
+   field only document intent? - We will most likely rework the mut soon, so dont worry about it now
+
+5. runtime overflow. arithmetic on values known at compile time warns
+   (W0701) unless '[wrap]'; at run time it always wraps silently. should
+   overflow at run time stop the program (in a debug mode), as the warning
+   suggests it is a mistake? - No. Runtime is user's land, not compiler's.
+
+6. empty slices are null. 'slice == null' is true for every empty slice, not
+   only for the null slice (the machine compares the length). intended? - I dont know. what about go or rust or odin, do they allow empty slices? and differentiate beween null slices and empty slices?
+
+7. printing u8 arrays and slices strips one trailing NUL (so "text"c prints
+   as text). intended for slices too, or only for arrays of 'c' literals? - Only for c strings, so 'c' literals.
+
+8. extern functions as values. a '[builtin]' function can be used as a value,
+   an '[extern]' function cannot: the checker accepts it, then the compiler
+   stops with E0602 asking to wrap it in a function. allow it (or reject it
+   in the checker with a proper diagnostic)? - I suppose extern function should be allowed to be used as a value. it is supposed to have a definition still, which tells the compiler all the info about the types, parameters etc. so it should be allowed.
+
+9. main's arguments. main takes no parameters; should it receive the command
+   line ('main :: (arguments: [][]u8) -> int')? - YES
+
+
+the standard library
+--------------------
+
+10. math. there is no sqrt, sin, pow, floor... add a 'math' module as
+    natives ('[extern = "mc_sqrt"]')? the c machine makes this a one-line
+    table entry per function (source/vm_builtins.c).
+
+11. alloc with a negative count. alloc(-3) makes a slice of length -3, and
+    realloc with a negative count keeps all but the last elements (python
+    slicing). both implementations do the same, but it should probably be a
+    runtime error. make it one?
+
+12. allocation size. the c machine refuses to allocate more than 2^28
+    elements at once (runtime error); python tries and may run out of
+    memory. keep a limit? make it an option?
+
+13. leaks. memory from alloc that is never freed is collected silently when
+    unreachable. report unfreed allocations at exit (an option of 'run')?
+
+ANSWER: I want to implement the stdlib myself. I think that for stuff like math, functions shall be externs, rather than builtins. maybe it should be same with memory and other functions. Do we even need builtin anymore then? we can just extern malloc and have the definition have out types, no?
+
+
+the tools
+---------
+
+14. json diagnostics. besides '--format human' and '--format short', add
+    '--format json' for editors and other tools?
+
+15. limits. the compile-time evaluator stops after 1,000,000 steps (E0705);
+    the machine stops after 10,000 nested calls. make them options? the c
+    'run' has '--limit <n>' for instructions (the python 'run' got it too,
+    for the differential tests). - yes, should be options.
+
+16. the bytecode file is json (readable, shared by both implementations). a
+    binary format would load faster. worth it? - Yes. I actually want the program to be as fast as possible.
+
+17. windows. the c port builds with gcc/clang (linux, wsl, macos): it uses
+    __int128 and a few posix calls (isatty; the tests use mkdtemp and
+    open_memstream). support msvc too? - yes, compiler/interpretter should be cross platform.
+
+18. python parity. the c implementation reports runtime errors more
+    compactly (repeated calls collapsed, advice added), prints the
+    'N error(s), M warning(s)' line for every command, and has 'explain',
+    '--werror', '--stats', '--version'. port these back to python, or let
+    the python implementation stay the plain reference? - No, we drop python soon.
+
+19. step-limit positions. where E0705 points depends on how many values the
+    checker probed before (probes count as steps). both implementations
+    agree, but the position is somewhat arbitrary. report the loop or call
+    that ran too long instead? - Sure
+
+
+changes made to the python implementation during the port
+---------------------------------------------------------
+
+- diag: '--format short' (one line per diagnostic).
+- cli: '--limit <n>' for 'run'.
+- evaluate: struct constants keep their fields in layout order.
+- checker: positional entries in a struct literal no longer produce a second
+  confusing error ('has no field None').
