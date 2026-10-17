@@ -415,7 +415,7 @@ static const _mc_command_s _mc_commands[] = {
 		mc_check_options
 		"  --limit <n>         stop after <n> instructions\n"
 		"  --call-depth <n>    the calls that may run at once (default 10000)\n"
-		"  --stats             print how many instructions ran\n", _mc_run, true, },
+		"  --stats             print the instructions run and the heap allocations made\n", _mc_run, true, },
 	{ "explain", "explain a diagnostic code ('mc explain E0502'), or list them all", "", _mc_explain, false, },
 };
 

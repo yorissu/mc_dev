@@ -16,10 +16,15 @@ the language
 2. format specifiers. print and println know '{}', '{{' and '}}' only. add
    '{:x}', '{:08.3}', '{:>10}' and similar, checked at compile time like the
    placeholders already are? - YES
+   DONE in the rework: '{:[[fill]align][sign][#][0][width][.precision][type]}',
+   checked at compile time by the std plugin (E0530); see stdlib/io.mc.
 
 3. attributes on statements. '[wrap]' and '[uninit]' work on lets,
    assignments and expression statements. should any statement (a block, a
    loop) take them, so '[wrap]' can cover a whole loop? - I suppose, yes?
+   DONE in the rework: attributes before any statement; '[wrap]' on a block,
+   'if', 'while', 'for' covers everything inside but nested functions and
+   lambdas; '[uninit]' on 'let' only.
 
 4. field-level 'mut'. a field marked 'mut' can be written through a non-mut
    variable of the struct? today a field is writable when both the variable
@@ -33,17 +38,28 @@ the language
 
 6. empty slices are null. 'slice == null' is true for every empty slice, not
    only for the null slice (the machine compares the length). intended? - I dont know. what about go or rust or odin, do they allow empty slices? and differentiate beween null slices and empty slices?
+   ANSWER TO THE QUESTION (still open, behaviour unchanged): go has both: a
+   nil slice and an empty non-nil one ('make([]int, 0)'); 's == nil' is true
+   only for the nil one, but len, range and append treat them alike, and the
+   usual advice is to test 'len(s) == 0'. rust has no null slices at all
+   (an empty slice is just empty; 'Option<&[T]>' says "none"). odin, like
+   go, has nil slices ('s == nil' compares the data pointer) and empty ones.
+   mc today is closest to "test the length": every empty slice is null.
 
 7. printing u8 arrays and slices strips one trailing NUL (so "text"c prints
    as text). intended for slices too, or only for arrays of 'c' literals? - Only for c strings, so 'c' literals.
+   DONE in the rework (see "decided during the rework" for the details).
 
 8. extern functions as values. a '[builtin]' function can be used as a value,
    an '[extern]' function cannot: the checker accepts it, then the compiler
    stops with E0602 asking to wrap it in a function. allow it (or reject it
    in the checker with a proper diagnostic)? - I suppose extern function should be allowed to be used as a value. it is supposed to have a definition still, which tells the compiler all the info about the types, parameters etc. so it should be allowed.
+   DONE in the rework: '[builtin]' and '[extern]' became '[plugin]'; a plugin
+   function can be used as a value (variadic ones cannot, E0529).
 
 9. main's arguments. main takes no parameters; should it receive the command
    line ('main :: (arguments: [][]u8) -> int')? - YES
+   DONE in the rework: 'mc run file.mc a b' gives ["file.mc", "a", "b"].
 
 
 the standard library
@@ -66,6 +82,10 @@ the standard library
     unreachable. report unfreed allocations at exit (an option of 'run')?
 
 ANSWER: I want to implement the stdlib myself. I think that for stuff like math, functions shall be externs, rather than builtins. maybe it should be same with memory and other functions. Do we even need builtin anymore then? we can just extern malloc and have the definition have out types, no?
+DONE in the rework: there is one kind, '[plugin]'. memory and io come from
+the 'std' plugin built into mc; a math module is a plugin of its own
+(c/examples/plugins/math is one). 11, 12 and 13 keep today's behaviour
+(the rework prompt said so); they stay open.
 
 
 the tools
@@ -78,13 +98,17 @@ the tools
     the machine stops after 10,000 nested calls. make them options? the c
     'run' has '--limit <n>' for instructions (the python 'run' got it too,
     for the differential tests). - yes, should be options.
+    DONE in the rework: '--eval-steps', '--call-depth' and '--limit'.
 
 16. the bytecode file is json (readable, shared by both implementations). a
     binary format would load faster. worth it? - Yes. I actually want the program to be as fast as possible.
+    DONE in the rework: '.mcb' is binary (c/readme.txt, 'bytecode files').
 
 17. windows. the c port builds with gcc/clang (linux, wsl, macos): it uses
     __int128 and a few posix calls (isatty; the tests use mkdtemp and
     open_memstream). support msvc too? - yes, compiler/interpretter should be cross platform.
+    DONE in the rework: portable 128-bit integers, a platform layer and
+    c/build.bat. the msvc build could not be tried here (see below).
 
 18. python parity. the c implementation reports runtime errors more
     compactly (repeated calls collapsed, advice added), prints the
@@ -96,6 +120,8 @@ the tools
     checker probed before (probes count as steps). both implementations
     agree, but the position is somewhat arbitrary. report the loop or call
     that ran too long instead? - Sure
+    DONE in the rework: E0705 points at the innermost loop or call still
+    running, with a note naming it and help about '--eval-steps'.
 
 
 changes made to the python implementation during the port
@@ -106,6 +132,38 @@ changes made to the python implementation during the port
 - evaluate: struct constants keep their fields in layout order.
 - checker: positional entries in a struct literal no longer produce a second
   confusing error ('has no field None').
+
+
+new open questions
+==================
+
+questions that came up during the rework. each says what mc does today.
+
+20. plugins at check time. a call of a '[plugin]' function that no loaded
+    plugin provides is E0416 for 'check' and 'build' too, since the plugin's
+    check is part of checking (the format check of io.println is one). allow
+    'check' without the plugin (skipping its checks, a warning instead)?
+
+21. plugins calling mc. a plugin can read a function value
+    ('mc_plugin_function_name_at') but cannot call it. add calls from
+    plugins into the machine (callbacks: sort with a compare function)?
+
+22. slices of more than 4 GiB. a slice keeps its offset and length in 32
+    bits each, so it covers at most 4 GiB of its block (2^32 - 1 elements),
+    and an allocation is at most 2^28 elements anyway (12). a 24-byte slice
+    would lift it, at the cost of every slice. needed?
+
+23. alloc's negative count (11) and realloc's: still python's slicing. now
+    that memory is c-like, a runtime error would be simpler. make it one?
+
+24. msvc. c/build.bat is written but untried (no windows here); the
+    portable build (make CONFIG=portable) is what was tested. who can run
+    it on windows, and should msvc warnings be errors (/WX)?
+
+25. the python implementation. tests/differential.py still runs, but the
+    two implementations now differ on purpose (plugins, layout, format
+    specifiers, .mcb). remove the python implementation and the
+    differential test, once nobody needs them?
 
 
 decided during the rework
@@ -232,3 +290,12 @@ each one is easy to revisit.
   c11 allows and the implicit conversions gcc does not flag either), not
   /WX, as it could not be tried here. .gitattributes checks .bat files
   out with crlf.
+- commits: the rework prompt says not to commit unless told to; this
+  session's environment asked for the work to be committed and pushed to
+  the branch 'claude/determined-allen-1hnnqt', so every task is one commit
+  there (nothing on the main branch).
+- the python implementation was left as it was (the prompt says not to
+  change it), but stdlib/io.mc and stdlib/memory.mc now declare '[plugin]'
+  functions, which it does not know: it cannot run programs that import
+  them any more, and 36 of its unit tests fail. with the stdlib of before
+  the rework ('git show 379b053:stdlib/io.mc') all 116 pass. see 25.
