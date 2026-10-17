@@ -51,7 +51,7 @@ usage
 	--color[=auto|always|never] colors (auto: stderr is a terminal and NO_COLOR is unset)
 	--werror                    warnings count as errors
 	--limit <n>                 run: stop after n instructions
-	--stats                     run: print the instructions executed and collections
+	--stats                     run: print the instructions executed and heap allocations
 	-h, --help                  'mc --help', 'mc <command> --help'
 	--version
 
@@ -107,9 +107,9 @@ of one stage share among themselves is an internal header in source/.
 	  source/evaluate.c          compile-time evaluation
 	  source/mono.c              the 'mono' listing
 	source/machine.h           the virtual machine's internals, shared by:
-	  source/vm.c                loading, the instruction loop, runtime errors
-	  source/vm_memory.c         objects, the garbage collector, slices, locations
-	  source/vm_builtins.c       builtins, natives, printing values
+	  source/vm.c                loading and verifying, the instruction loop, runtime errors
+	  source/vm_memory.c         blocks and handles, frames, constants
+	  source/vm_builtins.c       intrinsics (alloc, print, ...), printing values
 
 	tests/main.c               runs the unit tests
 	tests/*_tests.c            unit tests (they register themselves with cairo)
@@ -139,14 +139,14 @@ python CODES table), then report it with mc_error / mc_warning:
 	mc_note(d, "a note"); mc_help(d, "advice");
 
 a new builtin or native: write the function in source/vm_builtins.c and add a
-row to _mc_builtins or _mc_natives there; declare it in a module of stdlib/
-with '[builtin]' or '[extern = "name"]'. the checker enforces the signature,
-so the function can trust its arguments.
+row to _mc_intrinsics there, under its qualified name ('module.function');
+declare it in a module of stdlib/ with '[builtin]' or '[extern = "name"]'.
+the checker enforces the signature, so the function can trust its arguments.
 
-a new instruction: add it to opcodes.def, emit it in source/compiler.c and
-run it in _mc_step (source/vm.c); bytecode.c reads, writes and disassembles
-it from the table. keep the python implementation in step, or the
-differential tests will say where they differ.
+a new instruction: add it to opcodes.def, emit it in source/compiler.c, give
+its stack effect to _mc_effect and run it in _mc_step (source/vm.c), with a
+fast case in _mc_loop if it is frequent; bytecode.c reads, writes and
+disassembles it from the table.
 
 a new command: write it in source/cli.c and add a row to _mc_commands.
 
@@ -163,14 +163,17 @@ numbers: literals and compile-time values are 128-bit integers and doubles,
 wrapped to their type exactly like the python implementation (which uses
 unbounded integers), so constant folding and overflow warnings agree.
 
-the machine: values are integers, floats, bools, function values and
-references to heap objects: lists (arrays and structs, copied on
-assignment, written in place), blocks (the memory slices view, owned by the
-heap, a call or another block), locations (assignment targets and reference
-arguments) and frame records (the locals of a call, alive until it returns).
-every access through a slice or a location checks that its memory is still
-alive and in bounds. a mark-and-sweep collector runs between instructions
-once enough has been allocated.
+the machine: data is laid out the way c lays it out (u8 is one byte,
+structs have c alignment and padding, a slice is 16 bytes). a call's
+locals live in a byte area of its frame; heap memory in blocks from
+'alloc'; constants in read-only blocks. slices and locations name a block
+by a handle (table, index, generation) and an offset, and every access
+checks the generation (use after free, a local of a call that returned)
+and the bounds. the operand stack holds 64-bit words. loading a module
+verifies every function (jumps, stack depths, offsets), then the loop runs
+decoded instructions with fast cases for the frequent ones. there is no
+garbage collector: frames die on return, heap blocks on free. see
+source/machine.h and include/mc/bytecode.h.
 
 python compatibility: number formatting (repr of floats, shortest f32
 digits), text decoding (invalid utf-8 becomes U+FFFD like python's

@@ -268,7 +268,9 @@ uint64_t mc_size_of(mc_checker_s* const c, const mc_type_s* const type, uint64_t
 				uint64_t field_alignment = 1;
 				const uint64_t size = mc_size_of(c, layout->fields.data[i]->type, &field_alignment);
 				if (0 == field_alignment) field_alignment = 1;
-				offset = (offset + field_alignment - 1) / field_alignment * field_alignment + size;
+				offset = (offset + field_alignment - 1) / field_alignment * field_alignment;
+				layout->fields.data[i]->offset = offset;
+				offset += size;
 				if (field_alignment > struct_alignment) struct_alignment = field_alignment;
 			}
 			for (size_t i = 0; i < c->sizing.count; ++i) {
@@ -307,6 +309,6 @@ mc_layout_s* mc_program_layout(mc_program_s* const program, const mc_type_s* con
 	return mc_layout(program->checker, type);
 }
 
-uint64_t mc_program_size_of(mc_program_s* const program, const mc_type_s* const type) {
-	return mc_size_of(program->checker, type, NULL);
+uint64_t mc_program_size_of(mc_program_s* const program, const mc_type_s* const type, uint64_t* const alignment) {
+	return mc_size_of(program->checker, type, alignment);
 }

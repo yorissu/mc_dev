@@ -16,442 +16,392 @@ constant 3: 3
 constant 4: 9
 constant 5: 'assertion failed: SQUARES[3] == 9'
 constant 6: {49, 48, 33, 32, 61, 32, 123, 125}
-constant 7: 0
-constant 8: {115, 113, 117, 97, 114, 101, 115, 58, 32, 123, 125}
-constant 9: {0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225}
-constant 10: slice {}
-constant 11: 1
-constant 12: 2
-constant 13: {0, 0.0}
-constant 14: 1.5
-constant 15: 0.5
-constant 16: {112, 97, 105, 114, 58, 32, 123, 125}
-constant 17: 0.0
-constant 18: {0, 0.0}
-constant 19: {0.0, 0.0}
-constant 20: 3.0
-constant 21: 4.0
-constant 22: {0.0, 0.0}
-constant 23: 1.0
-constant 24: 2.0
-constant 25: {112, 111, 115, 105, 116, 105, 111, 110, 32, 123, 125, 32}
-constant 26: {0.0, 0.0}
-constant 27: {98, 101, 99, 111, 109, 101, 115, 32, 123, 125}
-constant 28: 4
-constant 29: 8
-constant 30: {123, 123, 104, 101, 97, 112, 125, 125, 58, 32, 123, 125, 44, 32, 46, 46, 46}
-constant 31: slice {}
-constant 32: {104, 101, 108, 108, 111, 0}
-constant 33: {123, 125, 44, 32, 123, 125, 32, 98, 121, 116, 101, 115}
-constant 34: 6
-constant 35: {0, 0, 0, 0, 0, 0}
-constant 36: {0.0, 0.0}
-constant 37: {0.0, 0.0}
-constant 38: {0.0, 0.0}
-constant 39: 100
-constant 40: {0.0, 0.0}
-constant 41: {false, 0}
-constant 42: {false, 0}
-constant 43: true
+constant 7: {115, 113, 117, 97, 114, 101, 115, 58, 32, 123, 125}
+constant 8: 1
+constant 9: 2
+constant 10: 1.5
+constant 11: 0.5
+constant 12: {112, 97, 105, 114, 58, 32, 123, 125}
+constant 13: 3.0
+constant 14: 4.0
+constant 15: 1.0
+constant 16: 0.0
+constant 17: 2.0
+constant 18: {112, 111, 115, 105, 116, 105, 111, 110, 32, 123, 125, 32}
+constant 19: {98, 101, 99, 111, 109, 101, 115, 32, 123, 125}
+constant 20: 9
+constant 21: 4
+constant 22: 8
+constant 23: {123, 123, 104, 101, 97, 112, 125, 125, 58, 32, 123, 125, 44, 32, 46, 46, 46}
+constant 24: 0
+constant 25: {104, 101, 108, 108, 111, 0}
+constant 26: {123, 125, 44, 32, 123, 125, 32, 98, 121, 116, 101, 115}
+constant 27: 6
+constant 28: 0
+constant 29: 1
+constant 30: 100
+constant 31: {false, 0}
+constant 32: true
 
-function 0 main: 0 parameter(s), 9 local(s), returns a value  (entry)
-     0  CONST 0                      main.mc:73       3628800
-     1  CONST 0                      main.mc:73       3628800
-     2  EQ_UINT                      main.mc:73
-     3  JUMP_IF_TRUE 5               main.mc:73
-     4  ASSERT_FAIL 1                main.mc:73       'assertion failed: FACTORIAL_10 == 36...
-     5  NONE                         main.mc:73
-     6  POP                          main.mc:73
-     7  CONST 2                      main.mc:74       {0, 1, 4, 9, 16, 25, 36, 49, 64, 81, ...
-     8  CONST 3                      main.mc:74       3
-     9  INDEX_ARRAY                  main.mc:74
-    10  CONST 4                      main.mc:74       9
-    11  EQ_U32                       main.mc:74
-    12  JUMP_IF_TRUE 14              main.mc:74
-    13  ASSERT_FAIL 5                main.mc:74       'assertion failed: SQUARES[3] == 9'
-    14  NONE                         main.mc:74
-    15  POP                          main.mc:74
-    16  CONST 6                      main.mc:76       {49, 48, 33, 32, 61, 32, 123, 125}
-    17  TEMP_LOC                     main.mc:76
-    18  SLICE_LOC 24                 main.mc:76
-    19  CONST 0                      main.mc:76       3628800
-    20  CALL_BUILTIN [0, 2]          main.mc:76       builtin println
-    21  POP                          main.mc:76
-    22  CONST 8                      main.mc:77       {115, 113, 117, 97, 114, 101, 115, 58...
-    23  TEMP_LOC                     main.mc:77
-    24  SLICE_LOC 24                 main.mc:77
-    25  CONST 9                      main.mc:77       {0, 1, 4, 9, 16, 25, 36, 49, 64, 81, ...
-    26  TEMP_LOC                     main.mc:77
-    27  SLICE_LOC 24                 main.mc:77
-    28  CALL_BUILTIN [1, 2]          main.mc:77       builtin println
-    29  POP                          main.mc:77
-    30  CONST 11                     main.mc:79       1
-    31  STORE_NEW 0                  main.mc:79
-    32  CONST 12                     main.mc:80       2
-    33  STORE_NEW 1                  main.mc:80
-    34  LOC_LOCAL 0                  main.mc:81
-    35  LOC_LOCAL 1                  main.mc:81
-    36  CALL [1, 2]                  main.mc:81       swap<int>
-    37  POP                          main.mc:81
-    38  CONST 13                     main.mc:83       {0, 0.0}
-    39  LOAD 0                       main.mc:83
-    40  LOAD 1                       main.mc:83
-    41  CALL [2, 2]                  main.mc:83       max<int>
-    42  SET_FIELD 0                  main.mc:83
-    43  CONST 14                     main.mc:83       1.5
-    44  CONST 15                     main.mc:83       0.5
-    45  CALL [3, 2]                  main.mc:83       max<f32>
-    46  SET_FIELD 1                  main.mc:83
-    47  STORE_NEW 2                  main.mc:83
-    48  CONST 16                     main.mc:84       {112, 97, 105, 114, 58, 32, 123, 125}
-    49  TEMP_LOC                     main.mc:84
-    50  SLICE_LOC 24                 main.mc:84
-    51  LOAD 2                       main.mc:84
-    52  CALL_BUILTIN [2, 2]          main.mc:84       builtin println
-    53  POP                          main.mc:84
-    54  CONST 19                     main.mc:86       {0.0, 0.0}
-    55  CONST 20                     main.mc:86       3.0
-    56  SET_FIELD 0                  main.mc:86
-    57  CONST 21                     main.mc:86       4.0
-    58  SET_FIELD 1                  main.mc:86
-    59  STORE_NEW 3                  main.mc:86
-    60  CONST 22                     main.mc:87       {0.0, 0.0}
-    61  CONST 23                     main.mc:87       1.0
-    62  SET_FIELD 0                  main.mc:87
-    63  CONST 17                     main.mc:87       0.0
-    64  SET_FIELD 1                  main.mc:87
-    65  STORE_NEW 4                  main.mc:87
-    66  LOAD 3                       main.mc:88
-    67  CONST 24                     main.mc:88       2.0
-    68  LOAD 4                       main.mc:88
-    69  CALL [4, 2]                  main.mc:88       f32_scale_vec2
-    70  CALL [5, 2]                  main.mc:88       vec2_add
-    71  LOAD 4                       main.mc:88
-    72  CALL [6, 1]                  main.mc:88       vec2_negate
-    73  CALL [7, 2]                  main.mc:88       vec2_subtract
-    74  STORE 3                      main.mc:88
-    75  CONST 25                     main.mc:89       {112, 111, 115, 105, 116, 105, 111, 1...
-    76  TEMP_LOC                     main.mc:89
-    77  SLICE_LOC 24                 main.mc:89
-    78  LOAD 3                       main.mc:89
-    79  CALL_BUILTIN [3, 2]          main.mc:89       builtin print
-    80  POP                          main.mc:89
-    81  LOC_LOCAL 3                  main.mc:90
-    82  CALL [8, 1]                  main.mc:90       normalize
-    83  POP                          main.mc:90
-    84  CONST 27                     main.mc:91       {98, 101, 99, 111, 109, 101, 115, 32,...
-    85  TEMP_LOC                     main.mc:91
-    86  SLICE_LOC 24                 main.mc:91
-    87  LOAD 3                       main.mc:91
-    88  CALL_BUILTIN [4, 2]          main.mc:91       builtin println
-    89  POP                          main.mc:91
-    90  CONST 3                      main.mc:93       3
-    91  CONST 4                      main.mc:93       9
-    92  CONST 28                     main.mc:93       4
-    93  MAKE_ARRAY 3                 main.mc:93
-    94  STORE_NEW 5                  main.mc:93
-    95  LOC_LOCAL 5                  main.mc:94
-    96  SLICE_LOC 8                  main.mc:94
-    97  CALL [9, 1]                  main.mc:94       largest<int>
-    98  STORE_NEW 6                  main.mc:94
-    99  CONST 29                     main.mc:96       8
-   100  CALL_BUILTIN [5, 1]          main.mc:96       builtin alloc
-   101  STORE_NEW 7                  main.mc:96
-   102  LOAD 7                       main.mc:98
-   103  FUNCTION 10                  main.mc:98       lambda at main.mc:98
-   104  CALL [11, 2]                 main.mc:98       apply_all
-   105  POP                          main.mc:98
-   106  CONST 30                     main.mc:99       {123, 123, 104, 101, 97, 112, 125, 12...
-   107  TEMP_LOC                     main.mc:99
-   108  SLICE_LOC 24                 main.mc:99
-   109  LOAD 7                       main.mc:99
-   110  CONST 7                      main.mc:99       0
-   111  CONST 3                      main.mc:99       3
-   112  SLICE_SLICE 3                main.mc:99
-   113  CALL_BUILTIN [6, 2]          main.mc:99       builtin println
-   114  POP                          main.mc:99
-   115  LOAD 7                       main.mc:100
-   116  CALL_BUILTIN [7, 1]          main.mc:100      builtin free
-   117  POP                          main.mc:100
-   118  CONST 32                     main.mc:102      {104, 101, 108, 108, 111, 0}
-   119  STORE_NEW 8                  main.mc:102
-   120  CONST 33                     main.mc:103      {123, 125, 44, 32, 123, 125, 32, 98, ...
-   121  TEMP_LOC                     main.mc:103
-   122  SLICE_LOC 24                 main.mc:103
-   123  LOAD 8                       main.mc:103
-   124  CONST 34                     main.mc:103      6
-   125  CALL_BUILTIN [8, 3]          main.mc:103      builtin println
-   126  POP                          main.mc:103
-   127  CONST 34                     main.mc:104      6
-   128  CONST 34                     main.mc:104      6
-   129  NE_UINT                      main.mc:104
-   130  DUP                          main.mc:104
-   131  JUMP_IF_TRUE 136             main.mc:104
-   132  POP                          main.mc:104
-   133  LOC_LOCAL 6                  main.mc:104
-   134  CALL [12, 1]                 main.mc:104      is_some<int>
-   135  NOT                          main.mc:104
-   136  JUMP_IF_FALSE 139            main.mc:104
-   137  CONST 11                     main.mc:105      1
-   138  RETURN                       main.mc:105
-   139  LOC_LOCAL 6                  main.mc:107
-   140  CONST 7                      main.mc:107      0
-   141  CALL [13, 2]                 main.mc:107      value_or<int>
-   142  LOAD 2                       main.mc:107
-   143  FIELD 0                      main.mc:107
-   144  ADD_INT                      main.mc:107
-   145  LOAD 2                       main.mc:107
-   146  FIELD 1                      main.mc:107
-   147  CAST_F32_INT                 main.mc:107
-   148  ADD_INT                      main.mc:107
-   149  RETURN                       main.mc:107
-   150  NONE                         main.mc:108
-   151  RETURN                       main.mc:108
+intrinsic 0: io.println (...: uint)
+intrinsic 1: io.println (...: []u32)
+intrinsic 2: io.println (...: Pair<int, f32>)
+intrinsic 3: io.print (...: Vec2)
+intrinsic 4: io.println (...: Vec2)
+intrinsic 5: memory.alloc<int>
+intrinsic 6: io.println (...: []int)
+intrinsic 7: memory.free<int>
+intrinsic 8: io.println (...: [6]u8 uint)
 
-function 1 swap<int>: 2 parameter(s), 3 local(s)
-     0  LOAD_DEREF 0                 main.mc:47
-     1  STORE_NEW 2                  main.mc:47
-     2  LOAD 0                       main.mc:48
-     3  LOAD_DEREF 1                 main.mc:48
-     4  STORE_LOC                    main.mc:48
-     5  LOAD 1                       main.mc:49
-     6  LOAD 2                       main.mc:49
-     7  STORE_LOC                    main.mc:49
-     8  NONE                         main.mc:50
-     9  RETURN                       main.mc:50
+function 0 main: 0 parameter(s), 112 byte(s) of frame, returns a value  (entry)
+     0  CONST 0                          main.mc:73       3628800
+     1  CONST 0                          main.mc:73       3628800
+     2  EQ_UINT                          main.mc:73
+     3  JUMP_IF_TRUE 5                   main.mc:73
+     4  ASSERT_FAIL 1                    main.mc:73       'assertion failed: FACTORIAL_10 == 36...
+     5  CONST 2                          main.mc:74       {0, 1, 4, 9, 16, 25, 36, 49, 64, 81, ...
+     6  CONST 3                          main.mc:74       3
+     7  INDEX_U32_INT [16, 8]            main.mc:74
+     8  CONST 4                          main.mc:74       9
+     9  EQ_U32                           main.mc:74
+    10  JUMP_IF_TRUE 12                  main.mc:74
+    11  ASSERT_FAIL 5                    main.mc:74       'assertion failed: SQUARES[3] == 9'
+    12  LOC_CONST 6                      main.mc:76       {49, 48, 33, 32, 61, 32, 123, 125}
+    13  SLICE_LOC_INT_INT [8, 8, 1]      main.mc:76
+    14  CONST 0                          main.mc:76       3628800
+    15  CALL_INTRINSIC [0, 3]            main.mc:76       io.println
+    16  LOC_CONST 7                      main.mc:77       {115, 113, 117, 97, 114, 101, 115, 58...
+    17  SLICE_LOC_INT_INT [8, 11, 1]     main.mc:77
+    18  LOC_CONST 2                      main.mc:77       {0, 1, 4, 9, 16, 25, 36, 49, 64, 81, ...
+    19  SLICE_LOC_INT_INT [8, 16, 4]     main.mc:77
+    20  CALL_INTRINSIC [1, 4]            main.mc:77       io.println
+    21  CONST 8                          main.mc:79       1
+    22  STORE_INT 0                      main.mc:79
+    23  CONST 9                          main.mc:80       2
+    24  STORE_INT 8                      main.mc:80
+    25  LOC_LOCAL 0                      main.mc:81
+    26  LOC_LOCAL 8                      main.mc:81
+    27  CALL 1                           main.mc:81       swap<int>
+    28  ZERO 2                           main.mc:83
+    29  LOAD_INT 0                       main.mc:83
+    30  LOAD_INT 8                       main.mc:83
+    31  CALL 2                           main.mc:83       max<int>
+    32  SET_FIELD_INT [0, 2]             main.mc:83
+    33  CONST 10                         main.mc:83       1.5
+    34  CONST 11                         main.mc:83       0.5
+    35  CALL 3                           main.mc:83       max<f32>
+    36  SET_FIELD_F32 [8, 2]             main.mc:83
+    37  STORE_BYTES [16, 16]             main.mc:83
+    38  LOC_CONST 12                     main.mc:84       {112, 97, 105, 114, 58, 32, 123, 125}
+    39  SLICE_LOC_INT_INT [8, 8, 1]      main.mc:84
+    40  LOAD_BYTES [16, 16]              main.mc:84
+    41  CALL_INTRINSIC [2, 4]            main.mc:84       io.println
+    42  ZERO 1                           main.mc:86
+    43  CONST 13                         main.mc:86       3.0
+    44  SET_FIELD_F32 [0, 1]             main.mc:86
+    45  CONST 14                         main.mc:86       4.0
+    46  SET_FIELD_F32 [4, 1]             main.mc:86
+    47  STORE_BYTES [32, 8]              main.mc:86
+    48  ZERO 1                           main.mc:87
+    49  CONST 15                         main.mc:87       1.0
+    50  SET_FIELD_F32 [0, 1]             main.mc:87
+    51  CONST 16                         main.mc:87       0.0
+    52  SET_FIELD_F32 [4, 1]             main.mc:87
+    53  STORE_BYTES [40, 8]              main.mc:87
+    54  LOAD_BYTES [32, 8]               main.mc:88
+    55  CONST 17                         main.mc:88       2.0
+    56  LOAD_BYTES [40, 8]               main.mc:88
+    57  CALL 4                           main.mc:88       f32_scale_vec2
+    58  CALL 5                           main.mc:88       vec2_add
+    59  LOAD_BYTES [40, 8]               main.mc:88
+    60  CALL 6                           main.mc:88       vec2_negate
+    61  CALL 7                           main.mc:88       vec2_subtract
+    62  STORE_BYTES [32, 8]              main.mc:88
+    63  LOC_CONST 18                     main.mc:89       {112, 111, 115, 105, 116, 105, 111, 1...
+    64  SLICE_LOC_INT_INT [8, 12, 1]     main.mc:89
+    65  LOAD_BYTES [32, 8]               main.mc:89
+    66  CALL_INTRINSIC [3, 3]            main.mc:89       io.print
+    67  LOC_LOCAL 32                     main.mc:90
+    68  CALL 8                           main.mc:90       normalize
+    69  LOC_CONST 19                     main.mc:91       {98, 101, 99, 111, 109, 101, 115, 32,...
+    70  SLICE_LOC_INT_INT [8, 10, 1]     main.mc:91
+    71  LOAD_BYTES [32, 8]               main.mc:91
+    72  CALL_INTRINSIC [4, 3]            main.mc:91       io.println
+    73  CONST 3                          main.mc:93       3
+    74  CONST 20                         main.mc:93       9
+    75  CONST 21                         main.mc:93       4
+    76  MAKE_ARRAY_INT 3                 main.mc:93
+    77  STORE_BYTES [48, 24]             main.mc:93
+    78  LOC_LOCAL 48                     main.mc:94
+    79  SLICE_LOC_INT_INT [8, 3, 8]      main.mc:94
+    80  CALL 9                           main.mc:94       largest<int>
+    81  STORE_BYTES [72, 16]             main.mc:94
+    82  CONST 22                         main.mc:96       8
+    83  CALL_INTRINSIC [5, 1]            main.mc:96       memory.alloc
+    84  STORE_SLICE 88                   main.mc:96
+    85  LOAD_SLICE 88                    main.mc:98
+    86  FUNCTION 10                      main.mc:98       lambda at main.mc:98
+    87  CALL 11                          main.mc:98       apply_all
+    88  LOC_CONST 23                     main.mc:99       {123, 123, 104, 101, 97, 112, 125, 12...
+    89  SLICE_LOC_INT_INT [8, 17, 1]     main.mc:99
+    90  LOAD_SLICE 88                    main.mc:99
+    91  CONST 24                         main.mc:99       0
+    92  CONST 3                          main.mc:99       3
+    93  SLICE_SLICE_INT_INT [3, 8]       main.mc:99
+    94  CALL_INTRINSIC [6, 4]            main.mc:99       io.println
+    95  LOAD_SLICE 88                    main.mc:100
+    96  CALL_INTRINSIC [7, 2]            main.mc:100      memory.free
+    97  POP 2                            main.mc:100
+    98  CONST 25                         main.mc:102      {104, 101, 108, 108, 111, 0}
+    99  STORE_BYTES [104, 6]             main.mc:102
+   100  LOC_CONST 26                     main.mc:103      {123, 125, 44, 32, 123, 125, 32, 98, ...
+   101  SLICE_LOC_INT_INT [8, 12, 1]     main.mc:103
+   102  LOAD_BYTES [104, 6]              main.mc:103
+   103  CONST 27                         main.mc:103      6
+   104  CALL_INTRINSIC [8, 4]            main.mc:103      io.println
+   105  CONST 27                         main.mc:104      6
+   106  CONST 27                         main.mc:104      6
+   107  NE_UINT                          main.mc:104
+   108  DUP 1                            main.mc:104
+   109  JUMP_IF_TRUE 114                 main.mc:104
+   110  POP 1                            main.mc:104
+   111  LOC_LOCAL 72                     main.mc:104
+   112  CALL 12                          main.mc:104      is_some<int>
+   113  NOT                              main.mc:104
+   114  JUMP_IF_FALSE 117                main.mc:104
+   115  CONST 8                          main.mc:105      1
+   116  RETURN 1                         main.mc:105
+   117  LOC_LOCAL 72                     main.mc:107
+   118  CONST 24                         main.mc:107      0
+   119  CALL 13                          main.mc:107      value_or<int>
+   120  LOAD_INT 16                      main.mc:107
+   121  ADD_INT                          main.mc:107
+   122  LOAD_F32 24                      main.mc:107
+   123  CAST_F32_INT                     main.mc:107
+   124  ADD_INT                          main.mc:107
+   125  RETURN 1                         main.mc:107
+   126  RETURN 0                         main.mc:108
 
-function 2 max<int>: 2 parameter(s), 2 local(s), returns a value
-     0  LOAD 0                       main.mc:40
-     1  LOAD 1                       main.mc:40
-     2  GT_INT                       main.mc:40
-     3  JUMP_IF_FALSE 6              main.mc:40
-     4  LOAD 0                       main.mc:41
-     5  RETURN                       main.mc:41
-     6  LOAD 1                       main.mc:43
-     7  RETURN                       main.mc:43
-     8  NONE                         main.mc:44
-     9  RETURN                       main.mc:44
+function 1 swap<int>: 2 parameter(s), 40 byte(s) of frame
+     0  LOAD_SLICE 0                     main.mc:47
+     1  LOAD_LOC_INT                     main.mc:47
+     2  STORE_INT 32                     main.mc:47
+     3  LOAD_SLICE 0                     main.mc:48
+     4  LOAD_SLICE 16                    main.mc:48
+     5  LOAD_LOC_INT                     main.mc:48
+     6  STORE_LOC_INT                    main.mc:48
+     7  LOAD_SLICE 16                    main.mc:49
+     8  LOAD_INT 32                      main.mc:49
+     9  STORE_LOC_INT                    main.mc:49
+    10  RETURN 0                         main.mc:50
 
-function 3 max<f32>: 2 parameter(s), 2 local(s), returns a value
-     0  LOAD 0                       main.mc:40
-     1  LOAD 1                       main.mc:40
-     2  GT_F32                       main.mc:40
-     3  JUMP_IF_FALSE 6              main.mc:40
-     4  LOAD 0                       main.mc:41
-     5  RETURN                       main.mc:41
-     6  LOAD 1                       main.mc:43
-     7  RETURN                       main.mc:43
-     8  NONE                         main.mc:44
-     9  RETURN                       main.mc:44
+function 2 max<int>: 2 parameter(s), 16 byte(s) of frame, returns a value
+     0  LOAD_INT 0                       main.mc:40
+     1  LOAD_INT 8                       main.mc:40
+     2  GT_INT                           main.mc:40
+     3  JUMP_IF_FALSE 6                  main.mc:40
+     4  LOAD_INT 0                       main.mc:41
+     5  RETURN 1                         main.mc:41
+     6  LOAD_INT 8                       main.mc:43
+     7  RETURN 1                         main.mc:43
+     8  RETURN 0                         main.mc:44
 
-function 4 f32_scale_vec2: 2 parameter(s), 2 local(s), returns a value
-     0  LOAD 1                       geometry.mc:27
-     1  LOAD 0                       geometry.mc:27
-     2  CALL [14, 2]                 geometry.mc:27   vec2_scale
-     3  RETURN                       geometry.mc:27
-     4  NONE                         geometry.mc:28
-     5  RETURN                       geometry.mc:28
+function 3 max<f32>: 2 parameter(s), 8 byte(s) of frame, returns a value
+     0  LOAD_F32 0                       main.mc:40
+     1  LOAD_F32 4                       main.mc:40
+     2  GT_F32                           main.mc:40
+     3  JUMP_IF_FALSE 6                  main.mc:40
+     4  LOAD_F32 0                       main.mc:41
+     5  RETURN 1                         main.mc:41
+     6  LOAD_F32 4                       main.mc:43
+     7  RETURN 1                         main.mc:43
+     8  RETURN 0                         main.mc:44
 
-function 5 vec2_add: 2 parameter(s), 2 local(s), returns a value
-     0  CONST 36                     geometry.mc:12   {0.0, 0.0}
-     1  LOAD 0                       geometry.mc:12
-     2  FIELD 0                      geometry.mc:12
-     3  LOAD 1                       geometry.mc:12
-     4  FIELD 0                      geometry.mc:12
-     5  ADD_F32                      geometry.mc:12
-     6  SET_FIELD 0                  geometry.mc:12
-     7  LOAD 0                       geometry.mc:12
-     8  FIELD 1                      geometry.mc:12
-     9  LOAD 1                       geometry.mc:12
-    10  FIELD 1                      geometry.mc:12
-    11  ADD_F32                      geometry.mc:12
-    12  SET_FIELD 1                  geometry.mc:12
-    13  RETURN                       geometry.mc:12
-    14  NONE                         geometry.mc:13
-    15  RETURN                       geometry.mc:13
+function 4 f32_scale_vec2: 2 parameter(s), 16 byte(s) of frame, returns a value
+     0  LOAD_BYTES [4, 8]                geometry.mc:27
+     1  LOAD_F32 0                       geometry.mc:27
+     2  CALL 14                          geometry.mc:27   vec2_scale
+     3  RETURN 1                         geometry.mc:27
+     4  RETURN 0                         geometry.mc:28
 
-function 6 vec2_negate: 1 parameter(s), 1 local(s), returns a value
-     0  CONST 37                     geometry.mc:37   {0.0, 0.0}
-     1  LOAD 0                       geometry.mc:37
-     2  FIELD 0                      geometry.mc:37
-     3  NEG_F32                      geometry.mc:37
-     4  SET_FIELD 0                  geometry.mc:37
-     5  LOAD 0                       geometry.mc:37
-     6  FIELD 1                      geometry.mc:37
-     7  NEG_F32                      geometry.mc:37
-     8  SET_FIELD 1                  geometry.mc:37
-     9  RETURN                       geometry.mc:37
-    10  NONE                         geometry.mc:38
-    11  RETURN                       geometry.mc:38
+function 5 vec2_add: 2 parameter(s), 16 byte(s) of frame, returns a value
+     0  ZERO 1                           geometry.mc:12
+     1  LOAD_F32 0                       geometry.mc:12
+     2  LOAD_F32 8                       geometry.mc:12
+     3  ADD_F32                          geometry.mc:12
+     4  SET_FIELD_F32 [0, 1]             geometry.mc:12
+     5  LOAD_F32 4                       geometry.mc:12
+     6  LOAD_F32 12                      geometry.mc:12
+     7  ADD_F32                          geometry.mc:12
+     8  SET_FIELD_F32 [4, 1]             geometry.mc:12
+     9  RETURN 1                         geometry.mc:12
+    10  RETURN 0                         geometry.mc:13
 
-function 7 vec2_subtract: 2 parameter(s), 2 local(s), returns a value
-     0  CONST 38                     geometry.mc:17   {0.0, 0.0}
-     1  LOAD 0                       geometry.mc:17
-     2  FIELD 0                      geometry.mc:17
-     3  LOAD 1                       geometry.mc:17
-     4  FIELD 0                      geometry.mc:17
-     5  SUB_F32                      geometry.mc:17
-     6  SET_FIELD 0                  geometry.mc:17
-     7  LOAD 0                       geometry.mc:17
-     8  FIELD 1                      geometry.mc:17
-     9  LOAD 1                       geometry.mc:17
-    10  FIELD 1                      geometry.mc:17
-    11  SUB_F32                      geometry.mc:17
-    12  SET_FIELD 1                  geometry.mc:17
-    13  RETURN                       geometry.mc:17
-    14  NONE                         geometry.mc:18
-    15  RETURN                       geometry.mc:18
+function 6 vec2_negate: 1 parameter(s), 8 byte(s) of frame, returns a value
+     0  ZERO 1                           geometry.mc:37
+     1  LOAD_F32 0                       geometry.mc:37
+     2  NEG_F32                          geometry.mc:37
+     3  SET_FIELD_F32 [0, 1]             geometry.mc:37
+     4  LOAD_F32 4                       geometry.mc:37
+     5  NEG_F32                          geometry.mc:37
+     6  SET_FIELD_F32 [4, 1]             geometry.mc:37
+     7  RETURN 1                         geometry.mc:37
+     8  RETURN 0                         geometry.mc:38
 
-function 8 normalize: 1 parameter(s), 2 local(s)
-     0  LOAD 0                       geometry.mc:47
-     1  LOAD 0                       geometry.mc:47
-     2  CALL [15, 2]                 geometry.mc:47   dot
-     3  STORE_NEW 1                  geometry.mc:47
-     4  LOAD 1                       geometry.mc:48
-     5  CONST 17                     geometry.mc:48   0.0
-     6  EQ_F32                       geometry.mc:48
-     7  JUMP_IF_FALSE 10             geometry.mc:48
-     8  NONE                         geometry.mc:48
-     9  RETURN                       geometry.mc:48
-    10  LOAD 0                       geometry.mc:49
-    11  LOAD_DEREF 0                 geometry.mc:49
-    12  CONST 23                     geometry.mc:49   1.0
-    13  LOAD 1                       geometry.mc:49
-    14  DIV_F32                      geometry.mc:49
-    15  CALL [14, 2]                 geometry.mc:49   vec2_scale
-    16  STORE_LOC                    geometry.mc:49
-    17  NONE                         geometry.mc:50
-    18  RETURN                       geometry.mc:50
+function 7 vec2_subtract: 2 parameter(s), 16 byte(s) of frame, returns a value
+     0  ZERO 1                           geometry.mc:17
+     1  LOAD_F32 0                       geometry.mc:17
+     2  LOAD_F32 8                       geometry.mc:17
+     3  SUB_F32                          geometry.mc:17
+     4  SET_FIELD_F32 [0, 1]             geometry.mc:17
+     5  LOAD_F32 4                       geometry.mc:17
+     6  LOAD_F32 12                      geometry.mc:17
+     7  SUB_F32                          geometry.mc:17
+     8  SET_FIELD_F32 [4, 1]             geometry.mc:17
+     9  RETURN 1                         geometry.mc:17
+    10  RETURN 0                         geometry.mc:18
 
-function 9 largest<int>: 1 parameter(s), 6 local(s), returns a value
-     0  LOAD 0                       main.mc:54
-     1  LEN_SLICE                    main.mc:54
-     2  CONST 7                      main.mc:54       0
-     3  EQ_UINT                      main.mc:54
-     4  JUMP_IF_FALSE 7              main.mc:54
-     5  CALL [16, 0]                 main.mc:55       none<int>
-     6  RETURN                       main.mc:55
-     7  LOAD 0                       main.mc:57
-     8  CONST 7                      main.mc:57       0
-     9  INDEX_SLICE                  main.mc:57
-    10  STORE_NEW 1                  main.mc:57
-    11  CONST 11                     main.mc:58       1
-    12  LOAD 0                       main.mc:58
-    13  LEN_SLICE                    main.mc:58
-    14  RANGE_INIT [2, False]        main.mc:58
-    15  RANGE_TEST [2, 26]           main.mc:58
-    16  LOAD 2                       main.mc:58
-    17  STORE_NEW 5                  main.mc:58
-    18  LOAD 1                       main.mc:59
-    19  LOAD 0                       main.mc:59
-    20  LOAD 5                       main.mc:59
-    21  INDEX_SLICE                  main.mc:59
-    22  CALL [2, 2]                  main.mc:59       max<int>
-    23  STORE 1                      main.mc:59
-    24  RANGE_STEP 2                 main.mc:58
-    25  JUMP 15                      main.mc:58
-    26  LOAD 1                       main.mc:61
-    27  CALL [17, 1]                 main.mc:61       some<int>
-    28  RETURN                       main.mc:61
-    29  NONE                         main.mc:62
-    30  RETURN                       main.mc:62
+function 8 normalize: 1 parameter(s), 24 byte(s) of frame
+     0  LOAD_SLICE 0                     geometry.mc:47
+     1  LOAD_SLICE 0                     geometry.mc:47
+     2  CALL 15                          geometry.mc:47   dot
+     3  STORE_F32 16                     geometry.mc:47
+     4  LOAD_F32 16                      geometry.mc:48
+     5  CONST 16                         geometry.mc:48   0.0
+     6  EQ_F32                           geometry.mc:48
+     7  JUMP_IF_FALSE 9                  geometry.mc:48
+     8  RETURN 0                         geometry.mc:48
+     9  LOAD_SLICE 0                     geometry.mc:49
+    10  LOAD_SLICE 0                     geometry.mc:49
+    11  LOAD_LOC_BYTES 8                 geometry.mc:49
+    12  CONST 15                         geometry.mc:49   1.0
+    13  LOAD_F32 16                      geometry.mc:49
+    14  DIV_F32                          geometry.mc:49
+    15  CALL 14                          geometry.mc:49   vec2_scale
+    16  STORE_LOC_BYTES 8                geometry.mc:49
+    17  RETURN 0                         geometry.mc:50
 
-function 10 lambda at main.mc:98: 1 parameter(s), 1 local(s), returns a value
-     0  LOAD 0                       main.mc:98
-     1  CONST 39                     main.mc:98       100
-     2  ADD_INT                      main.mc:98
-     3  RETURN                       main.mc:98
-     4  NONE                         main.mc:98
-     5  RETURN                       main.mc:98
+function 9 largest<int>: 1 parameter(s), 56 byte(s) of frame, returns a value
+     0  LOAD_SLICE 0                     main.mc:54
+     1  LEN_SLICE                        main.mc:54
+     2  CONST 28                         main.mc:54       0
+     3  EQ_UINT                          main.mc:54
+     4  JUMP_IF_FALSE 7                  main.mc:54
+     5  CALL 16                          main.mc:55       none<int>
+     6  RETURN 2                         main.mc:55
+     7  LOAD_SLICE 0                     main.mc:57
+     8  CONST 24                         main.mc:57       0
+     9  INDEX_SLICE_INT_INT              main.mc:57
+    10  STORE_INT 16                     main.mc:57
+    11  CONST 29                         main.mc:58       1
+    12  LOAD_SLICE 0                     main.mc:58
+    13  LEN_SLICE                        main.mc:58
+    14  RANGE_INIT_UINT [24, 0]          main.mc:58
+    15  RANGE_TEST [24, 26]              main.mc:58
+    16  LOAD_INT 24                      main.mc:58
+    17  STORE_UINT 48                    main.mc:58
+    18  LOAD_INT 16                      main.mc:59
+    19  LOAD_SLICE 0                     main.mc:59
+    20  LOAD_UINT 48                     main.mc:59
+    21  INDEX_SLICE_INT_UINT             main.mc:59
+    22  CALL 2                           main.mc:59       max<int>
+    23  STORE_INT 16                     main.mc:59
+    24  RANGE_STEP 24                    main.mc:58
+    25  JUMP 15                          main.mc:58
+    26  LOAD_INT 16                      main.mc:61
+    27  CALL 17                          main.mc:61       some<int>
+    28  RETURN 2                         main.mc:61
+    29  RETURN 0                         main.mc:62
 
-function 11 apply_all: 2 parameter(s), 6 local(s)
-     0  CONST 7                      main.mc:67       0
-     1  LOAD 0                       main.mc:67
-     2  LEN_SLICE                    main.mc:67
-     3  RANGE_INIT [2, False]        main.mc:67
-     4  RANGE_TEST [2, 18]           main.mc:67
-     5  LOAD 2                       main.mc:67
-     6  STORE_NEW 5                  main.mc:67
-     7  LOAD 0                       main.mc:68
-     8  LOAD 5                       main.mc:68
-     9  LOC_INDEX_SLICE              main.mc:68
-    10  LOAD 1                       main.mc:68
-    11  LOAD 0                       main.mc:68
-    12  LOAD 5                       main.mc:68
-    13  INDEX_SLICE                  main.mc:68
-    14  CALL_VALUE 1                 main.mc:68
-    15  STORE_LOC                    main.mc:68
-    16  RANGE_STEP 2                 main.mc:67
-    17  JUMP 4                       main.mc:67
-    18  NONE                         main.mc:70
-    19  RETURN                       main.mc:70
+function 10 lambda at main.mc:98: 1 parameter(s), 8 byte(s) of frame, returns a value
+     0  LOAD_INT 0                       main.mc:98
+     1  CONST 30                         main.mc:98       100
+     2  ADD_INT                          main.mc:98
+     3  RETURN 1                         main.mc:98
+     4  RETURN 0                         main.mc:98
 
-function 12 is_some<int>: 1 parameter(s), 1 local(s), returns a value
-     0  LOAD_DEREF 0                 option.mc:18
-     1  FIELD 0                      option.mc:18
-     2  RETURN                       option.mc:18
-     3  NONE                         option.mc:19
-     4  RETURN                       option.mc:19
+function 11 apply_all: 2 parameter(s), 56 byte(s) of frame
+     0  CONST 28                         main.mc:67       0
+     1  LOAD_SLICE 0                     main.mc:67
+     2  LEN_SLICE                        main.mc:67
+     3  RANGE_INIT_UINT [24, 0]          main.mc:67
+     4  RANGE_TEST [24, 18]              main.mc:67
+     5  LOAD_INT 24                      main.mc:67
+     6  STORE_UINT 48                    main.mc:67
+     7  LOAD_SLICE 0                     main.mc:68
+     8  LOAD_UINT 48                     main.mc:68
+     9  LOC_INDEX_SLICE_UINT 8           main.mc:68
+    10  LOAD_FN 16                       main.mc:68
+    11  LOAD_SLICE 0                     main.mc:68
+    12  LOAD_UINT 48                     main.mc:68
+    13  INDEX_SLICE_INT_UINT             main.mc:68
+    14  CALL_VALUE [1, 1]                main.mc:68
+    15  STORE_LOC_INT                    main.mc:68
+    16  RANGE_STEP 24                    main.mc:67
+    17  JUMP 4                           main.mc:67
+    18  RETURN 0                         main.mc:70
 
-function 13 value_or<int>: 2 parameter(s), 2 local(s), returns a value
-     0  LOAD_DEREF 0                 option.mc:27
-     1  FIELD 0                      option.mc:27
-     2  JUMP_IF_FALSE 6              option.mc:27
-     3  LOAD_DEREF 0                 option.mc:28
-     4  FIELD 1                      option.mc:28
-     5  RETURN                       option.mc:28
-     6  LOAD 1                       option.mc:30
-     7  RETURN                       option.mc:30
-     8  NONE                         option.mc:31
-     9  RETURN                       option.mc:31
+function 12 is_some<int>: 1 parameter(s), 16 byte(s) of frame, returns a value
+     0  LOAD_SLICE 0                     option.mc:18
+     1  LOAD_LOC_BOOL                    option.mc:18
+     2  RETURN 1                         option.mc:18
+     3  RETURN 0                         option.mc:19
 
-function 14 vec2_scale: 2 parameter(s), 2 local(s), returns a value
-     0  CONST 40                     geometry.mc:22   {0.0, 0.0}
-     1  LOAD 0                       geometry.mc:22
-     2  FIELD 0                      geometry.mc:22
-     3  LOAD 1                       geometry.mc:22
-     4  MUL_F32                      geometry.mc:22
-     5  SET_FIELD 0                  geometry.mc:22
-     6  LOAD 0                       geometry.mc:22
-     7  FIELD 1                      geometry.mc:22
-     8  LOAD 1                       geometry.mc:22
-     9  MUL_F32                      geometry.mc:22
-    10  SET_FIELD 1                  geometry.mc:22
-    11  RETURN                       geometry.mc:22
-    12  NONE                         geometry.mc:23
-    13  RETURN                       geometry.mc:23
+function 13 value_or<int>: 2 parameter(s), 24 byte(s) of frame, returns a value
+     0  LOAD_SLICE 0                     option.mc:27
+     1  LOAD_LOC_BOOL                    option.mc:27
+     2  JUMP_IF_FALSE 7                  option.mc:27
+     3  LOAD_SLICE 0                     option.mc:28
+     4  LOC_FIELD 8                      option.mc:28
+     5  LOAD_LOC_INT                     option.mc:28
+     6  RETURN 1                         option.mc:28
+     7  LOAD_INT 16                      option.mc:30
+     8  RETURN 1                         option.mc:30
+     9  RETURN 0                         option.mc:31
 
-function 15 dot: 2 parameter(s), 2 local(s), returns a value
-     0  LOAD_DEREF 0                 geometry.mc:41
-     1  FIELD 0                      geometry.mc:41
-     2  LOAD_DEREF 1                 geometry.mc:41
-     3  FIELD 0                      geometry.mc:41
-     4  MUL_F32                      geometry.mc:41
-     5  LOAD_DEREF 0                 geometry.mc:41
-     6  FIELD 1                      geometry.mc:41
-     7  LOAD_DEREF 1                 geometry.mc:41
-     8  FIELD 1                      geometry.mc:41
-     9  MUL_F32                      geometry.mc:41
-    10  ADD_F32                      geometry.mc:41
-    11  RETURN                       geometry.mc:41
-    12  NONE                         geometry.mc:42
-    13  RETURN                       geometry.mc:42
+function 14 vec2_scale: 2 parameter(s), 16 byte(s) of frame, returns a value
+     0  ZERO 1                           geometry.mc:22
+     1  LOAD_F32 0                       geometry.mc:22
+     2  LOAD_F32 8                       geometry.mc:22
+     3  MUL_F32                          geometry.mc:22
+     4  SET_FIELD_F32 [0, 1]             geometry.mc:22
+     5  LOAD_F32 4                       geometry.mc:22
+     6  LOAD_F32 8                       geometry.mc:22
+     7  MUL_F32                          geometry.mc:22
+     8  SET_FIELD_F32 [4, 1]             geometry.mc:22
+     9  RETURN 1                         geometry.mc:22
+    10  RETURN 0                         geometry.mc:23
 
-function 16 none<int>: 0 parameter(s), 0 local(s), returns a value
-     0  CONST 41                     option.mc:14     {false, 0}
-     1  RETURN                       option.mc:14
-     2  NONE                         option.mc:15
-     3  RETURN                       option.mc:15
+function 15 dot: 2 parameter(s), 32 byte(s) of frame, returns a value
+     0  LOAD_SLICE 0                     geometry.mc:41
+     1  LOAD_LOC_F32                     geometry.mc:41
+     2  LOAD_SLICE 16                    geometry.mc:41
+     3  LOAD_LOC_F32                     geometry.mc:41
+     4  MUL_F32                          geometry.mc:41
+     5  LOAD_SLICE 0                     geometry.mc:41
+     6  LOC_FIELD 4                      geometry.mc:41
+     7  LOAD_LOC_F32                     geometry.mc:41
+     8  LOAD_SLICE 16                    geometry.mc:41
+     9  LOC_FIELD 4                      geometry.mc:41
+    10  LOAD_LOC_F32                     geometry.mc:41
+    11  MUL_F32                          geometry.mc:41
+    12  ADD_F32                          geometry.mc:41
+    13  RETURN 1                         geometry.mc:41
+    14  RETURN 0                         geometry.mc:42
 
-function 17 some<int>: 1 parameter(s), 1 local(s), returns a value
-     0  CONST 42                     option.mc:10     {false, 0}
-     1  CONST 43                     option.mc:10     true
-     2  SET_FIELD 0                  option.mc:10
-     3  LOAD 0                       option.mc:10
-     4  SET_FIELD 1                  option.mc:10
-     5  RETURN                       option.mc:10
-     6  NONE                         option.mc:11
-     7  RETURN                       option.mc:11
+function 16 none<int>: 0 parameter(s), 0 byte(s) of frame, returns a value
+     0  CONST 31                         option.mc:14     {false, 0}
+     1  RETURN 2                         option.mc:14
+     2  RETURN 0                         option.mc:15
+
+function 17 some<int>: 1 parameter(s), 8 byte(s) of frame, returns a value
+     0  CONST 31                         option.mc:10     {false, 0}
+     1  CONST 32                         option.mc:10     true
+     2  SET_FIELD_BOOL [0, 2]            option.mc:10
+     3  LOAD_INT 0                       option.mc:10
+     4  SET_FIELD_INT [8, 2]             option.mc:10
+     5  RETURN 2                         option.mc:10
+     6  RETURN 0                         option.mc:11
 
 == mcb (status 12)
 -- stdout

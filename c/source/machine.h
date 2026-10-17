@@ -5,141 +5,171 @@
 /// the virtual machine's internals, shared by its source files:
 ///
 ///   vm.c           loading a module, the instruction loop, runtime errors
-///   vm_memory.c    objects, the garbage collector, copying, locations, slices
-///   vm_builtins.c  builtins, natives and printing values
+///   vm_memory.c    blocks and handles, frames, constants, values in memory
+///   vm_builtins.c  intrinsics and printing values
 ///
-/// heap objects (lists, blocks, locations and frame records) start with an
-/// mc_object_s and are linked into one list that the collector sweeps. the
-/// collector runs only between instructions, when every live object is
-/// reachable from the stack, the frames or the constants.
+/// the design (see also bytecode.h):
+///
+/// - the operand stack is an array of 64-bit words. a scalar takes one
+///   word (integers sign- or zero-extended from their type, f32 as a double,
+///   bools 0 or 1, function values their index with the top bit set for
+///   intrinsics); a slice or a location two (a handle and an offset, plus
+///   the length for slices); a struct or an array its c bytes, rounded up to
+///   whole words. aggregates are moved with memcpy.
+/// - memory is in blocks: the byte area of a call (on a stack of chunks
+///   that never move, so addresses into it stay valid while the call runs),
+///   heap allocations (calloc), and the images of constants. a block is an
+///   entry of the table of its kind; its handle is a 64-bit word:
+///
+///       bits 0-31 index, 32-60 generation, 61 read-only, 62-63 kind
+///
+///   an entry's generation changes when its block dies (free, realloc, the
+///   call returns) and the entry is reused later, so an old handle no longer
+///   matches: that is the use-after-free check, and the kind of the handle
+///   says which message to give. a slice's second word is its byte offset
+///   (low 32 bits) and its length (high 32 bits); a location's second word
+///   is its byte offset.
+/// - a frame gets a block only when a location or a slice of its locals is
+///   taken (LOC_LOCAL, TEMP_LOC), so most calls never touch the tables.
+/// - there is no garbage collector: nothing on the operand stack or in a
+///   frame owns memory except heap blocks, which 'free' gives back; the
+///   rest is freed when the machine stops.
 
 #include "mc/vm.h"
 
 #include <setjmp.h>
+#include <string.h>
+
+typedef union {
+	int64_t  i;
+	uint64_t u;
+	double   f;
+} mc_word_u;
 
 typedef enum {
-	mc_value_none    ,
-	mc_value_integer ,
-	mc_value_real    ,
-	mc_value_boolean ,
-	mc_value_list    ,   // an array or a struct
-	mc_value_slice   ,
-	mc_value_location,
-	mc_value_function,
-} mc_value_kind_e;
-
-typedef enum {
-	mc_object_list    ,
-	mc_object_block   ,
-	mc_object_location,
-	mc_object_frame   ,
-} mc_object_kind_e;
-
-typedef struct mc_object_s mc_object_s;
-
-struct mc_object_s {
-	mc_object_s*     next  ;
-	mc_object_kind_e kind  ;
-	bool             marked;
-};
-
-typedef struct mc_list_s mc_list_s;
-typedef struct mc_block_s mc_block_s;
-typedef struct mc_place_s mc_place_s;
-
-typedef struct {
-	mc_value_kind_e kind;
-	union {
-		__int128    integer;
-		double      real   ;
-		bool        boolean;
-		mc_list_s*  list   ;
-		struct { mc_block_s* block; int64_t start; int64_t length; bool read_only; } slice;   // block null: null
-		mc_place_s* location;
-		struct { bool builtin; int64_t index; } function;
-	} as;
-} mc_value_s;
-
-struct mc_list_s {
-	mc_object_s object;
-	size_t      count ;
-	mc_value_s* items ;
-};
-
-typedef enum {
+	mc_block_none  ,   // the null slice
 	mc_block_heap  ,   // from alloc, until free or realloc
-	mc_block_stack ,   // an array of a call, or inside another block
-	mc_block_static,   // constants
+	mc_block_frame ,   // the locals of a call, until it returns
+	mc_block_static,   // constants, for the whole run
+	mc_block_kind_count_,
 } mc_block_kind_e;
 
-/// memory that slices view. 'owner' is the frame or block it lives in (null:
-/// it lives as long as the program).
-struct mc_block_s {
-	mc_object_s     object;
-	mc_list_s*      data  ;
-	mc_object_s*    owner ;
-	mc_block_kind_e kind  ;
-	bool            freed ;
-};
+#define mc_handle_read_only ((uint64_t)1 << 61)
+#define mc_handle_generation_mask 0x1FFFFFFFu
 
-/// a place: an assignment target or a reference argument. 'container' holds
-/// the value at 'key'.
-struct mc_place_s {
-	mc_object_s  object   ;
-	mc_list_s*   container;
-	int64_t      key      ;
-	mc_object_s* owner    ;
-	mc_block_s*  block    ;
-	bool         read_only;
-};
+static inline mc_block_kind_e mc_handle_kind(const uint64_t handle) {
+	return (mc_block_kind_e)(handle >> 62);
+}
 
-/// what outlives a call: its locals and whether it is still running.
+static inline uint32_t mc_handle_index(const uint64_t handle) {
+	return (uint32_t)handle;
+}
+
+static inline uint32_t mc_handle_generation(const uint64_t handle) {
+	return (uint32_t)(handle >> 32) & mc_handle_generation_mask;
+}
+
+static inline uint64_t mc_handle_make(const mc_block_kind_e kind, const uint32_t index, const uint32_t generation) {
+	return ((uint64_t)kind << 62) | ((uint64_t)(generation & mc_handle_generation_mask) << 32) | index;
+}
+
+/// the second word of a slice.
+static inline uint64_t mc_slice_word(const uint64_t offset, const uint64_t length) {
+	return (offset & 0xFFFFFFFFu) | (length << 32);
+}
+
+static inline uint64_t mc_slice_offset(const uint64_t word) {
+	return word & 0xFFFFFFFFu;
+}
+
+static inline uint64_t mc_slice_length(const uint64_t word) {
+	return word >> 32;
+}
+
 typedef struct {
-	mc_object_s object;
-	mc_list_s*  locals;
-	bool        alive ;
-} mc_frame_record_s;
+	uint8_t* data      ;
+	uint64_t size      ;
+	uint32_t generation;
+	uint32_t next_free ;   // the next free entry (0: none), while free
+	bool     alive     ;
+	void   (*release)(void* const memory);   // heap blocks: how to give the memory back
+} mc_block_s;
 
 typedef struct {
-	int64_t            function;
-	int64_t            pc      ;
-	mc_frame_record_s* record  ;
+	mc_block_s* items    ;   // entry 0 is never used: index 0 is no block
+	uint32_t    count    ;
+	uint32_t    capacity ;
+	uint32_t    free     ;   // the first free entry (0: none)
+} mc_blocks_s;
+
+/// a chunk of the stack that frames take their byte areas from.
+typedef struct {
+	uint8_t* data;
+	size_t   size;
+	size_t   used;
+} mc_chunk_s;
+
+typedef struct mc_exec_s mc_exec_s;
+
+/// a function, checked and decoded for running.
+typedef struct {
+	mc_exec_s* code     ;
+	size_t     max_stack;   // words of operand stack it needs at most
+	uint64_t   arguments;   // words of its arguments
+	bool       packed   ;   // the arguments are words at offsets 0, 8, 16...: one memcpy moves them
+} mc_prepared_s;
+
+typedef struct {
+	int64_t                 function  ;
+	const mc_exec_s*        code      ;
+	int64_t                 pc        ;
+	uint8_t*                base      ;   // the byte area of the frame
+	uint64_t                handle    ;   // its block, 0 until one is needed
+	size_t                  chunk     ;   // where the byte area was taken from
+	size_t                  used      ;   // the chunk's use before it
+	size_t                  stack_base;   // the operand stack below the call
 } mc_frame_s;
-
-/// a type descriptor, decoded.
-typedef enum {
-	mc_descriptor_int, mc_descriptor_float, mc_descriptor_bool, mc_descriptor_array,
-	mc_descriptor_slice, mc_descriptor_struct, mc_descriptor_function,
-} mc_descriptor_kind_e;
 
 typedef struct mc_vm_s mc_vm_s;
 
-typedef mc_value_s (*mc_builtin_f)(mc_vm_s* const vm, mc_value_s* const arguments, const size_t count, const mc_bc_builtin_s* const builtin);
+/// an intrinsic: reads its arguments from 'arguments' (words, as the
+/// operand stack holds them), writes its result (at most two words) to
+/// 'result' and returns how many words it wrote.
+typedef size_t (*mc_intrinsic_f)(mc_vm_s* const vm, const mc_bc_intrinsic_s* const intrinsic, const mc_word_u* const arguments,
+								 mc_word_u* const result);
 
-typedef mc_value_s (*mc_native_f)(mc_vm_s* const vm, mc_value_s* const arguments, const size_t count);
+/// a constant, ready to use: its words on the operand stack and its block
+/// (for locations of it; made on first use).
+typedef struct {
+	mc_word_u* words ;
+	size_t     count ;
+	uint64_t   handle;
+} mc_vm_constant_s;
 
 struct mc_vm_s {
 	const mc_module_bc_s*        module     ;
 	const mc_vm_options_s*       options    ;
 	FILE*                        out        ;
-	mc_vector_of(mc_value_s)     stack      ;
+	// the operand stack
+	mc_word_u*                   stack      ;
+	size_t                       sp         ;
+	size_t                       capacity   ;
+	// calls
 	mc_vector_of(mc_frame_s)     frames     ;
-	mc_vector_of(mc_value_s)     constants  ;   // the module's constants as values
-	mc_vector_of(mc_descriptor_kind_e) kinds;   // of the module's types
-	mc_vector_of(mc_builtin_f)   builtins   ;   // of the module's builtins
-	mc_vector_of(mc_native_f)    natives    ;   // of the module's natives
-	mc_value_s                   result     ;
-	mc_vector_of(mc_value_s)     arguments  ;   // of the builtin or native being called
-	mc_string_s                  buffer     ;   // what a builtin or native prints
+	mc_vector_of(mc_chunk_s)     chunks     ;
+	size_t                       chunk      ;   // the chunk in use
+	// memory
+	mc_blocks_s                  blocks[mc_block_kind_count_];
+	mc_vector_of(mc_vm_constant_s) constants;
+	mc_vector_of(mc_intrinsic_f) intrinsics ;
+	mc_vector_of(mc_prepared_s)  prepared   ;   // per function
+	mc_vector_of(uint8_t*)       zeros      ;   // the zero value of every type, made on first use (null: all zero bytes)
+	mc_string_s                  buffer     ;   // what an intrinsic prints
 	mc_string_s                  bytes      ;
-	// the collector
-	mc_object_s*                 objects    ;
-	size_t                       allocated  ;   // objects allocated since the last collection
-	size_t                       live       ;   // objects that survived it
-	size_t                       threshold  ;
-	uint64_t                     collections;
 	uint64_t                     steps      ;   // instructions executed
-	mc_vector_of(mc_object_s*)   gray       ;
+	uint64_t                     allocations;
+	bool                         returned   ;
+	mc_word_u                    result     ;
 	// stopping
 	jmp_buf*                     stop       ;
 	char*                        error      ;
@@ -152,83 +182,116 @@ struct mc_vm_s {
 mc_noreturn void mc_vm_fail(mc_vm_s* const vm, const char* const format, ...) mc_printf_like(2, 3);
 
 // vm_memory.c
-mc_list_s* mc_vm_list(mc_vm_s* const vm, const size_t count);
-mc_block_s* mc_vm_block(mc_vm_s* const vm, mc_list_s* const data, mc_object_s* const owner, const mc_block_kind_e kind);
-mc_place_s* mc_vm_place(mc_vm_s* const vm, mc_list_s* const container, const int64_t key, mc_object_s* const owner,
-						mc_block_s* const block, const bool read_only);
-mc_frame_record_s* mc_vm_frame_record(mc_vm_s* const vm, const size_t locals);
-void mc_vm_collect(mc_vm_s* const vm);
-void mc_vm_free_objects(mc_vm_s* const vm);
+/// a new block of 'kind' over 'data' (the entry is reused when one is free).
+uint64_t mc_vm_block_new(mc_vm_s* const vm, const mc_block_kind_e kind, uint8_t* const data, const uint64_t size,
+						 void (*release)(void* const memory));
 
-/// a deep copy: arrays and structs are values.
-mc_value_s mc_vm_copy(mc_vm_s* const vm, const mc_value_s value);
+/// ends a block: its handles stop working; heap memory is given back.
+void mc_vm_block_end(mc_vm_s* const vm, const uint64_t handle);
 
-/// the new value of a place: arrays and structs are written in place.
-mc_value_s mc_vm_assign(mc_vm_s* const vm, const mc_value_s old, const mc_value_s value);
+/// the memory of a live block; stops with the right message when it died.
+uint8_t* mc_vm_resolve(mc_vm_s* const vm, const uint64_t handle);
 
-/// stops when the block's memory was freed or its call returned.
-void mc_vm_check(mc_vm_s* const vm, const mc_block_s* const block);
-mc_value_s mc_vm_get(mc_vm_s* const vm, const mc_place_s* const place);
-void mc_vm_set(mc_vm_s* const vm, const mc_place_s* const place, const mc_value_s value);
+/// stops because 'handle' cannot be used: the block died, or the access
+/// ('size' bytes at 'offset') is outside of it.
+mc_noreturn void mc_vm_bad_access(mc_vm_s* const vm, const uint64_t handle);
 
-/// a slice of 'data' (or of the existing 'block') from 'low' to 'high'.
-mc_value_s mc_vm_slice_of(mc_vm_s* const vm, mc_list_s* const data, mc_object_s* const owner, const bool read_only, const int64_t flags,
-						  const bool has_low, const __int128 low, const bool has_high, const __int128 high,
-						  const int64_t start, const int64_t length, mc_block_s* const block);
+/// 'size' bytes at 'offset' of a live block (the fast path of every access).
+static inline uint8_t* mc_vm_memory(mc_vm_s* const vm, const uint64_t handle, const uint64_t offset, const uint64_t size) {
+	const mc_blocks_s* const table = &vm->blocks[handle >> 62];
+	const uint32_t index = (uint32_t)handle;
+	if (index < table->count) {
+		const mc_block_s* const block = &table->items[index];
+		if (block->generation == ((uint32_t)(handle >> 32) & mc_handle_generation_mask) && offset <= block->size && size <= block->size - offset) {
+			return block->data + offset;
+		}
+	}
+	mc_vm_bad_access(vm, handle);
+}
+
+/// the entry of a handle, or null when the block died (or never existed).
+mc_block_s* mc_vm_block_of(mc_vm_s* const vm, const uint64_t handle);
+
+/// the operand stack has room for 'count' more words.
+void mc_vm_reserve(mc_vm_s* const vm, const size_t count);
+
+/// the byte area of a new frame / of the frame being left.
+uint8_t* mc_vm_frame_alloc(mc_vm_s* const vm, mc_frame_s* const frame, const uint64_t size);
+void mc_vm_frame_release(mc_vm_s* const vm, mc_frame_s* const frame);
+
+/// the handle of a frame's block (made when first needed).
+uint64_t mc_vm_frame_handle(mc_vm_s* const vm, mc_frame_s* const frame);
+
+/// words on the operand stack of a value of the type descriptor 'type'.
+uint64_t mc_vm_type_words(const mc_vm_s* const vm, const int64_t type);
+
+/// bytes in memory of a value of a type code.
+uint64_t mc_vm_code_size(const mc_type_code_e code);
+
+/// a scalar (or a function value) in memory, as a word, and back.
+static inline mc_word_u mc_vm_read(const mc_type_code_e code, const uint8_t* const memory) {
+	mc_word_u word = { .u = 0, };
+	switch (code) {
+		case mc_code_s8:   word.i = (int8_t)memory[0]; break;
+		case mc_code_u8:   word.u = memory[0]; break;
+		case mc_code_bool: word.u = memory[0] != 0; break;
+		case mc_code_s16:  { int16_t value; memcpy(&value, memory, 2); word.i = value; break; }
+		case mc_code_u16:  { uint16_t value; memcpy(&value, memory, 2); word.u = value; break; }
+		case mc_code_s32:  { int32_t value; memcpy(&value, memory, 4); word.i = value; break; }
+		case mc_code_u32:  { uint32_t value; memcpy(&value, memory, 4); word.u = value; break; }
+		case mc_code_f32:  { float value; memcpy(&value, memory, 4); word.f = (double)value; break; }
+		default:           memcpy(&word, memory, 8); break;
+	}
+	return word;
+}
+
+static inline void mc_vm_write(const mc_type_code_e code, uint8_t* const memory, const mc_word_u word) {
+	switch (code) {
+		case mc_code_s8: case mc_code_u8:   memory[0] = (uint8_t)word.u; break;
+		case mc_code_bool:                  memory[0] = word.u != 0; break;
+		case mc_code_s16: case mc_code_u16: { const uint16_t value = (uint16_t)word.u; memcpy(memory, &value, 2); break; }
+		case mc_code_s32: case mc_code_u32: { const uint32_t value = (uint32_t)word.u; memcpy(memory, &value, 4); break; }
+		case mc_code_f32:                   { const float value = (float)word.f; memcpy(memory, &value, 4); break; }
+		default:                            memcpy(memory, &word, 8); break;
+	}
+}
+
+/// the value of an integer word of 'code' as a 128-bit integer (for messages and checks).
+__int128 mc_vm_integer(const mc_type_code_e code, const mc_word_u word);
+
+/// 'value' wrapped to the integer type 'code', as a word.
+mc_word_u mc_vm_wrap(const mc_type_code_e code, const uint64_t value);
+
+/// whether 'code' is a signed integer type.
+bool mc_vm_signed(const mc_type_code_e code);
+
+/// 'value' rounded as the float type 'code' (f32 rounds).
+double mc_vm_round(const mc_type_code_e code, const double value);
 
 /// 'value' in decimal (for messages).
 const char* mc_vm_int_text(char buffer[48], const __int128 value);
 
-/// a copy of the zero value of the type descriptor 'type'.
-mc_value_s mc_vm_zero(mc_vm_s* const vm, const int64_t type);
+/// the constants of the module, made ready (fails on a broken module).
+void mc_vm_load_constants(mc_vm_s* const vm);
+
+/// the handle of a constant's block (read-only).
+uint64_t mc_vm_constant_handle(mc_vm_s* const vm, const int64_t index);
+
+/// the zero value of a type in memory (null: all zero bytes).
+const uint8_t* mc_vm_zero(mc_vm_s* const vm, const int64_t type);
+
+void mc_vm_free_memory(mc_vm_s* const vm);
 
 // vm_builtins.c
-mc_builtin_f mc_vm_find_builtin(const char* const name);
-mc_native_f mc_vm_find_native(const char* const name);
+mc_intrinsic_f mc_vm_find_intrinsic(const char* const name);
 
-/// 'value' as print shows it, by the type descriptor 'type'.
-void mc_vm_format(mc_vm_s* const vm, mc_string_s* const out, const mc_value_s value, const int64_t type, const int depth);
-
-/// the bytes of a []u8 slice or a [N]u8 array, as utf-8 text.
-void mc_vm_text(mc_vm_s* const vm, mc_string_s* const out, const mc_value_s value);
+/// the value at 'memory' as print shows it, by the type descriptor 'type'.
+void mc_vm_format(mc_vm_s* const vm, mc_string_s* const out, const uint8_t* const memory, const int64_t type, const int depth);
 
 /// writes what the program prints.
-void mc_vm_write(mc_vm_s* const vm, const mc_string_s* const text);
+void mc_vm_print(mc_vm_s* const vm, const mc_string_s* const text);
 
 /// a float as print shows it ('bits' 32 for f32).
 void mc_vm_format_float(mc_string_s* const out, const double value, const int bits);
-
-static inline mc_value_s mc_make_integer(const __int128 integer) {
-	return (mc_value_s) { .kind = mc_value_integer, .as.integer = integer, };
-}
-
-static inline mc_value_s mc_make_real(const double real) {
-	return (mc_value_s) { .kind = mc_value_real, .as.real = real, };
-}
-
-static inline mc_value_s mc_make_boolean(const bool boolean) {
-	return (mc_value_s) { .kind = mc_value_boolean, .as.boolean = boolean, };
-}
-
-static inline mc_value_s mc_make_list(mc_list_s* const list) {
-	return (mc_value_s) { .kind = mc_value_list, .as.list = list, };
-}
-
-static inline mc_value_s mc_make_location(mc_place_s* const place) {
-	return (mc_value_s) { .kind = mc_value_location, .as.location = place, };
-}
-
-static inline mc_value_s mc_make_slice(mc_block_s* const block, const int64_t start, const int64_t length, const bool read_only) {
-	mc_value_s value = { .kind = mc_value_slice, };
-	value.as.slice.block = block;
-	value.as.slice.start = start;
-	value.as.slice.length = length;
-	value.as.slice.read_only = read_only;
-	return value;
-}
-
-static inline mc_value_s mc_make_none(void) {
-	return (mc_value_s) { .kind = mc_value_none, };
-}
 
 #endif

@@ -60,6 +60,51 @@ cairo_test_new(bytecode, loading_rejects_other_files) {
 	(void)unlink(path);
 }
 
+cairo_test_new(bytecode, truncated_and_corrupted_files_are_refused) {
+	mc_test_run_s run = mc_test_run(PRELUDE
+		"Point :: { let x: int; let y: f32 = 1.5; }\n"
+		"total :: (items: []Point) -> int { let mut sum = 0; for i in 0..lenof(items) { sum += items[i].x; } return sum; }\n"
+		"pub main :: () -> int { let points: [2]Point = { { x: 2, }, { x: 3, }, }; println(\"{}\", points[1]); return total(points[..]); }\n");
+	cairo_assert_true(run.compiled);
+	mc_string_s bytes = {0};
+	mc_module_bc_write(&run.module, &bytes);
+	// every shorter file is refused, with a message
+	for (size_t length = 0; length < bytes.length; ++length) {
+		mc_module_bc_s module = {0};
+		char* error = NULL;
+		cairo_assert_false(mc_module_bc_read(mc_view_new(bytes.data, length), &module, &error));
+		cairo_assert_true(error != NULL);
+		mc_free(error);
+	}
+	// a changed byte is refused, or the module loads and the machine refuses or runs it: it never crashes
+	uint32_t seed = 12345;
+	for (int round = 0; round < 3000; ++round) {
+		mc_string_s copy = {0};
+		mc_string_append(&copy, mc_string_view(&bytes));
+		for (int flips = 0; flips < 1 + round % 3; ++flips) {
+			seed = seed * 1103515245u + 12345u;
+			const size_t at = (seed >> 8) % copy.length;
+			seed = seed * 1103515245u + 12345u;
+			copy.data[at] = (char)(uint8_t)(seed >> 16);
+		}
+		mc_module_bc_s module = {0};
+		char* error = NULL;
+		if (mc_module_bc_read(mc_string_view(&copy), &module, &error)) {
+			FILE* const out = tmpfile();
+			const mc_vm_options_s options = { .out = out, .limit = 100000, };
+			mc_vm_result_s result = {0};
+			(void)mc_vm_run(&module, &options, &result);
+			mc_vm_result_free(&result);
+			if (out != NULL) (void)fclose(out);
+			mc_module_bc_free(&module);
+		}
+		mc_free(error);
+		mc_string_free(&copy);
+	}
+	mc_string_free(&bytes);
+	mc_test_run_free(&run);
+}
+
 /// runs 'source' and checks its output, exit status and runtime error (null: none).
 static bool _runs(const char* const source, const char* const out, const int status, const char* const message) {
 	mc_test_run_s run = mc_test_run(source);
@@ -195,17 +240,20 @@ cairo_test_new(machine, assertions_and_limits) {
 	mc_test_run_free(&run);
 }
 
-cairo_test_new(machine, garbage_is_collected) {
+cairo_test_new(machine, frames_and_heap_blocks_are_reused) {
 	mc_test_run_s run = mc_test_run(PRELUDE
 		"make :: (n: int) -> [16]int { let mut items: [16]int = {}; items[0] = n; return items; }\n"
 		"pub main :: () -> int {\n"
 		"	let mut total = 0;\n"
-		"	for i in 0..20000 { let items = make(i); let view = items[..]; total = (total + view[0]) % 1000; }\n"
+		"	for i in 0..20000 {\n"
+		"		let items = make(i); let view = items[..]; total = (total + view[0]) % 1000;\n"
+		"		let heap = alloc<int>(4); heap[0] = i; total = (total + heap[0]) % 1000; _ = free(heap);\n"
+		"	}\n"
 		"	return total;\n"
 		"}\n");
 	cairo_assert_true(run.finished);
 	cairo_assert_eq(run.status, 0);
-	cairo_assert_gt(run.collections, (uint64_t)0);
+	cairo_assert_eq(run.allocations, (uint64_t)20000);
 	mc_test_run_free(&run);
 }
 

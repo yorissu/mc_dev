@@ -99,6 +99,10 @@ bool mc_function_is_external(const mc_function_s* const function) {
 	return mc_attribute_find(attributes, "builtin") != NULL || mc_attribute_find(attributes, "extern") != NULL;
 }
 
+char* mc_function_qualified_name(const mc_function_s* const function) {
+	return mc_format("%s." mc_view_fmt, function->module->name, mc_view_arg(function->node->as.function.name));
+}
+
 static bool _mc_symbol_public(const mc_symbol_s* const symbol) {
 	switch (symbol->kind) {
 		case mc_symbol_function: return ((const mc_function_s*)symbol)->node->as.function.public_;

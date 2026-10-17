@@ -106,3 +106,48 @@ changes made to the python implementation during the port
 - evaluate: struct constants keep their fields in layout order.
 - checker: positional entries in a struct literal no longer produce a second
   confusing error ('has no field None').
+
+
+decided during the rework
+=========================
+
+decisions made while doing the rework (rework_prompt.md) without asking.
+each one is easy to revisit.
+
+- order of the work: the c-like memory layout (task 2) was done before the
+  plugins (task 1). the plugin api hands plugins pointers to the bytes of
+  slices, which only exist once the machine stores data the way c does;
+  doing the plugins first would have needed a throwaway translation layer.
+  the binary '.mcb' format (task 3) came with the same change, since the
+  json format would have had to change anyway.
+- slices are 16 bytes (sizeof([]T) stays 16): a block handle (table index,
+  29-bit generation, read-only bit, kind) and a word with the byte offset
+  (32 bits) and the length (32 bits). so one slice covers at most 4 GiB and
+  2^32 - 1 elements; 'alloc' refuses more than 4 GiB at once (besides the
+  2^28 element cap) with the old message. a generation wraps after 2^29
+  reuses of the same table entry, after which a very old dangling slice
+  could pass the check (practically never).
+- no garbage collector: frames are freed when their call returns, heap
+  blocks by 'free' and 'realloc', and everything else when the program
+  ends. memory that is never freed is not reclaimed while the program runs
+  (like c). '--stats' now prints the number of heap allocations instead of
+  collections.
+- a temporary whose address is needed (a slice of a call's result, a
+  literal passed for a slice parameter, '&5') lives in its own slot of the
+  frame, like a c compound literal: in a loop, every iteration reuses the
+  slot. before, every evaluation made a new object.
+- the operand stack holds f32 values as doubles (exact) and rounds after
+  each operation, as before, so results are unchanged.
+- 'for i in a..=b' where b is the largest value of a 64-bit type: the
+  stop value wraps, so the loop runs zero times (before: forever, in
+  practice).
+- the bytecode changed completely (byte offsets instead of slots, typed
+  loads and stores, intrinsics instead of builtins and natives); dis
+  listings and instruction counts (--limit, --stats) differ from before.
+- function values of builtins print as before ('<function alloc>', without
+  the module).
+- loading a module verifies it (jump targets, operand stack depths,
+  offsets into frames and stack values, call and return sizes) and every
+  access through a slice or location is bounds-checked against its block,
+  so a damaged '.mcb' file is refused or stopped with a message instead of
+  crashing.

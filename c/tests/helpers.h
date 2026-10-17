@@ -21,7 +21,7 @@ typedef struct {
 	bool           finished   ;   // ran without a runtime error
 	char*          message    ;   // the runtime error
 	int            status     ;   // the exit status
-	uint64_t       collections;
+	uint64_t       allocations;
 	mc_module_bc_s module     ;
 } mc_test_run_s;
 
@@ -77,7 +77,7 @@ static inline mc_test_run_s mc_test_run_limited(const char* const text, const ui
 		run.out = buffer;
 		run.message = (result.message != NULL) ? mc_strdup(result.message) : NULL;
 		run.status = run.finished ? mc_vm_exit_status(&result) : 101;
-		run.collections = result.collections;
+		run.allocations = result.allocations;
 		mc_vm_result_free(&result);
 	}
 	return run;

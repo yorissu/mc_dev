@@ -347,8 +347,8 @@ static int _mc_run(_mc_session_s* const s) {
 		status = mc_status_runtime;
 	}
 	if (s->options->stats) {
-		(void)fprintf(stderr, "%llu instruction(s), %llu collection(s), exit status %d\n", (unsigned long long)result.steps,
-			(unsigned long long)result.collections, status);
+		(void)fprintf(stderr, "%llu instruction(s), %llu allocation(s), exit status %d\n", (unsigned long long)result.steps,
+			(unsigned long long)result.allocations, status);
 	}
 	mc_vm_result_free(&result);
 	mc_module_bc_free(&module);

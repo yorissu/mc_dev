@@ -1,0 +1,322 @@
+== check (status 0)
+== run (status 93)
+-- stdout
+12 64 36 16
+{name: hello, inner: {tag: 2, value: -7, flag: true}, items: {1, -2, 3}, view: abc, ratio: 0.5, next: <function twice>}
+{tag: 2, value: -7, flag: true} -2 el 42
+93 {1, -2, 93}
+{tag: 3, value: -7, flag: true} true
+{tag: 0, value: -7, flag: false}
+{tag: 3, value: 93, flag: true} {tag: 9, value: -7, flag: false}
+2 9
+hello! -2
+30 -7
+0.6 0.6000000238418579
+== dis (status 0)
+-- stdout
+constant 0: {123, 125, 32, 123, 125, 32, 123, 125, 32, 123, 125}
+constant 1: 12
+constant 2: 64
+constant 3: 36
+constant 4: 16
+constant 5: {0, -7, false}
+constant 6: {{0, 0, 0, 0, 0}, {0, -7, false}, {0, 0, 0}, slice {}, 0.5, None}
+constant 7: {104, 101, 108, 108, 111}
+constant 8: 2
+constant 9: 1
+constant 10: -2
+constant 11: 3
+constant 12: {97, 98, 99}
+constant 13: {123, 125}
+constant 14: 21
+constant 15: {123, 125, 32, 123, 125}
+constant 16: 1
+constant 17: 3
+constant 18: 4
+constant 19: 2
+constant 20: 9
+constant 21: 8
+constant 22: 5
+constant 23: 33
+constant 24: 0
+constant 25: 6
+constant 26: 10
+constant 27: 5
+constant 28: 0.10000000149011612
+constant 29: 0.20000000298023224
+constant 30: 0.30000001192092896
+constant 31: 0.0
+constant 32: 100
+
+intrinsic 0: io.println (...: uint uint uint uint)
+intrinsic 1: io.println (...: Big)
+intrinsic 2: io.println (...: Small s16 []u8 int)
+intrinsic 3: io.println (...: s32 [3]s16)
+intrinsic 4: io.println (...: Small bool)
+intrinsic 5: memory.alloc<Small>
+intrinsic 6: io.println (...: Small)
+intrinsic 7: io.println (...: Small Small)
+intrinsic 8: io.println (...: uint u8)
+intrinsic 9: memory.alloc<u8>
+intrinsic 10: memory.copy<u8>
+intrinsic 11: io.println (...: []u8 s16)
+intrinsic 12: io.println (...: int s32)
+intrinsic 13: memory.free<u8>
+intrinsic 14: memory.free<Small>
+intrinsic 15: io.println (...: f32 f64)
+
+function 0 main: 0 parameter(s), 272 byte(s) of frame, returns a value  (entry)
+     0  LOC_CONST 0                      main.mc:40       {123, 125, 32, 123, 125, 32, 123, 125...
+     1  SLICE_LOC_INT_INT [8, 11, 1]     main.mc:40
+     2  CONST 1                          main.mc:40       12
+     3  CONST 2                          main.mc:40       64
+     4  CONST 3                          main.mc:40       36
+     5  CONST 4                          main.mc:40       16
+     6  CALL_INTRINSIC [0, 6]            main.mc:40       io.println
+     7  CONST 6                          main.mc:41       {{0, 0, 0, 0, 0}, {0, -7, false}, {0,...
+     8  CONST 7                          main.mc:41       {104, 101, 108, 108, 111}
+     9  SET_FIELD_BYTES [0, 8, 5]        main.mc:41
+    10  CONST 8                          main.mc:41       2
+    11  CALL 1                           main.mc:41       make
+    12  SET_FIELD_BYTES [8, 8, 12]       main.mc:41
+    13  CONST 9                          main.mc:41       1
+    14  CONST 10                         main.mc:41       -2
+    15  CONST 11                         main.mc:41       3
+    16  MAKE_ARRAY_S16 3                 main.mc:41
+    17  SET_FIELD_BYTES [20, 8, 6]       main.mc:41
+    18  LOC_CONST 12                     main.mc:41       {97, 98, 99}
+    19  SLICE_LOC_INT_INT [8, 3, 1]      main.mc:41
+    20  SET_FIELD_SLICE [32, 8]          main.mc:41
+    21  FUNCTION 2                       main.mc:41       twice
+    22  SET_FIELD_FN [56, 8]             main.mc:41
+    23  STORE_BYTES [0, 64]              main.mc:41
+    24  LOC_CONST 13                     main.mc:42       {123, 125}
+    25  SLICE_LOC_INT_INT [8, 2, 1]      main.mc:42
+    26  LOAD_BYTES [0, 64]               main.mc:42
+    27  CALL_INTRINSIC [1, 10]           main.mc:42       io.println
+    28  LOC_CONST 0                      main.mc:43       {123, 125, 32, 123, 125, 32, 123, 125...
+    29  SLICE_LOC_INT_INT [8, 11, 1]     main.mc:43
+    30  LOAD_BYTES [8, 12]               main.mc:43
+    31  LOAD_S16 22                      main.mc:43
+    32  LOC_LOCAL 0                      main.mc:43
+    33  CONST 9                          main.mc:43       1
+    34  CONST 11                         main.mc:43       3
+    35  SLICE_LOC_INT_INT [3, 5, 1]      main.mc:43
+    36  LOAD_FN 56                       main.mc:43
+    37  CONST 14                         main.mc:43       21
+    38  CALL_VALUE [1, 1]                main.mc:43
+    39  CALL_INTRINSIC [2, 8]            main.mc:43       io.println
+    40  LOC_LOCAL 0                      main.mc:44
+    41  LOC_FIELD 8                      main.mc:44
+    42  LOC_FIELD 4                      main.mc:44
+    43  CALL 3                           main.mc:44       bump
+    44  LOAD_S32 12                      main.mc:45
+    45  CAST_S32_S16                     main.mc:45
+    46  STORE_S16 24                     main.mc:45
+    47  LOC_CONST 15                     main.mc:46       {123, 125, 32, 123, 125}
+    48  SLICE_LOC_INT_INT [8, 5, 1]      main.mc:46
+    49  LOAD_S32 12                      main.mc:46
+    50  LOAD_BYTES [20, 6]               main.mc:46
+    51  CALL_INTRINSIC [3, 4]            main.mc:46       io.println
+    52  CONST 16                         main.mc:47       1
+    53  CALL 1                           main.mc:47       make
+    54  CONST 8                          main.mc:47       2
+    55  CALL 1                           main.mc:47       make
+    56  CONST 17                         main.mc:47       3
+    57  CALL 1                           main.mc:47       make
+    58  MAKE_ARRAY_BYTES [3, 12]         main.mc:47
+    59  STORE_BYTES [64, 36]             main.mc:47
+    60  LOC_CONST 15                     main.mc:48       {123, 125, 32, 123, 125}
+    61  SLICE_LOC_INT_INT [8, 5, 1]      main.mc:48
+    62  LOAD_BYTES [88, 12]              main.mc:48
+    63  LOAD_BOOL 84                     main.mc:48
+    64  CALL_INTRINSIC [4, 5]            main.mc:48       io.println
+    65  CONST 18                         main.mc:49       4
+    66  CALL_INTRINSIC [5, 1]            main.mc:49       memory.alloc
+    67  STORE_SLICE 104                  main.mc:49
+    68  LOC_CONST 13                     main.mc:50       {123, 125}
+    69  SLICE_LOC_INT_INT [8, 2, 1]      main.mc:50
+    70  LOAD_SLICE 104                   main.mc:50
+    71  CONST 11                         main.mc:50       3
+    72  INDEX_SLICE_BYTES_INT 12         main.mc:50
+    73  CALL_INTRINSIC [6, 4]            main.mc:50       io.println
+    74  LOAD_SLICE 104                   main.mc:51
+    75  CONST 9                          main.mc:51       1
+    76  LOC_INDEX_SLICE_INT 12           main.mc:51
+    77  LOAD_BYTES [88, 12]              main.mc:51
+    78  STORE_LOC_BYTES 12               main.mc:51
+    79  LOAD_SLICE 104                   main.mc:52
+    80  CONST 9                          main.mc:52       1
+    81  LOC_INDEX_SLICE_INT 12           main.mc:52
+    82  LOC_FIELD 4                      main.mc:52
+    83  CALL 3                           main.mc:52       bump
+    84  LOAD_SLICE 104                   main.mc:53
+    85  CONST 19                         main.mc:53       2
+    86  LOC_INDEX_SLICE_INT 12           main.mc:53
+    87  CONST 20                         main.mc:53       9
+    88  STORE_LOC_U8                     main.mc:53
+    89  LOC_CONST 15                     main.mc:54       {123, 125, 32, 123, 125}
+    90  SLICE_LOC_INT_INT [8, 5, 1]      main.mc:54
+    91  LOAD_SLICE 104                   main.mc:54
+    92  CONST 9                          main.mc:54       1
+    93  INDEX_SLICE_BYTES_INT 12         main.mc:54
+    94  LOAD_SLICE 104                   main.mc:54
+    95  CONST 19                         main.mc:54       2
+    96  INDEX_SLICE_BYTES_INT 12         main.mc:54
+    97  CALL_INTRINSIC [7, 6]            main.mc:54       io.println
+    98  LOAD_SLICE 104                   main.mc:55
+    99  CONST 9                          main.mc:55       1
+   100  CONST 11                         main.mc:55       3
+   101  SLICE_SLICE_INT_INT [3, 12]      main.mc:55
+   102  STORE_SLICE 120                  main.mc:55
+   103  LOC_CONST 15                     main.mc:56       {123, 125, 32, 123, 125}
+   104  SLICE_LOC_INT_INT [8, 5, 1]      main.mc:56
+   105  LOAD_SLICE 120                   main.mc:56
+   106  LEN_SLICE                        main.mc:56
+   107  LOAD_SLICE 120                   main.mc:56
+   108  CONST 9                          main.mc:56       1
+   109  LOC_INDEX_SLICE_INT 12           main.mc:56
+   110  LOAD_LOC_U8                      main.mc:56
+   111  CALL_INTRINSIC [8, 4]            main.mc:56       io.println
+   112  CONST 21                         main.mc:57       8
+   113  CALL_INTRINSIC [9, 1]            main.mc:57       memory.alloc
+   114  STORE_SLICE 136                  main.mc:57
+   115  LOAD_SLICE 136                   main.mc:58
+   116  LOC_LOCAL 0                      main.mc:58
+   117  SLICE_LOC_INT_INT [0, 5, 1]      main.mc:58
+   118  CALL_INTRINSIC [10, 4]           main.mc:58       memory.copy
+   119  POP 1                            main.mc:58
+   120  LOAD_SLICE 136                   main.mc:59
+   121  CONST 22                         main.mc:59       5
+   122  LOC_INDEX_SLICE_INT 1            main.mc:59
+   123  CONST 23                         main.mc:59       33
+   124  STORE_LOC_U8                     main.mc:59
+   125  LOC_CONST 15                     main.mc:60       {123, 125, 32, 123, 125}
+   126  SLICE_LOC_INT_INT [8, 5, 1]      main.mc:60
+   127  LOAD_SLICE 136                   main.mc:60
+   128  CONST 24                         main.mc:60       0
+   129  CONST 25                         main.mc:60       6
+   130  SLICE_SLICE_INT_INT [3, 1]       main.mc:60
+   131  LOAD_BYTES [20, 6]               main.mc:60
+   132  CONST 9                          main.mc:60       1
+   133  CALL 4                           main.mc:60       pick
+   134  CALL_INTRINSIC [11, 5]           main.mc:60       io.println
+   135  CONST 24                         main.mc:61       0
+   136  STORE_INT 152                    main.mc:61
+   137  CONST 24                         main.mc:62       0
+   138  CONST 11                         main.mc:62       3
+   139  RANGE_INIT_INT [160, 0]          main.mc:62
+   140  RANGE_TEST [160, 160]            main.mc:62
+   141  LOAD_INT 160                     main.mc:62
+   142  STORE_INT 184                    main.mc:62
+   143  LOAD_INT 184                     main.mc:63
+   144  LOAD_INT 184                     main.mc:63
+   145  CONST 26                         main.mc:63       10
+   146  MUL_INT                          main.mc:63
+   147  MAKE_ARRAY_INT 2                 main.mc:63
+   148  STORE_BYTES [192, 16]            main.mc:63
+   149  LOC_LOCAL 192                    main.mc:64
+   150  SLICE_LOC_INT_INT [8, 2, 8]      main.mc:64
+   151  STORE_SLICE 208                  main.mc:64
+   152  LOAD_INT 152                     main.mc:65
+   153  LOAD_SLICE 208                   main.mc:65
+   154  CONST 9                          main.mc:65       1
+   155  INDEX_SLICE_INT_INT              main.mc:65
+   156  ADD_INT                          main.mc:65
+   157  STORE_INT 152                    main.mc:65
+   158  RANGE_STEP 160                   main.mc:62
+   159  JUMP 140                         main.mc:62
+   160  LOC_CONST 15                     main.mc:67       {123, 125, 32, 123, 125}
+   161  SLICE_LOC_INT_INT [8, 5, 1]      main.mc:67
+   162  LOAD_INT 152                     main.mc:67
+   163  CONST 27                         main.mc:67       5
+   164  CALL 1                           main.mc:67       make
+   165  FIELD_S32 [4, 2]                 main.mc:67
+   166  CALL_INTRINSIC [12, 4]           main.mc:67       io.println
+   167  LOAD_SLICE 136                   main.mc:68
+   168  CALL_INTRINSIC [13, 2]           main.mc:68       memory.free
+   169  POP 2                            main.mc:68
+   170  LOAD_SLICE 104                   main.mc:69
+   171  CALL_INTRINSIC [14, 2]           main.mc:69       memory.free
+   172  POP 2                            main.mc:69
+   173  CONST 28                         main.mc:70       0.10000000149011612
+   174  CONST 29                         main.mc:70       0.20000000298023224
+   175  CONST 30                         main.mc:70       0.30000001192092896
+   176  MAKE_ARRAY_F32 3                 main.mc:70
+   177  STORE_BYTES [224, 12]            main.mc:70
+   178  CONST 31                         main.mc:71       0.0
+   179  STORE_F32 236                    main.mc:71
+   180  CONST 24                         main.mc:72       0
+   181  CONST 11                         main.mc:72       3
+   182  RANGE_INIT_INT [240, 0]          main.mc:72
+   183  RANGE_TEST [240, 195]            main.mc:72
+   184  LOAD_INT 240                     main.mc:72
+   185  STORE_INT 264                    main.mc:72
+   186  LOAD_F32 236                     main.mc:73
+   187  LOC_LOCAL 224                    main.mc:73
+   188  LOAD_INT 264                     main.mc:73
+   189  LOC_INDEX_INT [4, 3]             main.mc:73
+   190  LOAD_LOC_F32                     main.mc:73
+   191  ADD_F32                          main.mc:73
+   192  STORE_F32 236                    main.mc:73
+   193  RANGE_STEP 240                   main.mc:72
+   194  JUMP 183                         main.mc:72
+   195  LOC_CONST 15                     main.mc:75       {123, 125, 32, 123, 125}
+   196  SLICE_LOC_INT_INT [8, 5, 1]      main.mc:75
+   197  LOAD_F32 236                     main.mc:75
+   198  LOAD_F32 236                     main.mc:75
+   199  CAST_F32_F64                     main.mc:75
+   200  CALL_INTRINSIC [15, 4]           main.mc:75       io.println
+   201  LOAD_S32 12                      main.mc:76
+   202  CAST_S32_INT                     main.mc:76
+   203  RETURN 1                         main.mc:76
+   204  RETURN 0                         main.mc:77
+
+function 1 make: 1 parameter(s), 8 byte(s) of frame, returns a value
+     0  CONST 5                          main.mc:28       {0, -7, false}
+     1  LOAD_U8 0                        main.mc:28
+     2  SET_FIELD_U8 [0, 2]              main.mc:28
+     3  LOAD_U8 0                        main.mc:28
+     4  CONST 16                         main.mc:28       1
+     5  GT_U8                            main.mc:28
+     6  SET_FIELD_BOOL [8, 2]            main.mc:28
+     7  RETURN 2                         main.mc:28
+     8  RETURN 0                         main.mc:29
+
+function 2 twice: 1 parameter(s), 8 byte(s) of frame, returns a value
+     0  CONST 19                         main.mc:24       2
+     1  LOAD_INT 0                       main.mc:24
+     2  MUL_INT                          main.mc:24
+     3  RETURN 1                         main.mc:24
+     4  RETURN 0                         main.mc:25
+
+function 3 bump: 1 parameter(s), 16 byte(s) of frame
+     0  LOAD_SLICE 0                     main.mc:32
+     1  DUP 2                            main.mc:32
+     2  LOAD_LOC_S32                     main.mc:32
+     3  CONST 32                         main.mc:32       100
+     4  ADD_S32                          main.mc:32
+     5  STORE_LOC_S32                    main.mc:32
+     6  RETURN 0                         main.mc:33
+
+function 4 pick: 2 parameter(s), 16 byte(s) of frame, returns a value
+     0  LOC_LOCAL 0                      main.mc:36
+     1  LOAD_INT 8                       main.mc:36
+     2  LOC_INDEX_INT [2, 3]             main.mc:36
+     3  LOAD_LOC_S16                     main.mc:36
+     4  RETURN 1                         main.mc:36
+     5  RETURN 0                         main.mc:37
+
+== mcb (status 93)
+-- stdout
+12 64 36 16
+{name: hello, inner: {tag: 2, value: -7, flag: true}, items: {1, -2, 3}, view: abc, ratio: 0.5, next: <function twice>}
+{tag: 2, value: -7, flag: true} -2 el 42
+93 {1, -2, 93}
+{tag: 3, value: -7, flag: true} true
+{tag: 0, value: -7, flag: false}
+{tag: 3, value: 93, flag: true} {tag: 9, value: -7, flag: false}
+2 9
+hello! -2
+30 -7
+0.6 0.6000000238418579

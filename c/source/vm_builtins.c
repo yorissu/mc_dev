@@ -1,65 +1,20 @@
 
-/// builtins ('[builtin]' functions), natives ('[extern = "name"]' functions)
-/// and printing values.
-///
-/// to add a builtin or a native, write its function and list it in
-/// _mc_builtins or _mc_natives below; the declaration in an mc module gives
-/// its signature, which the checker enforces before the machine runs.
+/// intrinsics (the functions of the standard library that the machine
+/// provides: memory and io) and printing values.
 
 #include "machine.h"
 #include "mc/format.h"
 
+#include <inttypes.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define mc_nesting_limit 256
 
-// --- helpers -----------------------------------------------------------------------------
+// --- printing ----------------------------------------------------------------------------
 
-/// the elements a slice views (an empty range for a null slice).
-static const mc_value_s* _mc_elements(mc_vm_s* const vm, const mc_value_s slice, size_t* const count) {
-	*count = 0;
-	const mc_block_s* const block = slice.as.slice.block;
-	if (NULL == block) return NULL;
-	mc_vm_check(vm, block);
-	const int64_t size = (int64_t)block->data->count;
-	int64_t start = slice.as.slice.start, end = slice.as.slice.start + slice.as.slice.length;
-	if (start > size) start = size;
-	if (end > size) end = size;
-	if (start < 0) start = 0;
-	if (end < start) end = start;
-	*count = (size_t)(end - start);
-	return block->data->items + start;
-}
-
-static void _mc_bytes_text(mc_string_s* const out, const mc_value_s* items, size_t count, const bool strip_nul) {
-	if (strip_nul && count > 0 && mc_value_integer == items[count - 1].kind && 0 == items[count - 1].as.integer) --count;
-	char chunk[256];
-	while (count > 0) {
-		// whole utf-8 sequences per chunk: cut before a lead byte
-		size_t size = (count < sizeof(chunk)) ? count : sizeof(chunk);
-		if (size < count) {
-			size_t cut = size;
-			while (cut > size - 4 && 0x80 == ((uint8_t)items[cut].as.integer & 0xC0)) --cut;
-			size = cut;
-		}
-		for (size_t i = 0; i < size; ++i) chunk[i] = (char)(uint8_t)items[i].as.integer;
-		mc_format_utf8(out, mc_view_new(chunk, size));
-		items += size;
-		count -= size;
-	}
-}
-
-void mc_vm_text(mc_vm_s* const vm, mc_string_s* const out, const mc_value_s value) {
-	size_t count = 0;
-	const mc_value_s* items = NULL;
-	if (mc_value_slice == value.kind) items = _mc_elements(vm, value, &count);
-	else if (mc_value_list == value.kind) items = value.as.list->items, count = value.as.list->count;
-	_mc_bytes_text(out, items, count, false);
-}
-
-void mc_vm_write(mc_vm_s* const vm, const mc_string_s* const text) {
+void mc_vm_print(mc_vm_s* const vm, const mc_string_s* const text) {
 	if (text->length > 0) (void)fwrite(text->data, 1, text->length, vm->out);
 }
 
@@ -91,153 +46,214 @@ void mc_vm_format_float(mc_string_s* const out, const double value, const int bi
 	mc_string_free(&text);
 }
 
-void mc_vm_format(mc_vm_s* const vm, mc_string_s* const out, const mc_value_s value, const int64_t type, const int depth) {
+/// the elements a slice views (none for the null slice).
+static const uint8_t* _mc_slice_memory(mc_vm_s* const vm, const uint8_t* const slice, const uint64_t element, uint64_t* const length) {
+	uint64_t words[2];
+	memcpy(words, slice, 16);
+	*length = mc_slice_length(words[1]);
+	if (0 == words[0]) {
+		*length = 0;
+		return NULL;
+	}
+	return mc_vm_memory(vm, words[0], mc_slice_offset(words[1]), *length * element);
+}
+
+static void _mc_bytes_text(mc_string_s* const out, const uint8_t* const bytes, uint64_t count, const bool strip_nul) {
+	if (strip_nul && count > 0 && 0 == bytes[count - 1]) --count;
+	if (count > 0) mc_format_utf8(out, mc_view_new((const char*)bytes, (size_t)count));
+}
+
+void mc_vm_format(mc_vm_s* const vm, mc_string_s* const out, const uint8_t* const memory, const int64_t type, const int depth) {
 	if (depth > mc_nesting_limit) mc_vm_fail(vm, "values nest too deeply");
-	const mc_bc_type_s* const descriptor = &vm->module->types.data[type];
-	switch (vm->kinds.data[type]) {
-		case mc_descriptor_int:
-			mc_format_int128(out, value.as.integer);
+	const mc_module_bc_s* const module = vm->module;
+	const mc_bc_type_s* const descriptor = &module->types.data[type];
+	switch (descriptor->kind) {
+		case mc_descriptor_int: {
+			const mc_word_u word = mc_vm_read(descriptor->code, memory);
+			if (mc_vm_signed(descriptor->code)) mc_string_appendf(out, "%" PRId64, word.i);
+			else mc_string_appendf(out, "%" PRIu64, word.u);
 			return;
+		}
 		case mc_descriptor_float:
-			mc_vm_format_float(out, value.as.real, 0 == strcmp(descriptor->name, "f32") ? 32 : 64);
+			mc_vm_format_float(out, mc_vm_read(descriptor->code, memory).f, mc_code_f32 == descriptor->code ? 32 : 64);
 			return;
 		case mc_descriptor_bool:
-			mc_string_append_cstr(out, value.as.boolean ? "true" : "false");
+			mc_string_append_cstr(out, mc_vm_read(mc_code_bool, memory).u ? "true" : "false");
 			return;
 		case mc_descriptor_function: {
-			const int64_t index = value.as.function.index;
-			const char* const name = value.as.function.builtin ? vm->module->builtins.data[index].name : vm->module->functions.data[index].name;
+			const uint64_t word = mc_vm_read(mc_code_fn, memory).u;
+			const uint64_t index = word & ~((uint64_t)1 << 63);
+			const char* name = "?";
+			if (word >> 63) {
+				if (index < module->intrinsics.count) {
+					// intrinsics show their own name, without the module
+					name = module->intrinsics.data[index].name;
+					const char* const dot = strrchr(name, '.');
+					if (dot != NULL) name = dot + 1;
+				}
+			}
+			else if (index < module->functions.count) {
+				name = module->functions.data[index].name;
+			}
 			mc_string_appendf(out, "<function %s>", name);
 			return;
 		}
 		case mc_descriptor_array:
 		case mc_descriptor_slice: {
-			size_t count = 0;
-			const mc_value_s* items = NULL;
-			if (mc_descriptor_slice == vm->kinds.data[type]) items = _mc_elements(vm, value, &count);
-			else items = value.as.list->items, count = value.as.list->count;
-			if (0 == strcmp(vm->module->types.data[descriptor->element].name, "u8")) {
+			uint64_t count = 0;
+			const uint8_t* items = NULL;
+			const mc_bc_type_s* const element = &module->types.data[descriptor->element];
+			if (mc_descriptor_slice == descriptor->kind) {
+				items = _mc_slice_memory(vm, memory, element->size, &count);
+			}
+			else {
+				items = memory;
+				count = (uint64_t)descriptor->length;
+			}
+			if (0 == strcmp(element->name, "u8")) {
 				_mc_bytes_text(out, items, count, true);
 				return;
 			}
 			mc_string_append_char(out, '{');
-			for (size_t i = 0; i < count; ++i) {
+			for (uint64_t i = 0; i < count; ++i) {
 				if (i > 0) mc_string_append_cstr(out, ", ");
-				mc_vm_format(vm, out, items[i], descriptor->element, depth + 1);
+				mc_vm_format(vm, out, items + i * element->size, descriptor->element, depth + 1);
 			}
 			mc_string_append_char(out, '}');
 			return;
 		}
-		case mc_descriptor_struct: {
+		case mc_descriptor_struct:
 			mc_string_append_char(out, '{');
-			for (size_t i = 0; i < descriptor->field_names.count && i < value.as.list->count; ++i) {
+			for (size_t i = 0; i < descriptor->field_names.count; ++i) {
 				if (i > 0) mc_string_append_cstr(out, ", ");
 				mc_string_appendf(out, "%s: ", descriptor->field_names.data[i]);
-				mc_vm_format(vm, out, value.as.list->items[i], descriptor->field_types.data[i], depth + 1);
+				mc_vm_format(vm, out, memory + descriptor->field_offsets.data[i], descriptor->field_types.data[i], depth + 1);
 			}
 			mc_string_append_char(out, '}');
 			return;
-		}
+		default:
+			return;
 	}
 }
 
-// --- builtins ----------------------------------------------------------------------------
+// --- arguments ---------------------------------------------------------------------------
 
-#define mc_allocation_limit ((__int128)1 << 28)
-
-static mc_value_s _mc_allocate(mc_vm_s* const vm, const __int128 count, const int64_t type) {
-	if (count > mc_allocation_limit) {
-		char text[48];
-		mc_vm_fail(vm, "cannot allocate %s elements", mc_vm_int_text(text, count));
+/// the memory form of an argument: in place for slices and aggregates,
+/// written to 'scratch' (8 bytes) for scalars.
+static const uint8_t* _mc_argument_memory(mc_vm_s* const vm, const int64_t type, const mc_word_u* const words, uint8_t* const scratch) {
+	const mc_bc_type_s* const descriptor = &vm->module->types.data[type];
+	if (descriptor->code != mc_type_code_count_ && descriptor->code != mc_code_slice) {
+		mc_vm_write(descriptor->code, scratch, words[0]);
+		return scratch;
 	}
-	const size_t size = (count > 0) ? (size_t)count : 0;
-	mc_list_s* const data = mc_vm_list(vm, size);
-	for (size_t i = 0; i < size; ++i) data->items[i] = mc_vm_zero(vm, type);
-	return mc_make_slice(mc_vm_block(vm, data, NULL, mc_block_heap), 0, (int64_t)count, false);
+	return (const uint8_t*)words;
+}
+
+// --- memory ------------------------------------------------------------------------------
+
+#define mc_allocation_limit ((uint64_t)1 << 28)
+
+static void _mc_heap_release(void* const memory) {
+	free(memory);
+}
+
+/// a new heap block of 'count' elements of 'type', set to its zero value.
+static size_t _mc_allocate(mc_vm_s* const vm, const uint64_t count, const int64_t type, mc_word_u* const result) {
+	const mc_bc_type_s* const descriptor = &vm->module->types.data[type];
+	if (count > mc_allocation_limit || (descriptor->size > 0 && count > ((uint64_t)1 << 32) / descriptor->size)) {
+		mc_vm_fail(vm, "cannot allocate %" PRIu64 " elements", count);
+	}
+	const uint64_t size = count * descriptor->size;
+	uint8_t* const data = calloc(1, size > 0 ? (size_t)size : 1);
+	if (NULL == data) mc_vm_fail(vm, "cannot allocate %" PRIu64 " elements", count);
+	const uint8_t* const zero = mc_vm_zero(vm, type);
+	if (zero != NULL) for (uint64_t i = 0; i < count; ++i) memcpy(data + i * descriptor->size, zero, (size_t)descriptor->size);
+	vm->allocations += 1;
+	result[0].u = mc_vm_block_new(vm, mc_block_heap, data, size, _mc_heap_release);
+	result[1].u = mc_slice_word(0, count);
+	return 2;
 }
 
 /// the heap block of a whole allocation, for realloc and free.
-static mc_block_s* _mc_heap_allocation(mc_vm_s* const vm, const mc_value_s value, const char* const what) {
-	mc_block_s* const block = value.as.slice.block;
-	if (NULL == block || block->kind != mc_block_heap) mc_vm_fail(vm, "%s of memory that `alloc` did not return", what);
-	mc_vm_check(vm, block);
-	if (value.as.slice.start != 0 || value.as.slice.length != (int64_t)block->data->count) {
+static mc_block_s* _mc_heap_allocation(mc_vm_s* const vm, const mc_word_u* const slice, const int64_t element, const char* const what) {
+	const uint64_t handle = slice[0].u;
+	if (mc_handle_kind(handle) != mc_block_heap) mc_vm_fail(vm, "%s of memory that `alloc` did not return", what);
+	(void)mc_vm_resolve(vm, handle);
+	mc_block_s* const block = mc_vm_block_of(vm, handle);
+	const uint64_t size = vm->module->types.data[element].size;
+	if (mc_slice_offset(slice[1].u) != 0 || mc_slice_length(slice[1].u) * size != block->size) {
 		mc_vm_fail(vm, "%s needs the whole allocation, not a part of it", what);
 	}
 	return block;
 }
 
-static mc_value_s _mc_builtin_alloc(mc_vm_s* const vm, mc_value_s* const arguments, const size_t count, const mc_bc_builtin_s* const builtin) {
-	mc_unused(count);
-	return _mc_allocate(vm, arguments[0].as.integer, builtin->types.data[0]);
+static size_t _mc_alloc(mc_vm_s* const vm, const mc_bc_intrinsic_s* const intrinsic, const mc_word_u* const arguments, mc_word_u* const result) {
+	return _mc_allocate(vm, arguments[0].u, intrinsic->arguments.data[0], result);
 }
 
-static mc_value_s _mc_builtin_realloc(mc_vm_s* const vm, mc_value_s* const arguments, const size_t count, const mc_bc_builtin_s* const builtin) {
-	mc_unused(count);
-	const mc_value_s value = arguments[0];
-	const __int128 size = arguments[1].as.integer;
-	if (NULL == value.as.slice.block) return _mc_allocate(vm, size, builtin->types.data[0]);
-	mc_block_s* const block = _mc_heap_allocation(vm, value, "`realloc`");
-	if (size > mc_allocation_limit) {
-		char text[48];
-		mc_vm_fail(vm, "cannot allocate %s elements", mc_vm_int_text(text, size));
+static size_t _mc_realloc(mc_vm_s* const vm, const mc_bc_intrinsic_s* const intrinsic, const mc_word_u* const arguments, mc_word_u* const result) {
+	const int64_t element = intrinsic->arguments.data[0];
+	const uint64_t count = arguments[2].u;
+	if (0 == arguments[0].u) return _mc_allocate(vm, count, element, result);
+	const mc_block_s* const block = _mc_heap_allocation(vm, arguments, element, "`realloc`");
+	const uint8_t* const old = block->data;
+	const uint64_t old_size = block->size;
+	(void)_mc_allocate(vm, count, element, result);
+	uint8_t* const fresh = mc_vm_resolve(vm, result[0].u);
+	const uint64_t size = count * vm->module->types.data[element].size;
+	memcpy(fresh, old, (size_t)(size < old_size ? size : old_size));
+	mc_vm_block_end(vm, arguments[0].u);
+	return 2;
+}
+
+static size_t _mc_free(mc_vm_s* const vm, const mc_bc_intrinsic_s* const intrinsic, const mc_word_u* const arguments, mc_word_u* const result) {
+	if (arguments[0].u != 0) {
+		(void)_mc_heap_allocation(vm, arguments, intrinsic->arguments.data[0], "`free`");
+		mc_vm_block_end(vm, arguments[0].u);
 	}
-	// python slicing: data[:size] (a negative size drops from the end)
-	const __int128 old = (__int128)block->data->count;
-	__int128 kept = (size >= 0) ? (size < old ? size : old) : (old + size > 0 ? old + size : 0);
-	const __int128 added = (size > old) ? size - old : 0;
-	mc_list_s* const data = mc_vm_list(vm, (size_t)(kept + added));
-	for (size_t i = 0; i < (size_t)kept; ++i) data->items[i] = block->data->items[i];
-	for (size_t i = 0; i < (size_t)added; ++i) data->items[(size_t)kept + i] = mc_vm_zero(vm, builtin->types.data[0]);
-	block->freed = true;
-	return mc_make_slice(mc_vm_block(vm, data, NULL, mc_block_heap), 0, (int64_t)size, false);
+	result[0].u = 0;
+	result[1].u = 0;
+	return 2;
 }
 
-static mc_value_s _mc_builtin_free(mc_vm_s* const vm, mc_value_s* const arguments, const size_t count, const mc_bc_builtin_s* const builtin) {
-	mc_unused(count);
-	mc_unused(builtin);
-	if (arguments[0].as.slice.block != NULL) _mc_heap_allocation(vm, arguments[0], "`free`")->freed = true;
-	return mc_make_slice(NULL, 0, 0, false);
-}
-
-static mc_value_s _mc_builtin_copy(mc_vm_s* const vm, mc_value_s* const arguments, const size_t count, const mc_bc_builtin_s* const builtin) {
-	mc_unused(count);
-	mc_unused(builtin);
-	const mc_value_s target = arguments[0];
-	if (target.as.slice.read_only && target.as.slice.length != 0) mc_vm_fail(vm, "`copy` into a read-only slice");
-	size_t available = 0;
-	const mc_value_s* const items = _mc_elements(vm, arguments[1], &available);
-	const int64_t length = target.as.slice.length;
-	const size_t copied = (length <= 0) ? 0 : ((size_t)length < available ? (size_t)length : available);
+static size_t _mc_copy(mc_vm_s* const vm, const mc_bc_intrinsic_s* const intrinsic, const mc_word_u* const arguments, mc_word_u* const result) {
+	const uint64_t size = vm->module->types.data[intrinsic->arguments.data[0]].size;
+	const uint64_t target = arguments[0].u, source = arguments[2].u;
+	const uint64_t length = mc_slice_length(arguments[1].u), available = mc_slice_length(arguments[3].u);
+	if ((target & mc_handle_read_only) && length != 0) mc_vm_fail(vm, "`copy` into a read-only slice");
+	const uint8_t* const from = (source != 0) ? mc_vm_memory(vm, source, mc_slice_offset(arguments[3].u), available * size) : NULL;
+	const uint64_t copied = (length < available) ? length : available;
 	if (copied > 0) {
-		mc_vm_check(vm, target.as.slice.block);
-		// the source may overlap the target: take the values first
-		mc_value_s* const saved = mc_malloc(copied * sizeof(mc_value_s));
-		memcpy(saved, items, copied * sizeof(mc_value_s));
-		for (size_t i = 0; i < copied; ++i) target.as.slice.block->data->items[target.as.slice.start + (int64_t)i] = mc_vm_copy(vm, saved[i]);
-		mc_free(saved);
+		uint8_t* const to = mc_vm_memory(vm, target, mc_slice_offset(arguments[1].u), copied * size);
+		// the source may overlap the target
+		memmove(to, from, (size_t)(copied * size));
 	}
-	return mc_make_integer((__int128)copied);
+	result[0].u = copied;
+	return 1;
 }
+
+// --- io ----------------------------------------------------------------------------------
 
 /// the format string (the first argument) with each '{}' replaced by the
 /// next value; '{{' and '}}' are braces. the checker matched them already.
-static void _mc_formatted(mc_vm_s* const vm, mc_value_s* const arguments, const size_t count, const mc_bc_builtin_s* const builtin,
-						  mc_string_s* const out) {
-	size_t length = 0;
-	const mc_value_s* const data = _mc_elements(vm, arguments[0], &length);
-	size_t next = 1;
+static void _mc_formatted(mc_vm_s* const vm, const mc_bc_intrinsic_s* const intrinsic, const mc_word_u* const arguments, mc_string_s* const out) {
+	uint64_t length = 0;
+	const uint8_t* const data = _mc_slice_memory(vm, (const uint8_t*)arguments, 1, &length);
+	const mc_word_u* value = arguments + 2;
+	size_t next = 0;
 	mc_string_s* const text = &vm->bytes;
 	mc_string_clear(text);
-	size_t index = 0;
-	while (index < length) {
-		const uint8_t character = (uint8_t)data[index].as.integer;
-		const int following = (index + 1 < length) ? (int)(uint8_t)data[index + 1].as.integer : -1;
+	for (uint64_t index = 0; index < length;) {
+		const uint8_t character = data[index];
+		const int following = (index + 1 < length) ? (int)data[index + 1] : -1;
 		if ('{' == character && '}' == following) {
 			mc_format_utf8(out, mc_string_view(text));
 			mc_string_clear(text);
-			if (next < count && next - 1 < builtin->types.count) {
-				mc_vm_format(vm, out, arguments[next], builtin->types.data[next - 1], 0);
+			if (next < intrinsic->variadic.count) {
+				const int64_t type = intrinsic->variadic.data[next];
+				uint8_t scratch[8];
+				mc_vm_format(vm, out, _mc_argument_memory(vm, type, value, scratch), type, 0);
+				value += mc_vm_type_words(vm, type);
 				++next;
 			}
 			index += 2;
@@ -250,66 +266,61 @@ static void _mc_formatted(mc_vm_s* const vm, mc_value_s* const arguments, const 
 	mc_format_utf8(out, mc_string_view(text));
 }
 
-static mc_value_s _mc_builtin_print(mc_vm_s* const vm, mc_value_s* const arguments, const size_t count, const mc_bc_builtin_s* const builtin) {
+static size_t _mc_print(mc_vm_s* const vm, const mc_bc_intrinsic_s* const intrinsic, const mc_word_u* const arguments, mc_word_u* const result) {
+	mc_unused(result);
 	mc_string_clear(&vm->buffer);
-	_mc_formatted(vm, arguments, count, builtin, &vm->buffer);
-	mc_vm_write(vm, &vm->buffer);
-	return mc_make_none();
+	_mc_formatted(vm, intrinsic, arguments, &vm->buffer);
+	mc_vm_print(vm, &vm->buffer);
+	return 0;
 }
 
-static mc_value_s _mc_builtin_println(mc_vm_s* const vm, mc_value_s* const arguments, const size_t count, const mc_bc_builtin_s* const builtin) {
+static size_t _mc_println(mc_vm_s* const vm, const mc_bc_intrinsic_s* const intrinsic, const mc_word_u* const arguments, mc_word_u* const result) {
+	mc_unused(result);
 	mc_string_clear(&vm->buffer);
-	_mc_formatted(vm, arguments, count, builtin, &vm->buffer);
+	_mc_formatted(vm, intrinsic, arguments, &vm->buffer);
 	mc_string_append_char(&vm->buffer, '\n');
-	mc_vm_write(vm, &vm->buffer);
-	return mc_make_none();
+	mc_vm_print(vm, &vm->buffer);
+	return 0;
+}
+
+static void _mc_write_bytes(mc_vm_s* const vm, const mc_word_u* const arguments, const bool line) {
+	uint64_t length = 0;
+	const uint8_t* const data = _mc_slice_memory(vm, (const uint8_t*)arguments, 1, &length);
+	mc_string_clear(&vm->buffer);
+	_mc_bytes_text(&vm->buffer, data, length, false);
+	if (line) mc_string_append_char(&vm->buffer, '\n');
+	mc_vm_print(vm, &vm->buffer);
+}
+
+static size_t _mc_write(mc_vm_s* const vm, const mc_bc_intrinsic_s* const intrinsic, const mc_word_u* const arguments, mc_word_u* const result) {
+	mc_unused(intrinsic);
+	mc_unused(result);
+	_mc_write_bytes(vm, arguments, false);
+	return 0;
+}
+
+static size_t _mc_write_line(mc_vm_s* const vm, const mc_bc_intrinsic_s* const intrinsic, const mc_word_u* const arguments, mc_word_u* const result) {
+	mc_unused(intrinsic);
+	mc_unused(result);
+	_mc_write_bytes(vm, arguments, true);
+	return 0;
 }
 
 static const struct {
-	const char*  name    ;
-	mc_builtin_f function;
-} _mc_builtins[] = {
-	{ "alloc"  , _mc_builtin_alloc   },
-	{ "realloc", _mc_builtin_realloc },
-	{ "free"   , _mc_builtin_free    },
-	{ "copy"   , _mc_builtin_copy    },
-	{ "print"  , _mc_builtin_print   },
-	{ "println", _mc_builtin_println },
+	const char*    name    ;
+	mc_intrinsic_f function;
+} _mc_intrinsics[] = {
+	{ "memory.alloc"  , _mc_alloc      },
+	{ "memory.realloc", _mc_realloc    },
+	{ "memory.free"   , _mc_free       },
+	{ "memory.copy"   , _mc_copy       },
+	{ "io.print"      , _mc_print      },
+	{ "io.println"    , _mc_println    },
+	{ "io.write"      , _mc_write      },
+	{ "io.write_line" , _mc_write_line },
 };
 
-mc_builtin_f mc_vm_find_builtin(const char* const name) {
-	for (size_t i = 0; i < mc_count_of(_mc_builtins); ++i) if (0 == strcmp(_mc_builtins[i].name, name)) return _mc_builtins[i].function;
-	return NULL;
-}
-
-// --- natives -----------------------------------------------------------------------------
-
-static mc_value_s _mc_native_write(mc_vm_s* const vm, mc_value_s* const arguments, const size_t count) {
-	mc_unused(count);
-	mc_string_clear(&vm->buffer);
-	mc_vm_text(vm, &vm->buffer, arguments[0]);
-	mc_vm_write(vm, &vm->buffer);
-	return mc_make_none();
-}
-
-static mc_value_s _mc_native_write_line(mc_vm_s* const vm, mc_value_s* const arguments, const size_t count) {
-	mc_unused(count);
-	mc_string_clear(&vm->buffer);
-	mc_vm_text(vm, &vm->buffer, arguments[0]);
-	mc_string_append_char(&vm->buffer, '\n');
-	mc_vm_write(vm, &vm->buffer);
-	return mc_make_none();
-}
-
-static const struct {
-	const char* name    ;
-	mc_native_f function;
-} _mc_natives[] = {
-	{ "mc_write"     , _mc_native_write      },
-	{ "mc_write_line", _mc_native_write_line },
-};
-
-mc_native_f mc_vm_find_native(const char* const name) {
-	for (size_t i = 0; i < mc_count_of(_mc_natives); ++i) if (0 == strcmp(_mc_natives[i].name, name)) return _mc_natives[i].function;
+mc_intrinsic_f mc_vm_find_intrinsic(const char* const name) {
+	for (size_t i = 0; i < mc_count_of(_mc_intrinsics); ++i) if (0 == strcmp(_mc_intrinsics[i].name, name)) return _mc_intrinsics[i].function;
 	return NULL;
 }

@@ -4,18 +4,20 @@
 
 /// the virtual machine: runs a bytecode module.
 ///
-/// integers, floats and bools are plain values; arrays and structs are
-/// lists, copied on every assignment and written into in place, so slices of
-/// an array keep seeing it; slices are views of a block of memory; references
-/// and assignment targets are locations. every access through a slice or a
-/// location checks that its memory is still alive and that the index is in
-/// bounds: a mistake stops the program with a runtime error instead of
-/// corrupting memory. a mark-and-sweep collector reclaims unreachable lists,
-/// blocks and locations.
+/// data is laid out the way c lays it out (see bytecode.h): the locals of a
+/// call live in a byte area of its frame, heap memory in blocks from
+/// 'alloc', constants in read-only blocks. slices and locations name a
+/// block by a handle (its table, index and generation) and an offset in it,
+/// so every access checks that the memory is still alive: a block's
+/// generation changes when it is freed or its call returns, and a slice of
+/// it stops working. a mistake stops the program with a runtime error
+/// instead of corrupting memory. nothing is garbage collected: frames are
+/// freed when their call returns, heap blocks by 'free' (and all the rest
+/// when the program ends).
 ///
-/// builtins ('[builtin]' functions) and natives ('[extern = "name"]'
-/// functions) are listed in source/vm_builtins.c; adding one there is all it
-/// takes to make it callable.
+/// functions the machine does not run itself ('[builtin]' and '[extern]'
+/// functions) are intrinsics, called by their qualified name; they are
+/// listed in source/vm_builtins.c.
 
 #include "mc/bytecode.h"
 
@@ -39,9 +41,9 @@ typedef struct {
 	char*                          message   ;   // the runtime error
 	mc_vector_of(mc_trace_entry_s) trace     ;   // innermost call first
 	bool                           has_result;   // 'main' returned an int
-	__int128                       result    ;
+	int64_t                        result    ;
 	uint64_t                       steps     ;   // instructions executed
-	uint64_t                       collections;  // garbage collections
+	uint64_t                       allocations;  // heap blocks allocated
 } mc_vm_result_s;
 
 /// runs the module's entry function; false when it stops with a runtime error

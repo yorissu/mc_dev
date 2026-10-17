@@ -120,6 +120,7 @@ struct mc_field_s {
 	mc_node_s*       default_;   // a checked copy, or null
 	mc_node_s*       node   ;
 	size_t           index  ;
+	uint64_t         offset ;   // in bytes, c layout (set with the struct's size)
 };
 
 struct mc_layout_s {
@@ -198,11 +199,15 @@ const mc_type_s* mc_instance_type(mc_program_s* const program, const mc_instance
 /// whether the function is '[builtin]' or '[extern]'.
 bool mc_function_is_external(const mc_function_s* const function);
 
+/// the qualified name of a function: its module's dotted name and its own
+/// ('memory.alloc'); 'main' is the module name of the entry file.
+char* mc_function_qualified_name(const mc_function_s* const function);
+
 /// the layout (fields) of a struct type.
 mc_layout_s* mc_program_layout(mc_program_s* const program, const mc_type_s* const type);
 
-/// size and alignment of a type in bytes.
-uint64_t mc_program_size_of(mc_program_s* const program, const mc_type_s* const type);
+/// size and alignment of a type in bytes (c layout).
+uint64_t mc_program_size_of(mc_program_s* const program, const mc_type_s* const type, uint64_t* const alignment);
 
 /// the program with every generic instantiated and every expression typed
 /// (the 'mono' command).
