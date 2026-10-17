@@ -765,7 +765,7 @@ static void _mc_check_overflow(mc_checker_s* const c, mc_node_s* const node, con
 		mc_label_main(mc_error(c->diag, mc_E0704, node->span, "division by zero"), "the divisor is zero at compile time");
 		return;
 	}
-	if (context->wrap || (_mc_is_shift(operator_) && right.as.integer < 0)) return;
+	if (context->wrap || context->wrapping > 0 || (_mc_is_shift(operator_) && right.as.integer < 0)) return;
 	__int128 exact = 0;
 	if (!mc_integer_arithmetic(operator_, left.as.integer, right.as.integer, &exact)) return;
 	if (exact < mc_type_minimum(type) || exact > mc_type_maximum(type)) {

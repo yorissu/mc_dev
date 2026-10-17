@@ -22,6 +22,13 @@ static const struct {
 	{ "field",     " " },
 	{ "let",       " uninit wrap " },
 	{ "statement", " wrap " },
+	{ "block",     " wrap " },
+	{ "`if`",      " wrap " },
+	{ "`while` loop", " wrap " },
+	{ "`for` loop", " wrap " },
+	{ "`return`",  " wrap " },
+	{ "`break`",   " " },
+	{ "`continue`", " " },
 };
 
 static const struct {
@@ -635,11 +642,21 @@ static void _mc_check_main(mc_checker_s* const c, mc_module_s* const entry) {
 		mc_note(mc_label_main(mc_error(c->diag, mc_E0411, node->as.function.name_span, "`main` must be `pub`"), "add `pub`"),
 			"`main` is called from outside the program");
 	}
-	if (mc_function_is_generic(info) || node->as.function.parameters.count > 0) {
-		mc_label_main(mc_error(c->diag, mc_E0411, node->as.function.name_span, "`main` takes no parameters and no type parameters"), "remove them");
+	if (mc_function_is_generic(info)) {
+		mc_label_main(mc_error(c->diag, mc_E0411, node->as.function.name_span, "`main` takes no type parameters"), "remove them");
 	}
 	mc_instance_s* instance = NULL;
 	for (size_t i = 0; i < info->instances.count; ++i) if (0 == info->instances.data[i]->argument_count) instance = info->instances.data[i];
+	// no parameters, or the command line as a [][]u8
+	const mc_nodes_s* const parameters = &node->as.function.parameters;
+	const mc_type_s* const arguments = mc_type_slice_of(c->types, mc_type_slice_of(c->types, mc_scalar_type(c, mc_scalar_u8)));
+	const bool valid = 0 == parameters->count || (1 == parameters->count && NULL == parameters->data[0]->as.param.default_
+		&& (NULL == instance || (1 == instance->parameters.count && instance->parameters.data[0] == arguments)));
+	if (!valid) {
+		mc_help(mc_label_main(mc_error(c->diag, mc_E0411, parameters->data[0]->span, "`main` takes nothing, or the command line"),
+			"not a valid parameter list for `main`"),
+			"write `pub main :: ()`, `pub main :: () -> int`, `pub main :: (arguments: [][]u8)` or `pub main :: (arguments: [][]u8) -> int`");
+	}
 	if (instance != NULL && instance->result != NULL && instance->result != mc_scalar_type(c, mc_scalar_int)) {
 		mc_label_main(mc_error(c->diag, mc_E0411, node->as.function.result->span, "`main` returns nothing or `int`"),
 			"returns `%s`", mc_name_of(c, instance->result));
@@ -660,8 +677,7 @@ const mc_type_s* mc_constant_type(mc_checker_s* const c, mc_constant_s* const in
 	info->state = mc_constant_checking;
 	mc_context_s* const context = (info->context != NULL) ? info->context : mc_context_new(c, info->module, NULL, NULL, NULL, NULL, false);
 	const mc_attribute_set_s found = mc_attributes(c, &info->node->as.constant.attributes, "constant");
-	const bool saved = context->wrap;
-	context->wrap = saved || found.wrap != NULL;
+	if (found.wrap != NULL) context->wrapping += 1;
 	mc_node_s* const value_node = info->node->as.constant.value;
 	const mc_type_s* type = mc_expression(c, value_node, context, NULL);
 	const mc_type_s* const error = mc_special_type(c, mc_special_error);
@@ -680,7 +696,7 @@ const mc_type_s* mc_constant_type(mc_checker_s* const c, mc_constant_s* const in
 		has_value = mc_require_constant(c, value_node, context, what, &value);
 		mc_free(what);
 	}
-	context->wrap = saved;
+	if (found.wrap != NULL) context->wrapping -= 1;
 	info->type = has_value ? type : error;
 	if (has_value) {
 		info->value = mc_arena_new(c->arena, mc_cvalue_s);

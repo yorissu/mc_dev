@@ -75,11 +75,13 @@ static mc_node_s* _mc_clone(mc_arena_s* const arena, const mc_node_s* const node
 		case mc_node_assert:         _mc_child(assert_.condition); _mc_child(assert_.message); break;
 		case mc_node_let:            _mc_child(let.type); _mc_child(let.value); _mc_children(let.attributes); break;
 		case mc_node_declaration_statement: _mc_child(declaration_statement.declaration); break;
-		case mc_node_if:             _mc_child(if_.condition); _mc_child(if_.then); _mc_child(if_.otherwise); break;
-		case mc_node_while:          _mc_child(while_.condition); _mc_child(while_.body); break;
-		case mc_node_for:            _mc_child(for_.start); _mc_child(for_.end); _mc_child(for_.body); break;
-		case mc_node_return:         _mc_child(return_.value); break;
-		case mc_node_block:          _mc_children(block.statements); break;
+		case mc_node_if:             _mc_child(if_.condition); _mc_child(if_.then); _mc_child(if_.otherwise); _mc_children(if_.attributes); break;
+		case mc_node_while:          _mc_child(while_.condition); _mc_child(while_.body); _mc_children(while_.attributes); break;
+		case mc_node_for:            _mc_child(for_.start); _mc_child(for_.end); _mc_child(for_.body); _mc_children(for_.attributes); break;
+		case mc_node_return:         _mc_child(return_.value); _mc_children(return_.attributes); break;
+		case mc_node_break:
+		case mc_node_continue:       _mc_children(jump.attributes); break;
+		case mc_node_block:          _mc_children(block.statements); _mc_children(block.attributes); break;
 		case mc_node_expression_statement: _mc_child(expression_statement.expression); _mc_children(expression_statement.attributes); break;
 		case mc_node_assign:         _mc_child(assign.target); _mc_child(assign.value); _mc_children(assign.attributes); break;
 		case mc_node_param:          _mc_child(param.type); _mc_child(param.default_); break;
@@ -149,4 +151,21 @@ const mc_node_s* mc_attribute_find(const mc_nodes_s* const attributes, const cha
 		if (mc_view_eq_cstr(attributes->data[i]->as.attribute.name, name)) return attributes->data[i];
 	}
 	return NULL;
+}
+
+const mc_nodes_s* mc_statement_attributes(const mc_node_s* const node) {
+	static const mc_nodes_s none = {0};
+	switch (node->kind) {
+		case mc_node_let:                  return &node->as.let.attributes;
+		case mc_node_expression_statement: return &node->as.expression_statement.attributes;
+		case mc_node_assign:               return &node->as.assign.attributes;
+		case mc_node_if:                   return &node->as.if_.attributes;
+		case mc_node_while:                return &node->as.while_.attributes;
+		case mc_node_for:                  return &node->as.for_.attributes;
+		case mc_node_return:               return &node->as.return_.attributes;
+		case mc_node_break:
+		case mc_node_continue:             return &node->as.jump.attributes;
+		case mc_node_block:                return &node->as.block.attributes;
+		default:                           return &none;
+	}
 }

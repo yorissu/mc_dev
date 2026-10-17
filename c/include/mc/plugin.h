@@ -147,7 +147,7 @@ typedef struct {
 	bool                      boolean ;
 	const uint8_t*            bytes   ;   // valid during the check
 	size_t                    length  ;
-	bool                      c_string;   // the bytes come from a "..."c literal (they end with its NUL)
+	bool                      c_string;   // the argument comes from a "..."c literal (also when its value is not known)
 } mc_plugin_constant_s;
 
 /// the run function of a plugin function, and its optional check.

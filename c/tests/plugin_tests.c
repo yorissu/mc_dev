@@ -183,3 +183,101 @@ cairo_test_new(plugins, the_example_math_plugin) {
 	mc_test_run_free(&run);
 	mc_plugins_free(&plugins);
 }
+
+// --- the format specifiers of the std plugin ---------------------------------------------------
+
+#include "../source/plugins/std.h"
+
+/// a spec parsed from 'text' (the part after ':'), or its problem.
+static const char* _spec(const char* const text, mc_std_spec_s* const spec) {
+	return mc_std_parse_spec((const uint8_t*)text, strlen(text), spec);
+}
+
+cairo_test_new(std_format, specs_are_parsed) {
+	mc_std_spec_s spec;
+	cairo_assert_true(NULL == _spec("*^+#012.3x", &spec));
+	cairo_assert_eq(spec.fill, '*');
+	cairo_assert_eq(spec.align, '^');
+	cairo_assert_eq(spec.sign, '+');
+	cairo_assert_true(spec.alternate);
+	cairo_assert_true(spec.zero);
+	cairo_assert_eq(spec.width, (size_t)12);
+	cairo_assert_true(spec.has_precision);
+	cairo_assert_eq(spec.precision, (size_t)3);
+	cairo_assert_eq(spec.type, 'x');
+	cairo_assert_true(NULL == _spec("<", &spec));
+	cairo_assert_eq(spec.align, '<');
+	cairo_assert_eq(spec.fill, ' ');
+	cairo_assert_true(NULL == _spec("<<5", &spec));
+	cairo_assert_eq(spec.fill, '<');
+	cairo_assert_eq(spec.width, (size_t)5);
+	cairo_assert_true(NULL == _spec("", &spec));
+	cairo_assert_streq(_spec("q", &spec), "unknown character `q` in the format specifier");
+	cairo_assert_streq(_spec("5.", &spec), "`.` must be followed by the precision, a number");
+	cairo_assert_streq(_spec(".101f", &spec), "the precision is too large (at most 100)");
+	cairo_assert_streq(_spec("x5", &spec), "unknown character `5` in the format specifier");
+	cairo_assert_true(NULL == _spec(".2f", &spec));
+	cairo_assert_true(NULL == mc_std_spec_fits(&spec, mc_std_value_float));
+	cairo_assert_streq(mc_std_spec_fits(&spec, mc_std_value_int), "`f` is for floats, but the value is an integer");
+	cairo_assert_true(NULL == _spec("#b", &spec));
+	cairo_assert_true(NULL == mc_std_spec_fits(&spec, mc_std_value_int));
+	cairo_assert_true(NULL == _spec("#", &spec));
+	cairo_assert_streq(mc_std_spec_fits(&spec, mc_std_value_int), "`#` is for integers written with `x`, `X`, `o` or `b`");
+	cairo_assert_true(NULL == _spec(">9", &spec));
+	cairo_assert_true(NULL == mc_std_spec_fits(&spec, mc_std_value_other));
+}
+
+cairo_test_new(std_format, placeholders_are_found) {
+	const char* const text = "a{{b}} {} {:>3} {x";
+	size_t at = 0;
+	mc_std_piece_s piece;
+	cairo_assert_true(mc_std_next_placeholder((const uint8_t*)text, strlen(text), &at, &piece));
+	cairo_assert_true(piece.placeholder);
+	cairo_assert_eq(piece.text_end, (size_t)7);
+	cairo_assert_true(mc_std_next_placeholder((const uint8_t*)text, strlen(text), &at, &piece));
+	cairo_assert_eq(piece.spec.align, '>');
+	cairo_assert_eq(piece.spec.width, (size_t)3);
+	cairo_assert_true(mc_std_next_placeholder((const uint8_t*)text, strlen(text), &at, &piece));
+	cairo_assert_streq(piece.problem, "`{` is not closed by `}` (write `{{` for a brace)");
+	cairo_assert_false(mc_std_next_placeholder((const uint8_t*)text, strlen(text), &at, &piece));
+}
+
+/// 'value' formatted by the spec 'text'.
+static char* _formatted(const char* const text, const int kind, const int64_t integer, const double real) {
+	mc_std_spec_s spec;
+	mc_string_s out = {0};
+	if (_spec(text, &spec) != NULL) return mc_strdup("(invalid)");
+	if (0 == kind) mc_std_format_integer(&out, &spec, integer < 0, integer < 0 ? (uint64_t)0 - (uint64_t)integer : (uint64_t)integer);
+	else if (1 == kind) mc_std_format_float(&out, &spec, real, 64);
+	else {
+		mc_string_s value = {0};
+		mc_string_append_cstr(&value, "té");
+		mc_std_format_text(&out, &spec, &value);
+		mc_string_free(&value);
+	}
+	return mc_string_take(&out);
+}
+
+cairo_test_new(std_format, values_are_formatted) {
+	static const struct {
+		const char* spec  ;
+		int         kind  ;   // 0 integer, 1 float, 2 text
+		int64_t     integer;
+		double      real  ;
+		const char* expected;
+	} cases[] = {
+		{ "", 0, -42, 0, "-42" }, { "05", 0, -42, 0, "-0042" }, { "+", 0, 7, 0, "+7" }, { "#x", 0, 255, 0, "0xff" },
+		{ "#X", 0, -255, 0, "-0XFF" }, { "#010b", 0, 5, 0, "0b00000101" }, { "o", 0, 8, 0, "10" }, { "*<6", 0, 1, 0, "1*****" },
+		{ "^7", 0, 123, 0, "  123  " }, { ">3", 0, 12345, 0, "12345" },
+		{ "", 1, 0, 0.1, "0.1" }, { "", 1, 0, 1.0, "1.0" }, { ".3f", 1, 0, 3.14159, "3.142" }, { "08.2f", 1, 0, -1.5, "-0001.50" },
+		{ "e", 1, 0, 1234.5, "1.234500e+03" }, { ".1E", 1, 0, 0.00012, "1.2E-04" }, { ".3g", 1, 0, 1234.5, "1.23e+03" },
+		{ "+.1f", 1, 0, 2.0, "+2.0" }, { "08", 1, 0, -1.0 / 0.0, "    -inf" }, { "<6", 1, 0, 0.5, "0.5   " },
+		{ "4", 2, 0, 0, "té  " }, { ">4", 2, 0, 0, "  té" }, { "-^5", 2, 0, 0, "-té--" }, { "1", 2, 0, 0, "té" },
+	};
+	for (size_t i = 0; i < mc_count_of(cases); ++i) {
+		char* const result = _formatted(cases[i].spec, cases[i].kind, cases[i].integer, cases[i].real);
+		if (0 != strcmp(result, cases[i].expected)) (void)fprintf(stderr, "spec `%s`: `%s`, expected `%s`\n", cases[i].spec, result, cases[i].expected);
+		cairo_assert_streq(result, cases[i].expected);
+		mc_free(result);
+	}
+}

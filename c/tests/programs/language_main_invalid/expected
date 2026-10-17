@@ -1,0 +1,8 @@
+== check (status 1)
+-- stderr
+main.mc:4:14: error[E0411]: `main` takes nothing, or the command line
+main.mc:4:43: error[E0411]: `main` returns nothing or `int`
+== run (status 1)
+-- stderr
+main.mc:4:14: error[E0411]: `main` takes nothing, or the command line
+main.mc:4:43: error[E0411]: `main` returns nothing or `int`

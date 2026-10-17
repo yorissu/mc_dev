@@ -154,19 +154,29 @@ static void _mc_fields(const mc_node_s* const node, mc_string_s* const header, _
 			_mc_node(children, "condition", node->as.if_.condition);
 			_mc_node(children, "then", node->as.if_.then);
 			_mc_node(children, "otherwise", node->as.if_.otherwise);
+			_mc_list(children, "attributes", &node->as.if_.attributes);
 			break;
-		case mc_node_while: _mc_node(children, "condition", node->as.while_.condition); _mc_node(children, "body", node->as.while_.body); break;
+		case mc_node_while:
+			_mc_node(children, "condition", node->as.while_.condition);
+			_mc_node(children, "body", node->as.while_.body);
+			_mc_list(children, "attributes", &node->as.while_.attributes);
+			break;
 		case mc_node_for:
 			_mc_text(header, "name", node->as.for_.name);
 			_mc_node(children, "start", node->as.for_.start);
 			_mc_node(children, "end", node->as.for_.end);
 			_mc_flag(header, "inclusive", node->as.for_.inclusive);
 			_mc_node(children, "body", node->as.for_.body);
+			_mc_list(children, "attributes", &node->as.for_.attributes);
 			break;
-		case mc_node_return:   _mc_node(children, "value", node->as.return_.value); break;
-		case mc_node_break:    break;
-		case mc_node_continue: break;
-		case mc_node_block:    _mc_list(children, "statements", &node->as.block.statements); _mc_flag(header, "braceless", node->as.block.braceless); break;
+		case mc_node_return:   _mc_node(children, "value", node->as.return_.value); _mc_list(children, "attributes", &node->as.return_.attributes); break;
+		case mc_node_break:
+		case mc_node_continue: _mc_list(children, "attributes", &node->as.jump.attributes); break;
+		case mc_node_block:
+			_mc_list(children, "statements", &node->as.block.statements);
+			_mc_flag(header, "braceless", node->as.block.braceless);
+			_mc_list(children, "attributes", &node->as.block.attributes);
+			break;
 		case mc_node_expression_statement:
 			_mc_node(children, "expression", node->as.expression_statement.expression);
 			_mc_list(children, "attributes", &node->as.expression_statement.attributes);

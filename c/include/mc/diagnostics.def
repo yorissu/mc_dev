@@ -41,7 +41,7 @@ mc_diagnostic(E0407, operator_arity, "an operator function needs one parameter p
 mc_diagnostic(E0408, derived_operator, "`!=`, `>`, `<=`, `>=` and `a op= b` are derived from `==`, `<` and `op`; they cannot be declared.")
 mc_diagnostic(E0409, operator_signature, "operator functions take values, return a value (`bool` for `==` and `<`), and are not generic or variadic.")
 mc_diagnostic(E0410, duplicate_operator, "two operator functions for the same pattern and operand types.")
-mc_diagnostic(E0411, invalid_main, "the entry module needs `pub main :: ()` or `pub main :: () -> int`.")
+mc_diagnostic(E0411, invalid_main, "the entry module needs `pub main :: ()` or `pub main :: () -> int`; `main` may take the command line: `pub main :: (arguments: [][]u8) -> int`.")
 mc_diagnostic(E0412, default_parameter_order, "parameters with defaults must come last; lambdas cannot have defaults.")
 mc_diagnostic(E0413, reference_not_allowed, "references (`&T`) exist only as parameter types; use a slice to keep a view of an array.")
 mc_diagnostic(E0414, recursive_struct, "a struct contains itself by value; store it through a slice instead.")

@@ -162,6 +162,7 @@ struct mc_variable_s {
 	int                level    ;
 	bool               mutated  ;
 	int                loops    ;   // loops around the declaration
+	const mc_node_s*   initializer;   // lets: the value it starts with, or null
 };
 
 typedef struct {

@@ -187,7 +187,8 @@ static const mc_plugin_type_s* _mc_check_type_argument(mc_plugin_check_s* const 
 	return _mc_type_handle(self->checker, self->instance->arguments[index]);
 }
 
-/// whether 'node' is a "..."c literal, a constant made from one, or a slice of either.
+/// whether 'node' is a "..."c literal, a constant or a variable that is not
+/// 'mut' made from one, or a slice of any of them.
 static bool _mc_c_string(const mc_node_s* const node, const int depth) {
 	if (NULL == node || depth > 32) return false;
 	switch (node->kind) {
@@ -195,9 +196,13 @@ static bool _mc_c_string(const mc_node_s* const node, const int depth) {
 		case mc_node_string:   return node->as.string.c;
 		case mc_node_slice_of: return _mc_c_string(node->as.slice_of.target, depth + 1);
 		case mc_node_name:
-		case mc_node_member:
-			if (NULL == node->note.constant || node->note.field != NULL) return false;
+		case mc_node_member: {
+			if (node->note.field != NULL) return false;
+			const mc_variable_s* const variable = node->note.variable;
+			if (variable != NULL) return mc_variable_let == variable->kind && !variable->mutable_ && _mc_c_string(variable->initializer, depth + 1);
+			if (NULL == node->note.constant) return false;
 			return _mc_c_string(node->note.constant->node->as.constant.value, depth + 1);
+		}
 		default:
 			return false;
 	}
@@ -207,7 +212,7 @@ static mc_plugin_constant_s _mc_check_constant(mc_plugin_check_s* const check, c
 	_mc_check_s* const self = _mc_check_of(check);
 	mc_checker_s* const c = self->checker;
 	mc_node_s* const node = self->arguments[_mc_index(self, index)];
-	mc_plugin_constant_s constant = { .kind = mc_plugin_constant_none, };
+	mc_plugin_constant_s constant = { .kind = mc_plugin_constant_none, .c_string = _mc_c_string(node, 0), };
 	mc_cvalue_s value = {0};
 	if (mc_node_reference == node->kind || !mc_try_value(c, node, &value)) return constant;
 	switch (value.kind) {
@@ -237,7 +242,6 @@ static mc_plugin_constant_s _mc_check_constant(mc_plugin_check_s* const check, c
 			constant.kind = mc_plugin_constant_bytes;
 			constant.bytes = bytes;
 			constant.length = (size_t)length;
-			constant.c_string = _mc_c_string(node, 0);
 			return constant;
 		}
 		default:

@@ -179,3 +179,27 @@ each one is easy to revisit.
   calling an mc function value from a plugin is not in this version of
   the api.
 - 'mono' marks plugin functions with ' [plugin]' (was ' [builtin]').
+- format specifiers: '{:.n}' without a type is 'g' with n significant
+  digits (c's %g); 'e', 'E' and 'f' without a precision use 6 digits (like
+  c and python); 'g' without a precision is today's shortest text. '#'
+  works with 'x', 'X', 'o', 'b' only ('0X' for 'X'); negative numbers in
+  those bases are written with a minus ('-0xff'). a sign or '0' applies to
+  numbers only, a precision to floats only; anything else is E0530 at
+  compile time. widths count code points of the text; nan and infinities
+  are padded with spaces even with '0'. a width is at most 10000 and a
+  precision at most 100.
+- trailing NUL: besides "..."c literals, constants made from them and
+  slices of either (the rule asked for), a variable that is not 'mut' and
+  starts as a c string counts too (let text = "hi"c; println("{}", text)
+  still prints 'hi'). a c string inside a struct or an array is written
+  with its NUL now (before: every u8 array lost one trailing NUL).
+- '[wrap]' on a statement (any statement now, a 'return' included) no
+  longer reaches into lambdas and local functions declared inside it (that
+  is also new for '[wrap]' on 'let', assignments and expressions, which
+  used to reach them); '[wrap]' on a function still does. 'break' and
+  'continue' take no attributes (E0403).
+- 'mc run <file> ...': everything after the file is the program's command
+  line (so mc's own options come before the file); '--' ends mc's options
+  (for files that start with '-'). 'main' gets the file as given first.
+  the command line is read-only constant memory: writing to it is a
+  runtime error, and 'free' says it is not memory 'alloc' returned.

@@ -36,6 +36,7 @@ typedef struct {
 	const char*                 path    ;
 	mc_vector_of(const char*)   include ;
 	mc_vector_of(const char*)   plugins ;   // --plugin and --plugin-dir, in order
+	mc_vector_of(const char*)   arguments;  // run: the program's command line (the file first)
 	const char*                 stdlib  ;
 	const char*                 output  ;
 	mc_diag_format_e            format  ;
@@ -351,7 +352,10 @@ static int _mc_run(_mc_session_s* const s) {
 		_mc_report(s);
 		return mc_status_error;
 	}
-	const mc_vm_options_s options = { .out = stdout, .limit = s->options->limit, .plugins = &s->plugins, };
+	const mc_vm_options_s options = {
+		.out = stdout, .limit = s->options->limit, .plugins = &s->plugins,
+		.arguments = s->options->arguments.data, .argument_count = s->options->arguments.count,
+	};
 	mc_vm_result_s result = {0};
 	const bool finished = mc_vm_run(&module, &options, &result);
 	(void)fflush(stdout);
@@ -402,7 +406,8 @@ static const _mc_command_s _mc_commands[] = {
 	{ "build", "compile a program to bytecode",
 		mc_check_options "  -o <file>           where to write it (default: next to the source, as .mcb)\n", _mc_build, true, },
 	{ "dis", "print the bytecode of a program (.mc or .mcb)", mc_check_options, _mc_dis, true, },
-	{ "run", "run a program (.mc or .mcb); exits with what main returns",
+	{ "run", "run a program (.mc or .mcb); exits with what main returns. what follows the file is given to\n"
+		"  `main :: (arguments: [][]u8)`, the file first ('--' ends mc's own options)",
 		mc_check_options
 		"  --limit <n>         stop after <n> instructions\n"
 		"  --stats             print how many instructions ran\n", _mc_run, true, },
@@ -486,9 +491,26 @@ static bool _mc_load_plugins(_mc_session_s* const s) {
 /// parses the arguments; returns -1 to go on, or the status to exit with.
 static int _mc_parse(_mc_options_s* const options, const int argc, const char* const argv[]) {
 	bool help = false;
+	bool options_end = false;
 	for (int i = 1; i < argc; ++i) {
 		const char* const argument = argv[i];
 		const bool has_next = i + 1 < argc;
+		// 'run': what follows the file is the program's command line; '--' ends mc's options
+		if (options->path != NULL && options->command != NULL && 0 == strcmp(options->command, "run")) {
+			if (0 == options->arguments.count) mc_vector_push(&options->arguments, options->path);
+			mc_vector_push(&options->arguments, argument);
+			continue;
+		}
+		if (!options_end && 0 == strcmp(argument, "--")) {
+			options_end = true;
+			continue;
+		}
+		if (options_end) {
+			if (NULL == options->command) options->command = argument;
+			else if (NULL == options->path) options->path = argument;
+			else return _mc_usage("unexpected argument `%s`", argument);
+			continue;
+		}
 		if (0 == strcmp(argument, "-h") || 0 == strcmp(argument, "--help")) help = true;
 		else if (0 == strcmp(argument, "--version")) {
 			(void)printf("mc %s\n", mc_version);
@@ -537,6 +559,7 @@ static int _mc_parse(_mc_options_s* const options, const int argc, const char* c
 	}
 	if (NULL == command) return _mc_usage("unknown command `%s`", options->command);
 	if (command->file && NULL == options->path) return _mc_usage("`mc %s` needs a file", command->name);
+	if (0 == options->arguments.count && options->path != NULL) mc_vector_push(&options->arguments, options->path);
 	return -1;
 }
 
@@ -563,5 +586,6 @@ int mc_cli_main(const int argc, const char* const argv[]) {
 	}
 	mc_vector_free(&options.include);
 	mc_vector_free(&options.plugins);
+	mc_vector_free(&options.arguments);
 	return status;
 }

@@ -107,11 +107,12 @@ struct mc_node_s {
 		struct { mc_view_s name; mc_attribute_value_e value_kind; mc_view_s text; int64_t integer; } attribute;
 		struct { mc_view_s name; mc_span_s name_span; bool mutable_; mc_node_s* type; mc_node_s* value; mc_nodes_s attributes; } let;
 		struct { mc_node_s* declaration; } declaration_statement;
-		struct { mc_node_s* condition; mc_node_s* then; mc_node_s* otherwise; } if_;
-		struct { mc_node_s* condition; mc_node_s* body; } while_;
-		struct { mc_view_s name; mc_span_s name_span; mc_node_s* start; mc_node_s* end; bool inclusive; mc_node_s* body; } for_;
-		struct { mc_node_s* value; } return_;
-		struct { mc_nodes_s statements; bool braceless; } block;
+		struct { mc_node_s* condition; mc_node_s* then; mc_node_s* otherwise; mc_nodes_s attributes; } if_;
+		struct { mc_node_s* condition; mc_node_s* body; mc_nodes_s attributes; } while_;
+		struct { mc_view_s name; mc_span_s name_span; mc_node_s* start; mc_node_s* end; bool inclusive; mc_node_s* body; mc_nodes_s attributes; } for_;
+		struct { mc_node_s* value; mc_nodes_s attributes; } return_;
+		struct { mc_nodes_s attributes; } jump;   // break, continue
+		struct { mc_nodes_s statements; bool braceless; mc_nodes_s attributes; } block;
 		struct { mc_node_s* expression; mc_nodes_s attributes; } expression_statement;
 		struct { mc_operator_e operator_; mc_node_s* target; mc_node_s* value; mc_nodes_s attributes; } assign;
 		struct { mc_view_s name; } generic;
@@ -149,6 +150,9 @@ mc_span_s mc_declaration_name_span(const mc_node_s* const node);
 const mc_nodes_s* mc_declaration_attributes(const mc_node_s* const node);
 
 bool mc_declaration_public(const mc_node_s* const node);
+
+/// the attributes written before a statement (an empty list for nodes that have none).
+const mc_nodes_s* mc_statement_attributes(const mc_node_s* const node);
 
 /// the attribute 'name' of a list of attribute nodes, or null.
 const mc_node_s* mc_attribute_find(const mc_nodes_s* const attributes, const char* const name);

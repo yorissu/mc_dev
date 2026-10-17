@@ -1085,12 +1085,37 @@ static void _mc_load(mc_vm_s* const vm) {
 		mc_vector_push(&vm->prepared, prepared);
 	}
 	for (size_t i = 0; i < module->functions.count; ++i) _mc_verify(vm, (int64_t)i);
-	if (vm->prepared.data[module->entry].arguments != 0) mc_vm_fail(vm, "the module is broken (the entry function takes arguments)");
+	const mc_bc_function_s* const entry = &module->functions.data[module->entry];
+	const bool command_line = 1 == entry->slots.count && mc_code_slice == entry->slots.data[0].code;
+	if (vm->prepared.data[module->entry].arguments != 0 && !command_line) mc_vm_fail(vm, "the module is broken (the entry function takes arguments)");
+}
+
+/// the command line as a [][]u8 on the stack: read-only blocks the program
+/// cannot free (they are not heap memory).
+static void _mc_push_command_line(mc_vm_s* const vm) {
+	const size_t count = vm->options->argument_count;
+	uint64_t bytes = 0;
+	for (size_t i = 0; i < count; ++i) bytes += strlen(vm->options->arguments[i]);
+	uint8_t* const text = mc_calloc(1, bytes > 0 ? (size_t)bytes : 1);
+	const uint64_t text_handle = mc_vm_block_new(vm, mc_block_static, text, bytes, mc_free) | mc_handle_read_only;
+	uint64_t* const slices = mc_calloc(count > 0 ? count : 1, 16);
+	const uint64_t slices_handle = mc_vm_block_new(vm, mc_block_static, (uint8_t*)slices, 16 * count, mc_free) | mc_handle_read_only;
+	uint64_t offset = 0;
+	for (size_t i = 0; i < count; ++i) {
+		const size_t length = strlen(vm->options->arguments[i]);
+		memcpy(text + offset, vm->options->arguments[i], length);
+		slices[2 * i] = text_handle;
+		slices[2 * i + 1] = mc_slice_word(offset, length);
+		offset += length;
+	}
+	vm->stack[vm->sp++].u = (count > 0) ? slices_handle : 0;
+	vm->stack[vm->sp++].u = mc_slice_word(0, count);
 }
 
 static void _mc_start(mc_vm_s* const vm) {
 	_mc_load(vm);
 	mc_vm_reserve(vm, 1024);
+	if (vm->prepared.data[vm->module->entry].arguments > 0) _mc_push_command_line(vm);
 	_mc_call(vm, vm->module->entry);
 	_mc_loop(vm);
 }

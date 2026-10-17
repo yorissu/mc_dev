@@ -706,20 +706,19 @@ static mc_node_s* _mc_statement(_mc_parser_s* const p) {
 		node->as.declaration_statement.declaration = declaration;
 		return node;
 	}
-	if (attributes.count > 0 && (mc_token_if == token->kind || mc_token_while == token->kind || mc_token_for == token->kind
-			|| mc_token_return == token->kind || mc_token_break == token->kind || mc_token_continue == token->kind
-			|| mc_token_left_brace == token->kind)) {
-		mc_label_main(mc_error(p->diag, mc_E0204, attributes.data[0]->span,
-			"attributes can only be attached to declarations, `let` and expression statements"), "not allowed here");
-	}
 	switch (token->kind) {
-		case mc_token_if:
-			return _mc_if(p);
+		case mc_token_if: {
+			mc_node_s* const node = _mc_if(p);
+			node->as.if_.attributes = attributes;
+			node->span = _mc_span_from(p, start);
+			return node;
+		}
 		case mc_token_while: {
 			_mc_advance(p);
 			mc_node_s* const node = _mc_new(p, mc_node_while, start);
 			node->as.while_.condition = _mc_condition(p);
 			node->as.while_.body = _mc_body(p, "`while`");
+			node->as.while_.attributes = attributes;
 			node->span = _mc_span_from(p, start);
 			return node;
 		}
@@ -743,6 +742,7 @@ static mc_node_s* _mc_statement(_mc_parser_s* const p) {
 			node->as.for_.inclusive = mc_token_dot_dot_equal == _mc_advance(p)->kind;
 			node->as.for_.end = _mc_condition(p);
 			node->as.for_.body = _mc_body(p, "`for`");
+			node->as.for_.attributes = attributes;
 			node->span = _mc_span_from(p, start);
 			return node;
 		}
@@ -751,21 +751,30 @@ static mc_node_s* _mc_statement(_mc_parser_s* const p) {
 			mc_node_s* const node = _mc_new(p, mc_node_return, start);
 			if (!_mc_at(p, mc_token_semicolon)) node->as.return_.value = _mc_expression(p);
 			_mc_expect(p, mc_token_semicolon, "after `return`");
+			node->as.return_.attributes = attributes;
 			node->span = _mc_span_from(p, start);
 			return node;
 		}
 		case mc_token_break: {
 			_mc_advance(p);
 			_mc_expect(p, mc_token_semicolon, "after `break`");
-			return _mc_new(p, mc_node_break, _mc_span_from(p, start));
+			mc_node_s* const node = _mc_new(p, mc_node_break, _mc_span_from(p, start));
+			node->as.jump.attributes = attributes;
+			return node;
 		}
 		case mc_token_continue: {
 			_mc_advance(p);
 			_mc_expect(p, mc_token_semicolon, "after `continue`");
-			return _mc_new(p, mc_node_continue, _mc_span_from(p, start));
+			mc_node_s* const node = _mc_new(p, mc_node_continue, _mc_span_from(p, start));
+			node->as.jump.attributes = attributes;
+			return node;
 		}
-		case mc_token_left_brace:
-			return _mc_block(p);
+		case mc_token_left_brace: {
+			mc_node_s* const node = _mc_block(p);
+			node->as.block.attributes = attributes;
+			node->span = _mc_span_from(p, start);
+			return node;
+		}
 		default:
 			break;
 	}

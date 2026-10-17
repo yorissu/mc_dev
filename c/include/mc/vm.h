@@ -28,6 +28,8 @@ typedef struct {
 	FILE*               out    ;   // what the program prints (stdout when null)
 	uint64_t            limit  ;   // stop after this many instructions; 0: no limit
 	const mc_plugins_s* plugins;   // the plugin functions; null: only the built-in ones
+	const char* const*  arguments;   // the command line for 'main', the program first (it is read-only to the program)
+	size_t              argument_count;
 } mc_vm_options_s;
 
 /// one call of a runtime error's trace.

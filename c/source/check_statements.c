@@ -72,8 +72,7 @@ static void _mc_declaration_statement(mc_checker_s* const c, mc_node_s* const no
 
 static void _mc_let(mc_checker_s* const c, mc_node_s* const node, mc_context_s* const context) {
 	const mc_attribute_set_s found = mc_attributes(c, &node->as.let.attributes, "let");
-	const bool saved = context->wrap;
-	context->wrap = saved || found.wrap != NULL;
+	if (found.wrap != NULL) context->wrapping += 1;
 	const mc_type_s* const error = mc_special_type(c, mc_special_error);
 	const mc_type_s* const declared = (node->as.let.type != NULL) ? mc_resolve_type(c, node->as.let.type, context, false, true) : NULL;
 	const mc_type_s* type = declared;
@@ -108,7 +107,7 @@ static void _mc_let(mc_checker_s* const c, mc_node_s* const node, mc_context_s* 
 		mc_label_main(mc_error(c->diag, mc_E0506, node->as.let.type->span, "`[_]` needs an initializer to take its length from"), "no value given");
 		type = error;
 	}
-	context->wrap = saved;
+	if (found.wrap != NULL) context->wrapping -= 1;
 	mc_variable_s* const variable = mc_arena_new(c->arena, mc_variable_s);
 	variable->base.kind = mc_symbol_variable;
 	variable->name = node->as.let.name;
@@ -118,6 +117,7 @@ static void _mc_let(mc_checker_s* const c, mc_node_s* const node, mc_context_s* 
 	variable->span = node->as.let.name_span;
 	variable->level = context->level;
 	variable->loops = context->loops;
+	variable->initializer = value;
 	node->note.variable = variable;
 	if (NULL == value && declared != NULL && NULL == found.uninit) mc_set_add(&context->unassigned, variable);
 	mc_symbol_s* const previous = mc_map_get(mc_vector_last(&context->scopes), node->as.let.name);
@@ -416,12 +416,8 @@ static void _mc_return(mc_checker_s* const c, mc_node_s* const node, mc_context_
 }
 
 static void _mc_expression_statement(mc_checker_s* const c, mc_node_s* const node, mc_context_s* const context) {
-	const mc_attribute_set_s found = mc_attributes(c, &node->as.expression_statement.attributes, "statement");
-	const bool saved = context->wrap;
-	context->wrap = saved || found.wrap != NULL;
 	mc_node_s* const expression = node->as.expression_statement.expression;
 	const mc_type_s* type = mc_expression(c, expression, context, NULL);
-	context->wrap = saved;
 	if (mc_type_is_untyped(type)) type = mc_settle(c, expression, type);
 	if (!mc_type_is_special(type, mc_special_nothing) && !mc_type_is_special(type, mc_special_error)) {
 		const mc_view_s text = mc_node_text(c, expression);
@@ -430,18 +426,40 @@ static void _mc_expression_statement(mc_checker_s* const c, mc_node_s* const nod
 	}
 }
 
+/// what the checker calls the statement in messages about its attributes.
+static const char* _mc_statement_kind(const mc_node_s* const node) {
+	switch (node->kind) {
+		case mc_node_block:    return "block";
+		case mc_node_if:       return "`if`";
+		case mc_node_while:    return "`while` loop";
+		case mc_node_for:      return "`for` loop";
+		case mc_node_return:   return "`return`";
+		case mc_node_break:    return "`break`";
+		case mc_node_continue: return "`continue`";
+		default:               return "statement";
+	}
+}
+
+static void _mc_statement_kinds(mc_checker_s* const c, mc_node_s* const node, mc_context_s* const context);
+
+/// a statement: its attributes (but a let's, which it checks itself), then
+/// the statement; '[wrap]' covers everything in it but nested functions.
 static void _mc_statement(mc_checker_s* const c, mc_node_s* const node, mc_context_s* const context) {
+	if (mc_node_let == node->kind || mc_node_declaration_statement == node->kind) {
+		_mc_statement_kinds(c, node, context);
+		return;
+	}
+	const mc_attribute_set_s found = mc_attributes(c, mc_statement_attributes(node), _mc_statement_kind(node));
+	if (found.wrap != NULL) context->wrapping += 1;
+	_mc_statement_kinds(c, node, context);
+	if (found.wrap != NULL) context->wrapping -= 1;
+}
+
+static void _mc_statement_kinds(mc_checker_s* const c, mc_node_s* const node, mc_context_s* const context) {
 	switch (node->kind) {
 		case mc_node_declaration_statement: _mc_declaration_statement(c, node, context); return;
 		case mc_node_let:                   _mc_let(c, node, context); return;
-		case mc_node_assign: {
-			const mc_attribute_set_s found = mc_attributes(c, &node->as.assign.attributes, "statement");
-			const bool saved = context->wrap;
-			context->wrap = saved || found.wrap != NULL;
-			_mc_assign(c, node, context);
-			context->wrap = saved;
-			return;
-		}
+		case mc_node_assign:                _mc_assign(c, node, context); return;
 		case mc_node_if: _mc_if(c, node, context); return;
 		case mc_node_while:
 			_mc_condition(c, node->as.while_.condition, context);

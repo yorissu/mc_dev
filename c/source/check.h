@@ -115,7 +115,8 @@ struct mc_context_s {
 	int                         loops     ;
 	mc_variable_set_s           unassigned;
 	mc_vector_of(mc_variable_s*) variables;
-	bool                        wrap      ;
+	bool                        wrap      ;   // '[wrap]' on the function (lambdas and local functions inherit it)
+	int                         wrapping  ;   // statements marked '[wrap]' being checked (not inherited)
 	int                         level     ;
 	int                         depth     ;
 };
