@@ -2,3 +2,4 @@
 c/build
 mc/__pycache__
 tests/__pycache__
+c/tests/__pycache__
