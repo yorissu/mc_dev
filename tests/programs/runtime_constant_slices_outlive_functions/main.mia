@@ -1,0 +1,11 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+name :: () -> []u8 {
+	return "static"[..];
+}
+
+pub main :: () {
+	println("{}", name());
+}

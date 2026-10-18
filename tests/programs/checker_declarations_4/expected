@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:3:11: error[E0415]: lambdas cannot take `...`
+== run (status 1)
+-- stderr
+main.mia:3:11: error[E0415]: lambdas cannot take `...`

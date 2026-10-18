@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:7:2: error[E0509]: the result of this expression is not used
+== run (status 1)
+-- stderr
+main.mia:7:2: error[E0509]: the result of this expression is not used

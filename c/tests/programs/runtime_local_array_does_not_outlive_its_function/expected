@@ -1,7 +1,0 @@
-== check (status 0)
--- stderr
-main.mc:5:33: warning[W0503]: variable `local` is `mut` but never changed
-== run (status 101)
--- stderr
-main.mc:5:33: warning[W0503]: variable `local` is `mut` but never changed
-main.mc:6:40: runtime error: use of a local array of a function that has returned

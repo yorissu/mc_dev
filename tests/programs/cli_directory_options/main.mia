@@ -1,0 +1,9 @@
+# modules beyond the program's directory and the stdlib: -M <dir>, -Mdir, --module-dir <dir>
+
+import io
+import helper
+
+pub main :: () -> int {
+	io.println("{}", helper.twice(21));
+	return 0;
+}

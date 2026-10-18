@@ -1,0 +1,3 @@
+
+commands: check run miab
+flags: -P @plugins@

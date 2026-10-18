@@ -1,0 +1,11 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+check :: (x: int) {
+	assert(x > 0);
+}
+
+pub main :: () {
+	check(0);
+}

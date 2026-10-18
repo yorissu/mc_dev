@@ -1,0 +1,4 @@
+== check (status 1)
+-- stderr
+main.mia:10:7: error[E0519]: `n` is already a reference
+main.mia:11:7: error[E0519]: `(n)` is already a reference

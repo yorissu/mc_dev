@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:3:2: error[E0408]: operator `_!=_` cannot be declared
-== run (status 1)
--- stderr
-main.mc:3:2: error[E0408]: operator `_!=_` cannot be declared

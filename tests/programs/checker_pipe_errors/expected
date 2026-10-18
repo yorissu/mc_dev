@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:13:2: error[E0517]: this parameter is a reference
+main.mia:14:10: error[E0504]: `3` is not a function
+main.mia:15:6: error[E0505]: `double` takes 1 argument(s), found 2
+main.mia:16:2: error[E0505]: `nothing` takes 0 argument(s), found 1

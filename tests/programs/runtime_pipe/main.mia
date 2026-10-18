@@ -1,0 +1,54 @@
+
+# pipes: `x ~ f(a, b)` is `f(x, a, b)` and `x ~ f` is `f(x)`, read left to right.
+
+from io import println
+import option
+
+Counter :: {
+	let count: int;
+}
+
+double :: (x: int) -> int then return x * 2;
+
+add :: (x: int, y: int) -> int then return x + y;
+
+bump :: (counter: &Counter, by: int) then counter.count += by;
+
+# a reference parameter is piped on as it is
+bump_twice :: (counter: &Counter) {
+	counter ~ bump(1);
+	counter ~ bump(1);
+}
+
+half :: (x: int) -> option.Option<int> {
+	if x % 2 != 0 then return option.none();
+	return option.some(x / 2);
+}
+
+pub main :: () {
+	# each step gets the value as its first argument
+	println("{}", 3 ~ double ~ add(4) ~ double);
+
+	# a pipe binds loosest: this is double(1 + 2)
+	println("{}", 1 + 2 ~ double);
+
+	# a variable is lent with `&` at the head of the pipe
+	let counter: Counter = { count: 0, };
+	&counter ~ bump(10);
+	&counter ~ bump_twice;
+	println("{}", counter);
+
+	# a temporary (here an Option) is lent to `&` parameters as it is
+	println("{} {}", 8 ~ half ~ option.unwrap, 7 ~ half ~ option.unwrap_or(() -> int then return -1));
+
+	# a lambda can be a step, and a chain can span lines
+	let squared = 6
+		~ (x: int) -> int {
+			return x * x;
+		}
+		~ add(1);
+	println("{}", squared);
+
+	# its result needs parentheses before another operator
+	if (5 ~ double) == 10 then println("ten");
+}

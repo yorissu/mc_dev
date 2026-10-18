@@ -1,0 +1,20 @@
+
+# only a reference parameter itself is passed on without `&`: a local
+# variable, or a part of a reference parameter, still needs it.
+
+Point :: {
+	let x: int;
+}
+
+bump :: (n: &int) {
+	n += 1;
+}
+
+move :: (p: &Point) {
+	bump(p.x);
+}
+
+pub main :: () {
+	let n = 0;
+	bump(n);
+}

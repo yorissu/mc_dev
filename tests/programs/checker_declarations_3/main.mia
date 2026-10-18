@@ -1,0 +1,3 @@
+
+[plugin = "host"] log :: (values: ..., format: []u8);
+pub main :: () {}

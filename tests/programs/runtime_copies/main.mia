@@ -1,0 +1,28 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+Point :: {
+	let x: int;
+	let y: int;
+}
+
+Box :: {
+	let items: [3]int;
+	let corner: Point;
+}
+
+pub main :: () {
+	let a: Point = { x: 1, y: 2, };
+	let b = a;
+	b.x = 10;
+	println("{}", a);
+	println("{}", b);
+	let first: Box = {};
+	first.items[1] = 5;
+	let second = first;
+	second.items[1] = 6;
+	second.corner.y = 7;
+	println("{}", first);
+	println("{}", second);
+}

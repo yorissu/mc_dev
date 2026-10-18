@@ -1,0 +1,12 @@
+
+invoke: run not_bytecode.miab
+invoke: run not_bytecode.miab
+invoke: run truncated.miab
+invoke: run wrong_version.miab
+invoke: run bad_section.miab
+invoke: run missing.miab
+invoke: run field_offset_wraps.miab
+invoke: run field_offset_outside.miab
+invoke: run scalar_code_bytes.miab
+invoke: run slot_offset_wraps.miab
+invoke: run array_too_long.miab

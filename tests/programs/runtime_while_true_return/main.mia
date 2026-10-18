@@ -1,0 +1,30 @@
+
+# a function that ends in `while true` returns from inside the loop: its exit
+# test is left out, so no path reaches the end of the function (the bytecode
+# used to be rejected).
+from io import println
+
+f :: (x: int) -> int {
+	while true {
+		return x;
+	}
+}
+
+g :: (x: int) -> int {
+	while true {
+		if x > 0 then return x;
+		x += 1;
+	}
+}
+
+h :: (x: int) {
+	while true {
+		return;
+	}
+}
+
+pub main :: () {
+	println("{}", f(8));
+	println("{}", g(-2));
+	h(1);
+}

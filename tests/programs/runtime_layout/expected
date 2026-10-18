@@ -1,0 +1,27 @@
+== check (status 0)
+== run (status 93)
+-- stdout
+12 64 36 16
+{name: hello, inner: {tag: 2, value: -7, flag: true}, items: {1, -2, 3}, view: abc, ratio: 0.5, next: <function twice>}
+{tag: 2, value: -7, flag: true} -2 el 42
+93 {1, -2, 93}
+{tag: 3, value: -7, flag: true} true
+{tag: 0, value: -7, flag: false}
+{tag: 3, value: 93, flag: true} {tag: 9, value: -7, flag: false}
+2 9
+hello! -2
+30 -7
+0.6 0.6000000238418579
+== miab (status 93)
+-- stdout
+12 64 36 16
+{name: hello, inner: {tag: 2, value: -7, flag: true}, items: {1, -2, 3}, view: abc, ratio: 0.5, next: <function twice>}
+{tag: 2, value: -7, flag: true} -2 el 42
+93 {1, -2, 93}
+{tag: 3, value: -7, flag: true} true
+{tag: 0, value: -7, flag: false}
+{tag: 3, value: 93, flag: true} {tag: 9, value: -7, flag: false}
+2 9
+hello! -2
+30 -7
+0.6 0.6000000238418579

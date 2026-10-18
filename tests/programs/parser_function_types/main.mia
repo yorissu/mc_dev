@@ -1,0 +1,3 @@
+
+apply :: (f: (int, &int) -> int, g: (int)) {}
+pub main :: () {}

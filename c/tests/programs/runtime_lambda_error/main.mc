@@ -1,6 +1,0 @@
-
-from io import print, println
-from memory import alloc, realloc, free, copy
-
-apply :: (f: (int) -> int, x: int) -> int { return f(x); }
-pub main :: () -> int { return apply((x: int) -> int { return 10 / x; }, 0); }

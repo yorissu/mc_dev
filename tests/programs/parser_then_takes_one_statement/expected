@@ -1,0 +1,3 @@
+== check (status 1)
+-- stderr
+main.mia:5:11: error[E0206]: `then` takes a single statement, not a block

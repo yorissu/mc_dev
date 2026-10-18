@@ -1,3 +1,0 @@
-
-f :: () { [uninit] let a: int; _ = a; }
-pub main :: () {}

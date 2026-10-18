@@ -1,0 +1,8 @@
+== check (status 1)
+-- stderr
+main.mia:2:7: error[E0201]: expected an expression, found `;`
+main.mia:5:7: error[E0201]: expected a variable name, found `=`
+== run (status 1)
+-- stderr
+main.mia:2:7: error[E0201]: expected an expression, found `;`
+main.mia:5:7: error[E0201]: expected a variable name, found `=`

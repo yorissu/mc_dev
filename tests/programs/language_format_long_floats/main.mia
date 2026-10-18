@@ -1,0 +1,11 @@
+
+# floats as long as they need to be (no fixed buffer), with the exponent in
+# two digits on every system.
+from io import println
+
+pub main :: () {
+	println("{:.2f}", 1e300);
+	println("{:f}", -1.7e308);
+	println("{:.3e} {:E} {:g} {:.20g}", 1e300, 1.5e-7, 1e100, 1e22);
+	println("{} {}", 1e300, (f32)1e30);
+}

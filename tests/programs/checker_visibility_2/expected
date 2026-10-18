@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:5:18: error[E0522]: field `secret` of `Hidden` is private
+== run (status 1)
+-- stderr
+main.mia:5:18: error[E0522]: field `secret` of `Hidden` is private

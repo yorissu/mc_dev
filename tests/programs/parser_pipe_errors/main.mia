@@ -1,0 +1,19 @@
+
+# a pipe needs a step after it; its result needs parentheses before another
+# operator; intrinsics are not functions, so they are no steps.
+
+narrow :: (x: u8) -> u8 then return x;
+
+id :: (x: bool) -> bool then return x;
+
+a :: () then _ = 5 ~ ;
+
+b :: () then _ = 3 ~ narrow + 1;
+
+c :: () then _ = true ~ id && false;
+
+d :: () then _ = 3 ~ narrow ~ narrow == 2;
+
+e :: (s: []int) -> uint then return s ~ lenof;
+
+pub main :: () {}

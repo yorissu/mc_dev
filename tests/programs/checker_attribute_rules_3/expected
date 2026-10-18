@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:2:2: error[E0403]: `plugin` needs the name of the plugin that provides the function
+== run (status 1)
+-- stderr
+main.mia:2:2: error[E0403]: `plugin` needs the name of the plugin that provides the function

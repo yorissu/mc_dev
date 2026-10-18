@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:4:10: error[E0410]: operator `_+_` for (V, V) is declared twice
-== run (status 1)
--- stderr
-main.mc:4:10: error[E0410]: operator `_+_` for (V, V) is declared twice

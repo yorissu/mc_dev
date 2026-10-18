@@ -1,0 +1,29 @@
+
+from io import println
+
+# a multiline string loses the indentation of its closing quotes on every
+# line, and the line breaks after the opening and before the closing quotes.
+HELP :: """
+	usage: tool <file>
+		-v  verbose
+	"quoted" and ""doubled"" quotes need no escape
+	""";
+
+pub main :: () {
+	println("{}", HELP);
+	let poem = """
+		one	tab
+
+		two (a blank line above)
+		""";
+	println("{}", poem);
+	TEXT :: """
+		nul-terminated
+		"""c;
+	println("[{}] {} bytes", TEXT, lenof(TEXT));
+	let empty = """
+	""";
+	println("[{}] {}", empty, lenof(empty));
+	let windows = "a\r\nb";
+	println("{}", lenof(windows));
+}

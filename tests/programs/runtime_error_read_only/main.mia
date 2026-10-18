@@ -1,0 +1,16 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+FIXED :: ([2]int){ 1, 2, };
+
+set :: (items: []int) {
+	items[0] = 9;
+}
+
+pub main :: () {
+	let open: [2]int = { 1, 2, };
+	set(open[..]);
+	println("{}", open);
+	set(FIXED[..]);
+}

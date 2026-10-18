@@ -1,0 +1,18 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+Settings :: {
+	let width: int = 80;
+	let name: []u8;
+	let on: bool = true;
+}
+
+pub main :: () {
+	let s: Settings = { name: "term"[..], };
+	println("{}", s);
+	let z: Settings = {};
+	println("{}", z.width);
+	let empty: [2]f32 = {};
+	println("{}", empty);
+}

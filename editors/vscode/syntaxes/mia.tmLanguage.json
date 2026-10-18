@@ -1,0 +1,320 @@
+
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "mia",
+	"scopeName": "source.mia",
+	"patterns": [
+		{ "include": "#comments" },
+		{ "include": "#attributes" },
+		{ "include": "#multiline-strings" },
+		{ "include": "#strings" },
+		{ "include": "#characters" },
+		{ "include": "#numbers" },
+		{ "include": "#declarations" },
+		{ "include": "#keywords" },
+		{ "include": "#types" },
+		{ "include": "#calls" },
+		{ "include": "#operators" },
+		{ "include": "#punctuation" }
+	],
+	"repository": {
+		"comments": {
+			"patterns": [
+				{
+					"name": "comment.line.number-sign.mia",
+					"match": "#.*$"
+				},
+				{
+					"name": "comment.line.double-slash.mia",
+					"match": "//.*$"
+				},
+				{ "include": "#block-comment" }
+			]
+		},
+		"block-comment": {
+			"name": "comment.block.mia",
+			"begin": "/\\*",
+			"end": "\\*/",
+			"patterns": [
+				{ "include": "#block-comment" }
+			]
+		},
+		"attributes": {
+			"patterns": [
+				{
+					"comment": "[wrap], [uninit], [plugin], [plugin = \"math\"]",
+					"match": "(\\[)\\s*(wrap|uninit|plugin)\\s*(?:(=)\\s*(\"[^\"]*\"))?\\s*(\\])",
+					"captures": {
+						"1": { "name": "punctuation.definition.attribute.begin.mia" },
+						"2": { "name": "entity.other.attribute-name.mia" },
+						"3": { "name": "keyword.operator.assignment.mia" },
+						"4": { "name": "string.quoted.double.mia" },
+						"5": { "name": "punctuation.definition.attribute.end.mia" }
+					}
+				}
+			]
+		},
+		"multiline-strings": {
+			"comment": "\"\"\" on its own, to \"\"\" (with an optional c suffix)",
+			"name": "string.quoted.triple.mia",
+			"begin": "\"\"\"",
+			"end": "(\"\"\")(c)?",
+			"beginCaptures": {
+				"0": { "name": "punctuation.definition.string.begin.mia" }
+			},
+			"endCaptures": {
+				"1": { "name": "punctuation.definition.string.end.mia" },
+				"2": { "name": "storage.modifier.c-string.mia" }
+			},
+			"patterns": [
+				{ "include": "#escapes" },
+				{
+					"name": "constant.character.escape.brace.mia",
+					"match": "\\{\\{|\\}\\}"
+				},
+				{
+					"name": "constant.other.placeholder.mia",
+					"match": "\\{(:[^{}\"]*)?\\}"
+				}
+			]
+		},
+		"strings": {
+			"comment": "a string also ends at the end of its line: mia strings cannot span lines, and an unclosed one must not color the rest of the file",
+			"name": "string.quoted.double.mia",
+			"begin": "\"",
+			"end": "(\")(c)?|(?=$)",
+			"beginCaptures": {
+				"0": { "name": "punctuation.definition.string.begin.mia" }
+			},
+			"endCaptures": {
+				"1": { "name": "punctuation.definition.string.end.mia" },
+				"2": { "name": "storage.modifier.c-string.mia" }
+			},
+			"patterns": [
+				{ "include": "#escapes" },
+				{
+					"name": "constant.character.escape.brace.mia",
+					"match": "\\{\\{|\\}\\}"
+				},
+				{
+					"comment": "format placeholders: {} and {:spec}",
+					"name": "constant.other.placeholder.mia",
+					"match": "\\{(:[^{}\"]*)?\\}"
+				}
+			]
+		},
+		"characters": {
+			"name": "string.quoted.single.mia",
+			"match": "'(?:\\\\(?:x[0-9a-fA-F]{2}|[nt0r\\\\\"'])|[^'\\\\\\n])'",
+			"captures": {
+				"0": { "patterns": [ { "include": "#escapes" } ] }
+			}
+		},
+		"escapes": {
+			"patterns": [
+				{
+					"name": "constant.character.escape.mia",
+					"match": "\\\\(?:x[0-9a-fA-F]{2}|[nt0r\\\\\"'])"
+				},
+				{
+					"name": "invalid.illegal.escape.mia",
+					"match": "\\\\."
+				}
+			]
+		},
+		"numbers": {
+			"patterns": [
+				{
+					"comment": "hexadecimal, octal and binary integers, with an integer suffix: 0xff, 0o17, 0b1010u8",
+					"name": "constant.numeric.integer.mia",
+					"match": "\\b0(?:[xX][0-9a-fA-F_]+|[oO][0-7_]+|[bB][01_]+)(?:[su](?:8|16|32|64)|u?int)?\\b"
+				},
+				{
+					"comment": "floats: 1.5, 2e10, 1.5f32, 2.0float",
+					"name": "constant.numeric.float.mia",
+					"match": "\\b[0-9][0-9_]*(?:\\.[0-9][0-9_]*(?:[eE][+-]?[0-9][0-9_]*)?|[eE][+-]?[0-9][0-9_]*)(?:f32|f64|float)?\\b"
+				},
+				{
+					"comment": "decimal integers with an optional type suffix: 42, 255u8, 1_000, 3f64",
+					"name": "constant.numeric.integer.mia",
+					"match": "\\b[0-9][0-9_]*(?:[su](?:8|16|32|64)|u?int|f32|f64|float)?\\b"
+				}
+			]
+		},
+		"declarations": {
+			"patterns": [
+				{
+					"comment": "a function: name<T> :: () or :: (name: (not a constant made with a cast, X :: (s8)200)",
+					"match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(<[^<>:]*>)?\\s*(::)(?=\\s*\\((?:\\s*\\)|\\s*[A-Za-z_][A-Za-z0-9_]*\\s*:))",
+					"captures": {
+						"1": { "name": "entity.name.function.mia" },
+						"2": { "patterns": [ { "include": "#generic-parameters" } ] },
+						"3": { "name": "keyword.operator.declaration.mia" }
+					}
+				},
+				{
+					"comment": "a struct: Name<T> :: {",
+					"match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(<[^<>:]*>)?\\s*(::)(?=\\s*\\{)",
+					"captures": {
+						"1": { "name": "entity.name.type.struct.mia" },
+						"2": { "patterns": [ { "include": "#generic-parameters" } ] },
+						"3": { "name": "keyword.operator.declaration.mia" }
+					}
+				},
+				{
+					"comment": "a constant: NAME :: value",
+					"match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(::)",
+					"captures": {
+						"1": { "name": "variable.other.constant.mia" },
+						"2": { "name": "keyword.operator.declaration.mia" }
+					}
+				}
+			]
+		},
+		"generic-parameters": {
+			"patterns": [
+				{
+					"name": "entity.name.type.parameter.mia",
+					"match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b"
+				},
+				{
+					"name": "punctuation.separator.comma.mia",
+					"match": ","
+				}
+			]
+		},
+		"keywords": {
+			"patterns": [
+				{
+					"name": "keyword.control.mia",
+					"match": "\\b(?:if|then|else|while|for|in|return|break|continue)\\b"
+				},
+				{
+					"name": "keyword.control.import.mia",
+					"match": "\\b(?:import|from|as)\\b"
+				},
+				{
+					"name": "storage.modifier.mia",
+					"match": "\\bpub\\b"
+				},
+				{
+					"name": "storage.type.let.mia",
+					"match": "\\blet\\b"
+				},
+				{
+					"name": "constant.language.boolean.mia",
+					"match": "\\b(?:true|false)\\b"
+				},
+				{
+					"name": "keyword.other.intrinsic.mia",
+					"match": "\\b(?:sizeof|lenof|assert)\\b"
+				},
+				{
+					"name": "variable.language.discard.mia",
+					"match": "\\b_\\b"
+				}
+			]
+		},
+		"types": {
+			"patterns": [
+				{
+					"name": "storage.type.primitive.mia",
+					"match": "\\b(?:s8|s16|s32|s64|u8|u16|u32|u64|int|uint|f32|f64|float|bool)\\b"
+				},
+				{
+					"comment": "by convention, types start with a capital and have a lower-case letter, or are one capital (T); constants are all capitals",
+					"name": "entity.name.type.mia",
+					"match": "\\b(?:[A-Z][A-Za-z0-9_]*[a-z][A-Za-z0-9_]*|[A-Z])\\b"
+				},
+				{
+					"name": "variable.other.constant.mia",
+					"match": "\\b[A-Z][A-Z0-9_]+\\b"
+				}
+			]
+		},
+		"calls": {
+			"patterns": [
+				{
+					"match": "\\b([a-z_][A-Za-z0-9_]*)\\s*(?=(?:<[^<>()]*>)?\\()",
+					"captures": {
+						"1": { "name": "entity.name.function.call.mia" }
+					}
+				}
+			]
+		},
+		"operators": {
+			"patterns": [
+				{
+					"name": "keyword.operator.arrow.mia",
+					"match": "->"
+				},
+				{
+					"name": "keyword.operator.variadic.mia",
+					"match": "\\.\\.\\."
+				},
+				{
+					"name": "keyword.operator.range.mia",
+					"match": "\\.\\.=?"
+				},
+				{
+					"name": "keyword.operator.assignment.compound.mia",
+					"match": "<<=|>>=|[-+*/%&|^]="
+				},
+				{
+					"name": "keyword.operator.comparison.mia",
+					"match": "==|!=|<=|>="
+				},
+				{
+					"comment": "the pipe: x ~ f(a) is f(x, a); a ~ after a value (a prefix ~ is the bit-not)",
+					"name": "keyword.operator.pipe.mia",
+					"match": "(?<=[\\w)\\]])\\s*~|(?<=[\\w)\\]]\\s)~"
+				},
+				{
+					"name": "keyword.operator.logical.mia",
+					"match": "&&|\\|\\||!"
+				},
+				{
+					"comment": "a reference: (x: &T), f(&x)",
+					"name": "keyword.operator.reference.mia",
+					"match": "(?:(?<=[:(,])|(?<=[:(,]\\s))&"
+				},
+				{
+					"name": "keyword.operator.bitwise.mia",
+					"match": "<<|>>|[&|^~]"
+				},
+				{
+					"name": "keyword.operator.arithmetic.mia",
+					"match": "[-+*/%]"
+				},
+				{
+					"name": "keyword.operator.comparison.mia",
+					"match": "[<>]"
+				},
+				{
+					"name": "keyword.operator.assignment.mia",
+					"match": "="
+				}
+			]
+		},
+		"punctuation": {
+			"patterns": [
+				{
+					"name": "punctuation.terminator.statement.mia",
+					"match": ";"
+				},
+				{
+					"name": "punctuation.separator.comma.mia",
+					"match": ","
+				},
+				{
+					"name": "punctuation.accessor.mia",
+					"match": "\\."
+				},
+				{
+					"name": "punctuation.separator.colon.mia",
+					"match": ":"
+				}
+			]
+		}
+	}
+}

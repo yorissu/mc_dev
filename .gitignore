@@ -1,2 +1,5 @@
 
-c/build
+build/
+*.miab
+# the broken bytecode files the loader tests read (made by fixtures.py)
+!tests/programs/bytecode_bad_files/*.miab

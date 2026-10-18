@@ -1,0 +1,6 @@
+
+# a function body is `{ ... }`, `then` and one statement, or `;` (plugin functions).
+
+f :: () return;
+
+pub main :: () {}

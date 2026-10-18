@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:3:2: error[E0406]: `_&&_` is not an operator pattern
-== run (status 1)
--- stderr
-main.mc:3:2: error[E0406]: `_&&_` is not an operator pattern

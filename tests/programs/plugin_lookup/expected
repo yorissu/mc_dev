@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:12:2: error[E0603]: the plugin `@plugins@/future@shared@` is refused: it needs plugin api version 2, but this mia has version 1
+main.mia:13:2: error[E0603]: `@plugins@/misnamed@shared@` is the plugin `other`, not `misnamed`
+main.mia:14:2: error[E0416]: no plugin provides `nowhere.nothing`
+main.mia:15:2: error[E0416]: no plugin provides `twice.nothing`

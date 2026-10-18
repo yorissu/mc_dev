@@ -1,0 +1,23 @@
+# operators are built in: they apply to numbers, bool, slices and functions,
+# never to structs (call a function instead).
+
+V :: {
+	let x: int;
+}
+
+add :: (a: V, b: V) -> V {
+	return { x: a.x + b.x, };
+}
+
+pub main :: () {
+	let a: V = { x: 1, };
+	let b: V = { x: 2, };
+	_ = add(a, b);
+	_ = a + b;
+	_ = a == b;
+	_ = a < b;
+	_ = -a;
+	_ = a[0];
+	let c = a;
+	c += b;
+}

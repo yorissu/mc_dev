@@ -1,5 +1,0 @@
-
-S :: { let a: int; }
-add<T> :: (a: T, b: T) -> T { return a + b; }
-f :: (s: S) { _ = add(s, s); }
-pub main :: () {}

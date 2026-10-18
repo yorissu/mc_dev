@@ -1,0 +1,60 @@
+== check (status 1)
+-- stderr
+error[E0705]: compile-time evaluation takes too long
+  --> main.mia:32:2
+   |
+31 |     let i = 0;
+32 |     while true {
+   |     ^^^^^^^^^^^^
+33 |         i += 1;
+ ...
+36 |         }
+37 |     }
+   | ^^^^^ this loop runs more than 1000000 steps
+38 | }
+   |
+   = note: the loop in `forever` runs more than 1000000 steps
+   = help: raise the limit with `--eval-steps <n>` if the evaluation is meant to take this long
+
+error[E0705]: compile-time evaluation takes too long
+  --> main.mia:24:9
+   |
+23 |     }
+24 |     return fib(n - 1) + fib(n - 2);
+   |            ^^^^^^^^^^ this call runs more than 1000000 steps
+25 | }
+   |
+   = note: the call of `fib` runs more than 1000000 steps
+   = help: raise the limit with `--eval-steps <n>` if the evaluation is meant to take this long
+
+2 error(s), 0 warning(s)
+== run (status 1)
+-- stderr
+error[E0705]: compile-time evaluation takes too long
+  --> main.mia:32:2
+   |
+31 |     let i = 0;
+32 |     while true {
+   |     ^^^^^^^^^^^^
+33 |         i += 1;
+ ...
+36 |         }
+37 |     }
+   | ^^^^^ this loop runs more than 1000000 steps
+38 | }
+   |
+   = note: the loop in `forever` runs more than 1000000 steps
+   = help: raise the limit with `--eval-steps <n>` if the evaluation is meant to take this long
+
+error[E0705]: compile-time evaluation takes too long
+  --> main.mia:24:9
+   |
+23 |     }
+24 |     return fib(n - 1) + fib(n - 2);
+   |            ^^^^^^^^^^ this call runs more than 1000000 steps
+25 | }
+   |
+   = note: the call of `fib` runs more than 1000000 steps
+   = help: raise the limit with `--eval-steps <n>` if the evaluation is meant to take this long
+
+2 error(s), 0 warning(s)

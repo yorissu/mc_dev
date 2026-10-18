@@ -1,0 +1,8 @@
+
+# a pipe binds loosest: its result needs parentheses before another operator.
+
+double :: (x: int) -> int then return x * 2;
+
+f :: () -> bool then return 3 ~ double == 6;
+
+pub main :: () {}

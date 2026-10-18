@@ -1,0 +1,4 @@
+== check (status 1)
+-- stderr
+main.mia:7:10: error[E0705]: compile-time values take more than 4194304 elements
+main.mia:8:11: error[E0705]: compile-time values take more than 4194304 elements

@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:3:19: error[E0529]: variadic function `println` can only be called
-== run (status 1)
--- stderr
-main.mc:3:19: error[E0529]: variadic function `println` can only be called

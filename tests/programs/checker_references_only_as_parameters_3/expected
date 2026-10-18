@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:2:18: error[E0413]: references are only allowed as parameter types
+== run (status 1)
+-- stderr
+main.mia:2:18: error[E0413]: references are only allowed as parameter types

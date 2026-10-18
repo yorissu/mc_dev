@@ -1,0 +1,7 @@
+﻿
+# a file may start with a utf-8 byte order mark (some editors write one).
+from io import println
+
+pub main :: () {
+	println("ok");
+}

@@ -1,0 +1,13 @@
+
+from io import print, println
+
+TABLE :: ([3]int){ 1, 2, 3, };
+
+set :: (items: []int) {
+	items[1] = 0;
+}
+
+pub main :: () {
+	println("{}", TABLE);
+	set(TABLE[..]);
+}

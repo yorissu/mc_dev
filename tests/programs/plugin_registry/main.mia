@@ -1,0 +1,11 @@
+# plugins that are found but refused when they register
+
+import io
+import careless
+import twice
+
+pub main :: () {
+	io.println("loaded");
+	careless.nothing();   # its mia_plugin_init does not call mia_plugin_compatible
+	twice.nothing();      # it registers io.println, which the plugin io provides
+}

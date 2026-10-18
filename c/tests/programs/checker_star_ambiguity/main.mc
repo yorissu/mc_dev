@@ -1,5 +1,0 @@
-
-from a import *
-from b import *
-f :: () { thing(); }
-pub main :: () {}

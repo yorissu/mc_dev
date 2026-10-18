@@ -1,8 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:6: error[E0203]: empty structs are not allowed
-error[E0411]: the entry module `main.mc` has no `main` function
-== run (status 1)
--- stderr
-main.mc:2:6: error[E0203]: empty structs are not allowed
-error[E0411]: the entry module `main.mc` has no `main` function

@@ -1,0 +1,33 @@
+== check (status 0)
+== run (status 101)
+-- stderr
+runtime error: index 5 is out of bounds (length 2)
+ --> main.mia:6:9
+  |
+5 | level3 :: (items: []int) -> int {
+6 |     return items[5];
+  |            ^^^^^^^^ here
+7 | }
+  |
+  = note: in `level3` at main.mia:6:9
+  = note: called from `level2` at main.mia:10:9
+  = note: called from `level1` at main.mia:18:9
+  = note: called from `level1` at main.mia:15:10 (4 times)
+  = note: called from `main` at main.mia:22:9
+
+== miab (status 101)
+-- stderr
+runtime error: index 5 is out of bounds (length 2)
+ --> main.mia:6:9
+  |
+5 | level3 :: (items: []int) -> int {
+6 |     return items[5];
+  |            ^^^^^^^^ here
+7 | }
+  |
+  = note: in `level3` at main.mia:6:9
+  = note: called from `level2` at main.mia:10:9
+  = note: called from `level1` at main.mia:18:9
+  = note: called from `level1` at main.mia:15:10 (4 times)
+  = note: called from `main` at main.mia:22:9
+

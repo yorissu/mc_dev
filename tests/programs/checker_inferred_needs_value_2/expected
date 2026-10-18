@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:3:10: error[E0506]: cannot infer the type of this literal
+== run (status 1)
+-- stderr
+main.mia:3:10: error[E0506]: cannot infer the type of this literal

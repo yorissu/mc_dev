@@ -1,0 +1,6 @@
+
+# `else` only follows the body of an `if`.
+
+pub main :: () {
+	else return;
+}

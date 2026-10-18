@@ -1,0 +1,9 @@
+invoke: check main.mia
+invoke: run -M mods main.mia
+invoke: run -Mmods main.mia
+invoke: run --module-dir mods main.mia
+invoke: run -M mods -P mods main.mia
+invoke: run -M mods -Pno/such/directory main.mia
+invoke: check -I mods main.mia
+invoke: check -M
+invoke: check main.mia -P

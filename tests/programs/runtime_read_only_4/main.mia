@@ -1,0 +1,13 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+set :: (s: []int) {
+	s[0] = 5;
+}
+
+pub main :: () {
+	let a: [2]int = {};
+	set(a[..]);
+	println("{}", a);
+}

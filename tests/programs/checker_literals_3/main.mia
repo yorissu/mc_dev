@@ -1,0 +1,12 @@
+
+Point :: {
+	let x: f32;
+	let y: f32 = 0;
+	let id: int = 7;
+}
+
+f :: () -> Point {
+	return {};
+}
+
+pub main :: () {}

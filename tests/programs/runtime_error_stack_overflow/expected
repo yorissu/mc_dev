@@ -1,0 +1,16 @@
+== check (status 0)
+== run (status 101)
+-- stderr
+runtime error: stack overflow: more than 10000 nested calls
+ --> main.mia:6:9
+  |
+5 | deep :: (n: int) -> int {
+6 |     return deep(n + 1) + 1;
+  |            ^^^^^^^^^^^ here
+7 | }
+  |
+  = note: in `deep` at main.mia:6:9
+  = note: called from `deep` at main.mia:6:9 (9998 times)
+  = note: called from `main` at main.mia:10:9
+  = help: a function calls itself without reaching an end, or calls nest too deeply; `--call-depth <n>` raises the limit
+

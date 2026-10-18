@@ -1,0 +1,10 @@
+== check (status 1)
+-- stderr
+main.mia:2:10: error[E0501]: cannot find `V`
+main.mia:2:16: error[E0501]: cannot find `V`
+main.mia:6:48: error[E0501]: cannot find `add`
+== run (status 1)
+-- stderr
+main.mia:2:10: error[E0501]: cannot find `V`
+main.mia:2:16: error[E0501]: cannot find `V`
+main.mia:6:48: error[E0501]: cannot find `add`

@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:4:10: error[E0519]: `&` is only allowed on a call argument
+== run (status 1)
+-- stderr
+main.mia:4:10: error[E0519]: `&` is only allowed on a call argument

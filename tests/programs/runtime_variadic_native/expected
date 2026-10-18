@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:7:16: error[E0416]: no plugin provides `main.collect`
+== run (status 1)
+-- stderr
+main.mia:7:16: error[E0416]: no plugin provides `main.collect`

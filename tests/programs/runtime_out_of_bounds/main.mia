@@ -1,0 +1,12 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+get :: (s: []int, i: uint) -> int {
+	return s[i];
+}
+
+pub main :: () {
+	let a: [2]int = {};
+	_ = get(a[..], 2);
+}

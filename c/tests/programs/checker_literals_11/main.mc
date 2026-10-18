@@ -1,3 +1,0 @@
-
-f :: () -> Point { return { 1, 2 }; }
-pub main :: () {}

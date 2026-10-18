@@ -1,0 +1,16 @@
+
+from io import println
+
+# untyped constants are exact up to 128 bits, at both ends.
+MAXIMUM :: 170141183460469231731687303715884105727;
+MINIMUM :: -MAXIMUM - 1;
+HIGH :: 1 << 126;
+SHIFTED :: (1 << 125) >> 120;
+PRODUCT :: (1 << 63) * (1 << 63);
+
+pub main :: () {
+	println("{} {} {}", MAXIMUM > 0, MINIMUM < 0, HIGH > 0);
+	println("{} {}", SHIFTED, PRODUCT >> 120);
+	println("{}", (MAXIMUM - HIGH) >> 120);
+	println("{}", MINIMUM / 2 < 0);
+}

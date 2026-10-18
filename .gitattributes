@@ -1,3 +1,7 @@
-
-# batch files run best with crlf; the repository keeps lf like every other file
+# every text file keeps lf, also in a windows checkout: the tests compare
+# what mia prints with their expectations byte for byte.
+* text=auto eol=lf
+# batch files run best with crlf.
 *.bat text eol=crlf
+# bytecode files are binary (the fixtures of tests/programs/bytecode_bad_files).
+*.miab binary

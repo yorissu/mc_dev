@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:2: error[E0402]: unknown attribute `unknown`
-== run (status 1)
--- stderr
-main.mc:2:2: error[E0402]: unknown attribute `unknown`

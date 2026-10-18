@@ -1,0 +1,21 @@
+
+# memory: heap allocation. the functions are provided by the plugin memory
+# (memory.c beside this file, built into memory.so, .dylib or .dll); heap
+# memory is only ever seen through slices, and every access through them is
+# checked (bounds, and use after free).
+
+# a slice of 'count' zeroed elements on the heap.
+[plugin = "memory"]
+pub alloc<T> :: (count: uint) -> []T;
+
+# a slice of 'count' elements with the old contents; 'data' is invalid afterwards.
+[plugin = "memory"]
+pub realloc<T> :: (data: []T, count: uint) -> []T;
+
+# frees the whole allocation that 'data' views; returns an empty slice.
+[plugin = "memory"]
+pub free<T> :: (data: []T) -> []T;
+
+# copies min(lenof(target), lenof(source)) elements; returns how many.
+[plugin = "memory"]
+pub copy<T> :: (target: []T, source: []T) -> uint;

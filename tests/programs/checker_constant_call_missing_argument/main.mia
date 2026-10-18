@@ -1,0 +1,12 @@
+
+# a constant computed by a function with a broken call: the call is reported,
+# and compile-time evaluation stops there (it used to crash on the missing
+# argument).
+
+square :: (n: int) -> int then return n * n;
+
+table :: () -> int then return square();
+
+TABLE :: table();
+
+pub main :: () {}

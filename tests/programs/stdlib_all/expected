@@ -1,0 +1,13 @@
+== check (status 0)
+== run (status 101)
+-- stdout
+true false 5 7
+true false oops!
+-- stderr
+@stdlib@/option.mia:22:2: runtime error: unwrap of an empty option
+== miab (status 101)
+-- stdout
+true false 5 7
+true false oops!
+-- stderr
+@stdlib@/option.mia:22:2: runtime error: unwrap of an empty option

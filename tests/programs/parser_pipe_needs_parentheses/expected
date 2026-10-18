@@ -1,0 +1,3 @@
+== check (status 1)
+-- stderr
+main.mia:6:40: error[E0202]: `~` and `==` need parentheses to show their order

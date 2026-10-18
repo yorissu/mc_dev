@@ -1,0 +1,3 @@
+== check (status 1)
+-- stderr
+main.mia:7:1014: error[E0207]: nested too deep

@@ -1,0 +1,48 @@
+== ast (status 1)
+-- stdout
+Module
+  declarations:
+    Function name=main public
+      result: TypeName path=[int]
+      body: Block
+        statements:
+          Return
+            value: Name name=x
+    Constant name=NUMBERS
+      value: Binary operator='+'
+        left: Binary operator='+'
+          left: Binary operator='+'
+            left: Binary operator='+'
+              left: Binary operator='+'
+                left: Binary operator='+'
+                  left: Binary operator='+'
+                    left: IntegerLiteral value=31
+                    right: IntegerLiteral value=10
+                  right: IntegerLiteral value=15
+                right: IntegerLiteral value=1000
+              right: IntegerLiteral value=255 suffix=u8
+            right: FloatLiteral value=1.5 suffix=f32
+          right: FloatLiteral value=2000.0
+        right: FloatLiteral value=3.0 suffix=f64
+    Constant name=TEXT
+      value: StringLiteral data='a\nA\t"'
+    Constant name=C
+      value: StringLiteral data='hi\x00' c
+    Constant name=CHAR
+      value: CharLiteral value=122
+    Constant name=TAB
+      value: CharLiteral value=9
+    Function name=f
+      parameters:
+        Param name=a
+          type: TypeReference
+            element: TypeName path=[int]
+        Param name=b
+          type: TypeReference
+            element: TypeName path=[int]
+        Param name=values variadic
+      attributes:
+        Attribute name=wrap
+        Attribute name=plugin value=x
+-- stderr
+main.mia:3:11: error[E0201]: expected `;` after the variable, found `..=`

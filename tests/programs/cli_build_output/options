@@ -1,0 +1,2 @@
+
+invoke: build -o other.mia main.mia

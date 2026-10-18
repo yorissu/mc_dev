@@ -1,0 +1,8 @@
+
+from geo.shapes import *
+
+f :: () -> Point {
+	return add(make(), make());
+}
+
+pub main :: () {}

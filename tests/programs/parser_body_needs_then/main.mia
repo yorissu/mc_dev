@@ -1,0 +1,8 @@
+
+# a body without braces starts with `then`.
+
+f :: (ready: bool) {
+	if ready return;
+}
+
+pub main :: () {}

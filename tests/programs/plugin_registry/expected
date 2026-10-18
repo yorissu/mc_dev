@@ -1,0 +1,4 @@
+== check (status 1)
+-- stderr
+main.mia:9:2: error[E0603]: the plugin `@plugins@/careless@shared@` is refused: its mia_plugin_init did not call mia_plugin_compatible
+main.mia:10:2: error[E0603]: the plugin `@plugins@/twice@shared@` is refused: `io.println` is provided by the plugins `io` and `twice`

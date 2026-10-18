@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:15: error[E0413]: references are only allowed as parameter types
-== run (status 1)
--- stderr
-main.mc:2:15: error[E0413]: references are only allowed as parameter types

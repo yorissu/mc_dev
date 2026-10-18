@@ -1,0 +1,11 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+set :: (s: []u8) {
+	s[0] = 5;
+}
+
+pub main :: () {
+	set("text"[..]);
+}

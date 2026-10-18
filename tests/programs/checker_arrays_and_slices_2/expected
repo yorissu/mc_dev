@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:3:18: error[E0525]: expected 3 elements, found 2
+== run (status 1)
+-- stderr
+main.mia:3:18: error[E0525]: expected 3 elements, found 2

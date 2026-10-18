@@ -1,0 +1,9 @@
+== check (status 1)
+-- stderr
+main.mia:5:1: error[E0532]: the struct `Halves` is too large
+main.mia:15:10: error[E0532]: an array of 5000000000 elements is too large
+main.mia:16:10: error[E0532]: an array of 4611686018427387904 elements is too large
+main.mia:17:10: error[E0532]: an array of 18446744073709551616 elements is too large
+main.mia:18:9: error[E0532]: the type `[3][2000000000]u8` is too large
+main.mia:19:9: error[E0532]: the type `[8]Halves` is too large
+main.mia:20:9: error[E0532]: the type `[5]Fits` is too large

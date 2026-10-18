@@ -1,0 +1,13 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+escape :: () -> []int {
+	let local: [3]int = { 1, 2, 3 };
+	return local[..];
+}
+
+pub main :: () {
+	let s = escape();
+	_ = s[0];
+}

@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:19: error[E0412]: parameters without defaults cannot follow parameters with defaults
-== run (status 1)
--- stderr
-main.mc:2:19: error[E0412]: parameters without defaults cannot follow parameters with defaults

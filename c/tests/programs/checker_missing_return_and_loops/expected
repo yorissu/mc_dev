@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:1: error[E0514]: `f` does not return a value on every path
-== run (status 1)
--- stderr
-main.mc:2:1: error[E0514]: `f` does not return a value on every path

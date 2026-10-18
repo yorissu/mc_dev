@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:4:62: error[E0528]: two references of this call overlap
-== run (status 1)
--- stderr
-main.mc:4:62: error[E0528]: two references of this call overlap

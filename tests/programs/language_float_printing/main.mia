@@ -1,0 +1,15 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+# floats are printed with the shortest text that reads back as the same number.
+divide :: (a: f64, b: f64) -> f64 {
+	return a / b;
+}
+
+pub main :: () {
+	println("{} {} {} {} {}", 0.1, 1.5, 100.0, -0.0, 1e16);
+	println("{} {} {} {}", 1e15, 1e-5, 0.0001, 1.0 / 3.0);
+	println("{} {} {} {}", 123456789012345680.0, divide(0.0, 0.0), divide(-1.0, 0.0), divide(1.0, 0.0));
+	println("{} {} {}", 0.1f32, (f32)(1.0 / 3.0), 16777217.0f32);
+}

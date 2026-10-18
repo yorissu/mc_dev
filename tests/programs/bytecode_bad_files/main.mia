@@ -1,0 +1,7 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+pub main :: () {
+	println("a valid program; the files beside it are not");
+}

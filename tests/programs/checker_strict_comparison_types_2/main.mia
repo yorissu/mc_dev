@@ -1,0 +1,6 @@
+
+f :: (a: []u8) -> bool {
+	return a == a || lenof(a) > 0;
+}
+
+pub main :: () {}

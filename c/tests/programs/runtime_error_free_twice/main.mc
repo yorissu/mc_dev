@@ -1,5 +1,0 @@
-
-from io import print, println
-from memory import alloc, realloc, free, copy
-
-pub main :: () { let data = alloc<int>(4); _ = free(data); _ = free(data); }

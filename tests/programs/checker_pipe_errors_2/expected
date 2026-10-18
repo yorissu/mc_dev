@@ -1,0 +1,12 @@
+== check (status 1)
+-- stderr
+main.mia:17:2: error[E0517]: this parameter is a reference
+main.mia:18:2: error[E0517]: this parameter is a reference
+main.mia:19:2: error[E0519]: this parameter is not a reference
+main.mia:19:2: error[E0509]: the result of this expression is not used
+main.mia:20:10: error[E0504]: `p` is not a function
+main.mia:21:10: error[E0504]: `Point` is a struct, not a function
+main.mia:22:10: error[E0529]: `io` is a module, not a value
+main.mia:23:10: error[E0523]: this has no value
+main.mia:24:6: error[E0511]: `256` does not fit in `u8`
+main.mia:25:2: error[E0509]: the result of this expression is not used

@@ -1,0 +1,28 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+pub main :: () {
+	for i in 0..3 then print("{}", i);
+	println("");
+	for i in 3..0 then print("{}", i);
+	println("");
+	for i in 0..=2 {
+		print("{}", i);
+	}
+	println("");
+	let n = 0;
+	while true {
+		n += 1;
+		if n == 2 then continue;
+		if n > 4 then break;
+		print("{}", n);
+	}
+	println("");
+	for i in 0..10 {
+		if i % 2 == 0 then continue;
+		if i > 7 then break;
+		print("{}", i);
+	}
+	println("");
+}

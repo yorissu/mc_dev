@@ -1,0 +1,11 @@
+
+from io import println
+
+# invalid utf-8 is written as U+FFFD: each invalid byte, a cut sequence once,
+# an encoded surrogate once per byte (like python's 'replace').
+pub main :: () {
+	println("[{}]", "h\xC3\xA9llo");
+	println("[{}]", "a\xFFb");
+	println("[{}]", "\xE2\x82x");
+	println("[{}]", "\xED\xA0\x80");
+}

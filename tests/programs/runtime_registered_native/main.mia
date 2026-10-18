@@ -1,0 +1,8 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+[plugin = "test_record"] record :: (x: int) -> int;
+
+pub main :: () {
+	println("{}", record(21));
+}

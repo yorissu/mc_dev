@@ -1,0 +1,11 @@
+
+# a recursion whose calls each have big locals stops with a stack overflow
+# before it takes too much memory (it used to be killed by the system).
+
+deep :: (n: int) -> int {
+	let big: [30000000]u64 = {};
+	big[0] = (u64)n;
+	return deep(n + 1) + (int)big[0];
+}
+
+pub main :: () -> int then return deep(0);

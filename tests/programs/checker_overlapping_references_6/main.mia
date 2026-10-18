@@ -1,0 +1,7 @@
+
+f :: () {
+	let p: P = {};
+	swap(&p.x, &p.y);
+}
+
+pub main :: () {}

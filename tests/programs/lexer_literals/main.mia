@@ -1,0 +1,10 @@
+
+pub main :: () -> int {
+	let x = a..=b;
+	return x;
+}
+
+NUMBERS :: 0x1F + 0b1010 + 0o17 + 1_000 + 255u8 + 1.5f32 + 2e3 + 3f64;
+# a comment
+/* a /* nested */ block */ TEXT :: "a\n\x41\t\"" ; C :: "hi"c; CHAR :: 'z'; TAB :: '\t'; // the end
+[wrap] [plugin = "x"] f :: (a: &int, b: &int, values: ...);

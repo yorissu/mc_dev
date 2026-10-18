@@ -1,0 +1,3 @@
+
+# build never writes bytecode over a source file.
+pub main :: () {}

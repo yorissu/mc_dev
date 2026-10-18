@@ -1,0 +1,10 @@
+
+# `then` takes a single statement; a block needs no `then`.
+
+f :: (ready: bool) {
+	if ready then {
+		return;
+	}
+}
+
+pub main :: () {}

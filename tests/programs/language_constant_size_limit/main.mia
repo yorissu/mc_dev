@@ -1,0 +1,13 @@
+
+# compile-time values hold at most 4194304 elements (each takes memory while
+# compiling and in the bytecode); the same values at run time are not limited.
+from io import println
+
+SMALL :: ([1000]u8){};
+LARGE :: ([5000000]u8){};
+NESTED :: ([2048][2048][2]u8){};
+
+pub main :: () {
+	let x = ([5000000]u8){};
+	println("{} {} {}", lenof(SMALL), lenof(LARGE), lenof(x));
+}

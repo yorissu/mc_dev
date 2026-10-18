@@ -1,4 +1,0 @@
-
-from geo.shapes import hidden
-f :: () -> int { return hidden().secret; }
-pub main :: () {}

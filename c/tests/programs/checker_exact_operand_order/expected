@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:8:30: error[E0507]: cannot apply `*` to `{integer}` and `V`
-== run (status 1)
--- stderr
-main.mc:8:30: error[E0507]: cannot apply `*` to `{integer}` and `V`

@@ -1,0 +1,266 @@
+== check (status 1)
+-- stderr
+error[E0530]: the format specifier does not fit its value
+ --> main.mia:7:10
+  |
+6 | pub main :: () {
+7 |     println("{:x}", 1.5);
+  |             ^^^^^^  --- this is a `float`
+  |             |
+  |             `x` is for integers, but the value is a float
+8 |     println("{:.2}", 3);
+
+error[E0530]: the format specifier does not fit its value
+ --> main.mia:8:10
+  |
+7 |     println("{:x}", 1.5);
+8 |     println("{:.2}", 3);
+  |             ^^^^^^^  - this is a `int`
+  |             |
+  |             a precision (`.n`) is for floats only
+9 |     println("{:+}", true);
+
+error[E0530]: the format specifier does not fit its value
+  --> main.mia:9:10
+   |
+ 8 |     println("{:.2}", 3);
+ 9 |     println("{:+}", true);
+   |             ^^^^^^  ---- this is a `bool`
+   |             |
+   |             a sign (`+` or `-`) is for numbers only
+10 |     println("{:#d}", 3);
+
+error[E0530]: the format specifier does not fit its value
+  --> main.mia:10:10
+   |
+ 9 |     println("{:+}", true);
+10 |     println("{:#d}", 3);
+   |             ^^^^^^^  - this is a `int`
+   |             |
+   |             `#` is for integers written with `x`, `X`, `o` or `b`
+11 |     println("{:0}", "text");
+
+error[E0530]: the format specifier does not fit its value
+  --> main.mia:11:10
+   |
+10 |     println("{:#d}", 3);
+11 |     println("{:0}", "text");
+   |             ^^^^^^  ------ this is a `[4]u8`
+   |             |
+   |             `0` (padding with zeros) is for numbers only
+12 |     println("{:q}", 3);
+
+error[E0530]: invalid format string
+  --> main.mia:12:10
+   |
+11 |     println("{:0}", "text");
+12 |     println("{:q}", 3);
+   |             ^^^^^^ unknown character `q` in the format specifier
+13 |     println("{:5.}", 3.0);
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: invalid format string
+  --> main.mia:13:10
+   |
+12 |     println("{:q}", 3);
+13 |     println("{:5.}", 3.0);
+   |             ^^^^^^^ `.` must be followed by the precision, a number
+14 |     println("{x}", 3);
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: invalid format string
+  --> main.mia:14:10
+   |
+13 |     println("{:5.}", 3.0);
+14 |     println("{x}", 3);
+   |             ^^^^^ a placeholder is `{}` or `{:spec}`, like `{:>8}` or `{:.3f}`
+15 |     println("{:>5", 3);
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: invalid format string
+  --> main.mia:15:10
+   |
+14 |     println("{x}", 3);
+15 |     println("{:>5", 3);
+   |             ^^^^^^ `{` is not closed by `}` (write `{{` for a brace)
+16 |     println("{} }", 3);
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: invalid format string
+  --> main.mia:16:10
+   |
+15 |     println("{:>5", 3);
+16 |     println("{} }", 3);
+   |             ^^^^^^ a single `}` must be written `}}`
+17 |     println("{} {:>3}", 3);
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: the format string has 2 placeholder(s), but 1 value(s) are given
+  --> main.mia:17:2
+   |
+16 |     println("{} }", 3);
+17 |     println("{} {:>3}", 3);
+   |     ^^^^^^^^^^^^^^^^^^^^^^ 2 placeholder(s)
+   |     |
+   |     they must match
+18 |     println("{:{}}", 3);
+
+error[E0530]: invalid format string
+  --> main.mia:18:10
+   |
+17 |     println("{} {:>3}", 3);
+18 |     println("{:{}}", 3);
+   |             ^^^^^^^ `{` is not closed by `}` (write `{{` for a brace)
+19 |     println("{:99999999999}", 3);
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: invalid format string
+  --> main.mia:19:10
+   |
+18 |     println("{:{}}", 3);
+19 |     println("{:99999999999}", 3);
+   |             ^^^^^^^^^^^^^^^^ the width is too large
+20 | }
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+13 error(s), 0 warning(s)
+== run (status 1)
+-- stderr
+error[E0530]: the format specifier does not fit its value
+ --> main.mia:7:10
+  |
+6 | pub main :: () {
+7 |     println("{:x}", 1.5);
+  |             ^^^^^^  --- this is a `float`
+  |             |
+  |             `x` is for integers, but the value is a float
+8 |     println("{:.2}", 3);
+
+error[E0530]: the format specifier does not fit its value
+ --> main.mia:8:10
+  |
+7 |     println("{:x}", 1.5);
+8 |     println("{:.2}", 3);
+  |             ^^^^^^^  - this is a `int`
+  |             |
+  |             a precision (`.n`) is for floats only
+9 |     println("{:+}", true);
+
+error[E0530]: the format specifier does not fit its value
+  --> main.mia:9:10
+   |
+ 8 |     println("{:.2}", 3);
+ 9 |     println("{:+}", true);
+   |             ^^^^^^  ---- this is a `bool`
+   |             |
+   |             a sign (`+` or `-`) is for numbers only
+10 |     println("{:#d}", 3);
+
+error[E0530]: the format specifier does not fit its value
+  --> main.mia:10:10
+   |
+ 9 |     println("{:+}", true);
+10 |     println("{:#d}", 3);
+   |             ^^^^^^^  - this is a `int`
+   |             |
+   |             `#` is for integers written with `x`, `X`, `o` or `b`
+11 |     println("{:0}", "text");
+
+error[E0530]: the format specifier does not fit its value
+  --> main.mia:11:10
+   |
+10 |     println("{:#d}", 3);
+11 |     println("{:0}", "text");
+   |             ^^^^^^  ------ this is a `[4]u8`
+   |             |
+   |             `0` (padding with zeros) is for numbers only
+12 |     println("{:q}", 3);
+
+error[E0530]: invalid format string
+  --> main.mia:12:10
+   |
+11 |     println("{:0}", "text");
+12 |     println("{:q}", 3);
+   |             ^^^^^^ unknown character `q` in the format specifier
+13 |     println("{:5.}", 3.0);
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: invalid format string
+  --> main.mia:13:10
+   |
+12 |     println("{:q}", 3);
+13 |     println("{:5.}", 3.0);
+   |             ^^^^^^^ `.` must be followed by the precision, a number
+14 |     println("{x}", 3);
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: invalid format string
+  --> main.mia:14:10
+   |
+13 |     println("{:5.}", 3.0);
+14 |     println("{x}", 3);
+   |             ^^^^^ a placeholder is `{}` or `{:spec}`, like `{:>8}` or `{:.3f}`
+15 |     println("{:>5", 3);
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: invalid format string
+  --> main.mia:15:10
+   |
+14 |     println("{x}", 3);
+15 |     println("{:>5", 3);
+   |             ^^^^^^ `{` is not closed by `}` (write `{{` for a brace)
+16 |     println("{} }", 3);
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: invalid format string
+  --> main.mia:16:10
+   |
+15 |     println("{:>5", 3);
+16 |     println("{} }", 3);
+   |             ^^^^^^ a single `}` must be written `}}`
+17 |     println("{} {:>3}", 3);
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: the format string has 2 placeholder(s), but 1 value(s) are given
+  --> main.mia:17:2
+   |
+16 |     println("{} }", 3);
+17 |     println("{} {:>3}", 3);
+   |     ^^^^^^^^^^^^^^^^^^^^^^ 2 placeholder(s)
+   |     |
+   |     they must match
+18 |     println("{:{}}", 3);
+
+error[E0530]: invalid format string
+  --> main.mia:18:10
+   |
+17 |     println("{} {:>3}", 3);
+18 |     println("{:{}}", 3);
+   |             ^^^^^^^ `{` is not closed by `}` (write `{{` for a brace)
+19 |     println("{:99999999999}", 3);
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: invalid format string
+  --> main.mia:19:10
+   |
+18 |     println("{:{}}", 3);
+19 |     println("{:99999999999}", 3);
+   |             ^^^^^^^^^^^^^^^^ the width is too large
+20 | }
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+13 error(s), 0 warning(s)

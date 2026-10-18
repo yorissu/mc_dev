@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:27: error[E0525]: expected 3 elements, found 2
-== run (status 1)
--- stderr
-main.mc:2:27: error[E0525]: expected 3 elements, found 2

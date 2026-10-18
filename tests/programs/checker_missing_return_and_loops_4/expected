@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:3:2: error[E0515]: `break` outside of a loop
+== run (status 1)
+-- stderr
+main.mia:3:2: error[E0515]: `break` outside of a loop

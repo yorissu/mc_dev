@@ -1,0 +1,20 @@
+
+apply :: (f: (int) -> int, v: int) -> int {
+	return f(v);
+}
+
+double :: (x: int) -> int {
+	return x * 2;
+}
+
+f :: () -> int {
+	LIMIT :: 10;
+	helper :: (x: int) -> int {
+		return x + LIMIT;
+	}
+	return apply(double, 1) + apply((x: int) -> int {
+		return x + LIMIT;
+	}, 2) + helper(3);
+}
+
+pub main :: () {}

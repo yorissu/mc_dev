@@ -1,0 +1,12 @@
+
+# nan and infinity are spelled by mia, not by the c library (c libraries differ)
+
+from io import println
+
+pub main :: () -> int {
+	let zero = 0.0;
+	let n = zero / zero;
+	let i = 1.0 / zero;
+	println("[{:.3f}] [{:e}] [{:E}] [{:>6.2f}] [{:+f}] [{:08.1f}] [{}]", n, i, -i, n, i, -i, -n);
+	return 0;
+}

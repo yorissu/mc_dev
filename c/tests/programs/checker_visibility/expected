@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:3:22: error[E0303]: `private_function` is not public in `geo.shapes`
-== run (status 1)
--- stderr
-main.mc:3:22: error[E0303]: `private_function` is not public in `geo.shapes`

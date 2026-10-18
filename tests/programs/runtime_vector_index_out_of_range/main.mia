@@ -1,0 +1,10 @@
+
+# a vector's index must be below its length, not only its capacity.
+
+import vector
+
+pub main :: () {
+	let numbers = vector.make<int>();
+	vector.push(&numbers, &1);
+	vector.at(&numbers, 1)[0] = 2;
+}

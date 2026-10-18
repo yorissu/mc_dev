@@ -1,0 +1,15 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+pub main :: () {
+	println("{:q}", 1);
+	println("{:5.}", 1.0);
+	println("{:.101f}", 1.0);
+	println("{:x5}", 1);
+	println("{:.2f}", 1);
+	println("{:#}", 1);
+	println("{:#x}", 1.5);
+	println("a{{b}} {} {:>3} {x", 1, 2);
+	println("{:99999}", 1);
+}

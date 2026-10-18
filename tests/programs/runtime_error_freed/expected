@@ -1,0 +1,14 @@
+== check (status 0)
+== run (status 101)
+-- stderr
+runtime error: use of freed heap memory
+  --> main.mia:9:9
+   |
+ 8 |     _ = free(data);
+ 9 |     return data[0];
+   |            ^^^^^^^ here
+10 | }
+   |
+   = note: in `main` at main.mia:9:9
+   = help: the memory was given back by `free` or `realloc` before this access
+

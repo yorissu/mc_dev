@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:26: error[E0401]: `a` is already declared in this scope
-== run (status 1)
--- stderr
-main.mc:2:26: error[E0401]: `a` is already declared in this scope

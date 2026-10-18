@@ -1,0 +1,3 @@
+== check (status 1)
+-- stderr
+main.mia:1006:1: error[E0705]: constants refer to each other too deeply

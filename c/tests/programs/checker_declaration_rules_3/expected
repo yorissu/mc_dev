@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:3:10: error[E0407]: `_+_` takes 2 operand(s), but `f` has 1 parameter(s)
-== run (status 1)
--- stderr
-main.mc:3:10: error[E0407]: `_+_` takes 2 operand(s), but `f` has 1 parameter(s)

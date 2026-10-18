@@ -1,0 +1,15 @@
+== check (status 1)
+-- stderr
+main.mia:7:13: error[E0105]: invalid number literal
+main.mia:14:12: error[E0105]: invalid number literal
+main.mia:15:16: error[E0105]: invalid number literal
+main.mia:9:9: error[E0511]: the constant does not fit in 128 bits (-2^127 to 2^127 - 1)
+main.mia:10:12: error[E0511]: the constant does not fit in 128 bits (-2^127 to 2^127 - 1)
+main.mia:11:11: error[E0511]: the constant does not fit in 128 bits (-2^127 to 2^127 - 1)
+main.mia:12:12: error[E0511]: the constant does not fit in 128 bits (-2^127 to 2^127 - 1)
+main.mia:16:10: warning[W0701]: `18446744073709551615u64 * 18446744073709551615u64` overflows `u64`
+main.mia:18:9: warning[W0701]: `255u8 + 1` overflows `u8`
+main.mia:19:10: warning[W0701]: `-9223372036854775808s64 - 1` overflows `s64`
+main.mia:20:9: error[E0704]: division by zero
+main.mia:23:15: error[E0511]: `18446744073709551616` does not fit in `u64`
+main.mia:24:14: error[E0511]: `-129` does not fit in `s8`

@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:25: error[E0704]: division by zero
-== run (status 1)
--- stderr
-main.mc:2:25: error[E0704]: division by zero

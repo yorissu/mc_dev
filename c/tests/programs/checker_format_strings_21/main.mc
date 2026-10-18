@@ -1,3 +1,0 @@
-
-f :: () { let p = println; }
-pub main :: () {}

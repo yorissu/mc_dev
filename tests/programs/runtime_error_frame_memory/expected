@@ -1,0 +1,3 @@
+== run (status 101)
+-- stderr
+main.mia:8:9: runtime error: stack overflow: the locals of the running calls would take more than 2147483648 bytes

@@ -1,6 +1,0 @@
-
-from io import print, println
-from memory import alloc, realloc, free, copy
-
-remainder :: (a: u8, b: u8) -> u8 { return a % b; }
-pub main :: () -> int { return (int)remainder(1, 0); }

@@ -1,0 +1,13 @@
+
+swap :: (a: &int, b: &int) {
+	let t = a;
+	a = b;
+	b = t;
+}
+
+P :: {
+	let x: int;
+	let y: int;
+}
+
+pub main :: () {}

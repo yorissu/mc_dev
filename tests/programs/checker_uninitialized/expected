@@ -1,0 +1,6 @@
+== check (status 0)
+-- stderr
+main.mia:4:6: warning[W0502]: `a` may be read before it is assigned
+== run (status 0)
+-- stderr
+main.mia:4:6: warning[W0502]: `a` may be read before it is assigned

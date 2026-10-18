@@ -1,0 +1,4 @@
+== check (status 0)
+== run (status 101)
+-- stderr
+main.mia:7:13: runtime error: cannot allocate 1099511627776 elements

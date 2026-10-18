@@ -1,0 +1,11 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+forever :: (n: int) -> int {
+	return forever(n + 1);
+}
+
+pub main :: () {
+	_ = forever(0);
+}

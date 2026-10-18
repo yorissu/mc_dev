@@ -1,0 +1,90 @@
+
+# conditions of 'if' and 'while' compile to jumps: '&&' and '||' still stop at
+# the first part that decides, in order, '!' turns them around, and literals
+# fold away. each part writes its number into a log, so the log shows which
+# parts ran.
+
+from io import println
+
+yes :: (log: &int, n: int) -> bool {
+	log = log * 10 + n;
+	return true;
+}
+
+no :: (log: &int, n: int) -> bool {
+	log = log * 10 + n;
+	return false;
+}
+
+show :: (name: []u8, log: int, taken: bool) then println("{}: ran {}, {}", name, log, taken);
+
+pub main :: () {
+	let log = 0;
+	let taken = false;
+
+	log = 0;
+	taken = false;
+	if yes(&log, 1) && no(&log, 2) then taken = true;
+	show("yes && no"[..], log, taken);
+
+	log = 0;
+	taken = false;
+	if no(&log, 1) && yes(&log, 2) then taken = true;
+	show("no && yes"[..], log, taken);
+
+	log = 0;
+	taken = false;
+	if no(&log, 1) || yes(&log, 2) then taken = true;
+	show("no || yes"[..], log, taken);
+
+	log = 0;
+	taken = false;
+	if yes(&log, 1) || no(&log, 2) then taken = true;
+	show("yes || no"[..], log, taken);
+
+	log = 0;
+	taken = false;
+	if !(no(&log, 1) || no(&log, 2)) then taken = true;
+	show("!(no || no)"[..], log, taken);
+
+	log = 0;
+	taken = false;
+	if (yes(&log, 1) && (no(&log, 2) || yes(&log, 3))) && !no(&log, 4) then taken = true;
+	show("nested"[..], log, taken);
+
+	log = 0;
+	taken = false;
+	if !(yes(&log, 1) && !yes(&log, 2)) || no(&log, 3) then taken = true;
+	show("not and not"[..], log, taken);
+
+	log = 0;
+	taken = false;
+	if false || yes(&log, 1) then taken = true;
+	show("false || yes"[..], log, taken);
+
+	log = 0;
+	taken = false;
+	if true && no(&log, 1) then taken = true;
+	show("true && no"[..], log, taken);
+
+	log = 0;
+	taken = false;
+	if no(&log, 1) then taken = false;
+	else if yes(&log, 2) && yes(&log, 3) then taken = true;
+	else taken = false;
+	show("else if"[..], log, taken);
+
+	log = 0;
+	let rounds = 0;
+	while rounds < 3 && yes(&log, rounds + 1) then rounds += 1;
+	show("while &&"[..], log, 3 == rounds);
+
+	log = 0;
+	rounds = 0;
+	while !(rounds >= 2 || no(&log, 9)) then rounds += 1;
+	show("while !||"[..], log, 0 == rounds);
+
+	log = 0;
+	while false && yes(&log, 1) then log = 99;
+	show("while false &&"[..], log, 0 == log);
+}

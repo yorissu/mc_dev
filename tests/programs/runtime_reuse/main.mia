@@ -1,0 +1,26 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+# 20000 calls with a local array, and 20000 heap blocks made and freed: the
+# statistics say how many heap allocations were made.
+make :: (n: int) -> [16]int {
+	let items: [16]int = {};
+	items[0] = n;
+	return items;
+}
+
+pub main :: () -> int {
+	let total = 0;
+	for i in 0..20000 {
+		let items = make(i);
+		let view = items[..];
+		total = (total + view[0]) % 1000;
+		let heap = alloc<int>(4);
+		heap[0] = i;
+		total = (total + heap[0]) % 1000;
+		_ = free(heap);
+	}
+	println("{}", total);
+	return total;
+}

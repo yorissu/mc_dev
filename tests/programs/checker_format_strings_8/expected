@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:5:16: error[E0519]: values for `...` are passed by value
+== run (status 1)
+-- stderr
+main.mia:5:16: error[E0519]: values for `...` are passed by value

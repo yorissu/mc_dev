@@ -1,10 +1,10 @@
 
 {
-	"name": "mc-language",
-	"displayName": "mc",
-	"description": "Syntax highlighting for mc (modernized c) source files.",
+	"name": "mia-language",
+	"displayName": "mia",
+	"description": "Syntax highlighting for mia source files.",
 	"version": "0.1.0",
-	"publisher": "mc",
+	"publisher": "mia",
 	"license": "UNLICENSED",
 	"engines": {
 		"vscode": "^1.60.0"
@@ -15,22 +15,21 @@
 	"contributes": {
 		"languages": [
 			{
-				"id": "mc",
+				"id": "mia",
 				"aliases": [
-					"mc",
-					"modernized c"
+					"mia"
 				],
 				"extensions": [
-					".mc"
+					".mia"
 				],
 				"configuration": "./language-configuration.json"
 			}
 		],
 		"grammars": [
 			{
-				"language": "mc",
-				"scopeName": "source.mc",
-				"path": "./syntaxes/mc.tmLanguage.json"
+				"language": "mia",
+				"scopeName": "source.mia",
+				"path": "./syntaxes/mia.tmLanguage.json"
 			}
 		]
 	}

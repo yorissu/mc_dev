@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:3:14: error[E0502]: both ends of a range need the same type
+== run (status 1)
+-- stderr
+main.mia:3:14: error[E0502]: both ends of a range need the same type

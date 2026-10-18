@@ -1,0 +1,3 @@
+
+[plugin = "twice"]
+pub nothing :: ();

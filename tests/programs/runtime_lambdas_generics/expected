@@ -1,0 +1,14 @@
+== check (status 0)
+== run (status 0)
+-- stdout
+{3, 5, 7}
+true
+9
+2.5
+{x: 1, y: 2}
+true
+true
+true
+6
+20
+101

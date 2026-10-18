@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:4:6: error[E0401]: `a` is already declared in this scope
+== run (status 1)
+-- stderr
+main.mia:4:6: error[E0401]: `a` is already declared in this scope

@@ -1,0 +1,27 @@
+
+from io import println
+
+Point :: {
+	let x: s16;
+	let y: f64;
+}
+
+[plugin = "probe"]
+describe :: (p: Point, s: []u16, values: ...) -> uint;
+
+[plugin = "probe"]
+wrap :: (value: int) -> u8;
+
+[plugin = "probe"]
+oops :: ();
+
+NUMBERS :: ([3]u16){ 1, 2, 500, };
+
+# the plugin sees the layout, the memory, the slice (read-only: a constant's)
+# and the values, and the flag its check put on the last value: 1111. its
+# result wraps to u8: 44.
+pub main :: () -> int {
+	let p: Point = { x: -3, y: 2.5, };
+	println("{} {}", describe(p, NUMBERS[..], true, -7), wrap(300));
+	return (int)wrap(258);
+}

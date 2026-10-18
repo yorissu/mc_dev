@@ -1,0 +1,31 @@
+== check (status 0)
+== run (status 0)
+-- stdout
+yes && no: ran 12, false
+no && yes: ran 1, false
+no || yes: ran 12, true
+yes || no: ran 1, true
+!(no || no): ran 12, true
+nested: ran 1234, true
+not and not: ran 12, true
+false || yes: ran 1, true
+true && no: ran 1, false
+else if: ran 123, true
+while &&: ran 123, true
+while !||: ran 99, false
+while false &&: ran 0, true
+== miab (status 0)
+-- stdout
+yes && no: ran 12, false
+no && yes: ran 1, false
+no || yes: ran 12, true
+yes || no: ran 1, true
+!(no || no): ran 12, true
+nested: ran 1234, true
+not and not: ran 12, true
+false || yes: ran 1, true
+true && no: ran 1, false
+else if: ran 123, true
+while &&: ran 123, true
+while !||: ran 99, false
+while false &&: ran 0, true

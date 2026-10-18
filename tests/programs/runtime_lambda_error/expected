@@ -1,0 +1,15 @@
+== check (status 0)
+== run (status 101)
+-- stderr
+runtime error: division by zero
+  --> main.mia:11:10
+   |
+10 |     return apply((x: int) -> int {
+11 |         return 10 / x;
+   |                ^^^^^^ here
+12 |     }, 0);
+   |
+   = note: in `lambda at main.mia:10` at main.mia:11:10
+   = note: called from `apply` at main.mia:6:9
+   = note: called from `main` at main.mia:10:9
+

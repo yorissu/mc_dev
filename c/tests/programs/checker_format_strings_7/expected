@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:3:31: error[E0701]: the format string must be known at compile time
-== run (status 1)
--- stderr
-main.mc:3:31: error[E0701]: the format string must be known at compile time

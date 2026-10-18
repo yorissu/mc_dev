@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:15: error[E0501]: cannot find `missing`
-== run (status 1)
--- stderr
-main.mc:2:15: error[E0501]: cannot find `missing`

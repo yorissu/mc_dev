@@ -1,0 +1,25 @@
+== check (status 0)
+== run (status 0)
+-- stdout
+42
+50
+81
+-1 1
+ran
+101
+-1
+21
+2
+8
+== miab (status 0)
+-- stdout
+42
+50
+81
+-1 1
+ran
+101
+-1
+21
+2
+8

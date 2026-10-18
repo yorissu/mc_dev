@@ -1,0 +1,24 @@
+
+/// the type codes of typed instructions: the name instructions show, the
+/// size of a value in memory (bytes; 0 for BYTES, whose size is an operand),
+/// its kind ('i' integer, 'f' float, 'b' bool, 'n' function value, 's'
+/// slice, 'x' the bytes of a struct or an array) and whether it is a signed
+/// integer.
+
+mia_code(s8, "S8", 1, 'i', true)
+mia_code(s16, "S16", 2, 'i', true)
+mia_code(s32, "S32", 4, 'i', true)
+mia_code(s64, "S64", 8, 'i', true)
+mia_code(u8, "U8", 1, 'i', false)
+mia_code(u16, "U16", 2, 'i', false)
+mia_code(u32, "U32", 4, 'i', false)
+mia_code(u64, "U64", 8, 'i', false)
+mia_code(int, "INT", 8, 'i', true)
+mia_code(uint, "UINT", 8, 'i', false)
+mia_code(f32, "F32", 4, 'f', false)
+mia_code(f64, "F64", 8, 'f', false)
+mia_code(float, "FLOAT", 8, 'f', false)
+mia_code(bool, "BOOL", 1, 'b', false)
+mia_code(fn, "FN", 8, 'n', false)
+mia_code(slice, "SLICE", 16, 's', false)
+mia_code(bytes, "BYTES", 0, 'x', false)

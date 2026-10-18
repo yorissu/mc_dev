@@ -1,0 +1,29 @@
+== check (status 1)
+-- stderr
+error[E0511]: `300` does not fit in `u8`
+  --> main.mia:19:16
+   |
+18 |     _ = first(b);
+19 |     let big: u8 = 300;
+   |                   ^^^ `u8` holds 0 to 255
+20 |     let f: (int, []u8) -> int = first;
+
+error[E0506]: generic function `first` needs type arguments here
+  --> main.mia:20:30
+   |
+19 |     let big: u8 = 300;
+20 |     let f: (int, []u8) -> int = first;
+   |                                 ^^^^^ cannot infer them
+21 | }
+   |
+   = help: write `first<T>`
+
+error[E0502]: mismatched types
+  --> main.mia:10:18
+   |
+ 9 | first<T> :: (box: Box<T>) -> T {
+10 |     let wrong: u8 = "text";
+   |                     ^^^^^^ expected `u8`, found `[4]u8`
+11 |     return box.value;
+
+3 error(s), 0 warning(s)

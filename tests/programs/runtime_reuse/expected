@@ -1,0 +1,5 @@
+== run (status 0)
+-- stdout
+0
+-- stderr
+880012 instruction(s), 20000 allocation(s), exit status 0

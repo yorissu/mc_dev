@@ -1,0 +1,17 @@
+
+grow :: (v: &int) {
+	v += 1;
+}
+
+read :: (v: &int) -> int {
+	return v;
+}
+
+f :: () {
+	let a = 1;
+	grow(&a);
+	_ = read(&a);
+	_ = read(&5);
+}
+
+pub main :: () {}

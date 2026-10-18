@@ -1,0 +1,4 @@
+== check (status 1)
+-- stderr
+main.mia:4:2: error[E0403]: `plugin` needs the name of the plugin that provides the function
+main.mia:7:2: error[E0403]: `plugin` needs the name of the plugin that provides the function

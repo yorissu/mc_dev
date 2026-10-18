@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:3:9: error[E0524]: this function returns nothing
+== run (status 1)
+-- stderr
+main.mia:3:9: error[E0524]: this function returns nothing

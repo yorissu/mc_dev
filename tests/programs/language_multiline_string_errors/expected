@@ -1,0 +1,55 @@
+== check (status 1)
+-- stderr
+error[E0109]: a multiline string starts on the next line
+ --> main.mia:5:10
+  |
+4 | pub main :: () {
+5 |     let a = """text on the first line
+  |             ^^^ text follows the opening `"""`
+6 |         """;
+  |
+  = help: write `"..."` for a string on one line
+
+error[E0109]: a line of a multiline string is indented less than its end
+  --> main.mia:9:1
+   |
+ 8 |         fine
+ 9 |     less indented
+   | ^^^^ indented less than the closing `"""`
+10 |         """;
+   |
+   = help: indent every line at least as much as the closing `"""`, with the same characters
+
+error[E0107]: unknown string suffix `x`
+  --> main.mia:13:6
+   |
+12 |         fine
+13 |         """x;
+   |            ^ only `c` is allowed
+14 |     println("{} {} {}", a, b, c);
+   |
+   = help: `"text"c` is a NUL-terminated string
+
+error[E0102]: unterminated multiline string
+  --> main.mia:15:10
+   |
+14 |     println("{} {} {}", a, b, c);
+15 |     let d = """
+   |             ^^^ this string is never closed
+16 |         never closed
+
+error[E0201]: expected `;` after the variable, found end of file
+  --> main.mia:18:1
+   |
+17 | }
+18 |
+   | ^ expected `;`
+
+error[E0201]: expected `}` to close the block, found end of file
+  --> main.mia:18:1
+   |
+17 | }
+18 |
+   | ^ expected `}`
+
+6 error(s), 0 warning(s)

@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:3:2: error[E0205]: struct declarations are only allowed at module level
+== run (status 1)
+-- stderr
+main.mia:3:2: error[E0205]: struct declarations are only allowed at module level

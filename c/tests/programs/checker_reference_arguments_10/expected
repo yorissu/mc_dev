@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:26: error[E0501]: cannot find `read`
-== run (status 1)
--- stderr
-main.mc:2:26: error[E0501]: cannot find `read`

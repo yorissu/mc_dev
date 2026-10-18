@@ -1,0 +1,34 @@
+== ast (status 1)
+-- stdout
+Module
+-- stderr
+main.mia:2:9: error[E0101]: unknown character '$'
+main.mia:3:9: error[E0102]: unterminated string literal
+main.mia:4:9: error[E0105]: invalid number literal
+main.mia:5:9: error[E0105]: invalid number literal
+main.mia:6:9: error[E0105]: invalid number literal
+main.mia:7:9: error[E0106]: invalid character literal
+main.mia:8:9: error[E0105]: invalid number literal
+main.mia:9:1: error[E0103]: unterminated block comment
+main.mia:2:1: error[E0201]: expected a declaration name, found `let`
+main.mia:3:1: error[E0201]: expected a declaration name, found `let`
+main.mia:5:1: error[E0201]: expected a declaration name, found `let`
+main.mia:6:1: error[E0201]: expected a declaration name, found `let`
+main.mia:7:1: error[E0201]: expected a declaration name, found `let`
+main.mia:8:1: error[E0201]: expected a declaration name, found `let`
+== check (status 1)
+-- stderr
+main.mia:2:9: error[E0101]: unknown character '$'
+main.mia:3:9: error[E0102]: unterminated string literal
+main.mia:4:9: error[E0105]: invalid number literal
+main.mia:5:9: error[E0105]: invalid number literal
+main.mia:6:9: error[E0105]: invalid number literal
+main.mia:7:9: error[E0106]: invalid character literal
+main.mia:8:9: error[E0105]: invalid number literal
+main.mia:9:1: error[E0103]: unterminated block comment
+main.mia:2:1: error[E0201]: expected a declaration name, found `let`
+main.mia:3:1: error[E0201]: expected a declaration name, found `let`
+main.mia:5:1: error[E0201]: expected a declaration name, found `let`
+main.mia:6:1: error[E0201]: expected a declaration name, found `let`
+main.mia:7:1: error[E0201]: expected a declaration name, found `let`
+main.mia:8:1: error[E0201]: expected a declaration name, found `let`

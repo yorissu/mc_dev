@@ -1,0 +1,4 @@
+== check (status 1)
+-- stderr
+main.mia:7:4: error[E0201]: expected `]` to close the attribute list, found `.`
+main.mia:7:8: error[E0201]: expected a declaration name, found `]`

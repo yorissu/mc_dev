@@ -1,0 +1,22 @@
+
+from io import println
+
+Point :: {
+	let x: s16;
+	let y: f64;
+}
+
+[plugin = "probe"]
+describe :: (p: Point, s: []u16, values: ...) -> uint;
+
+[plugin = "probe"]
+wrap :: (value: int) -> u8;
+
+[plugin = "probe"]
+oops :: ();
+
+# the plugin's check reports through the normal diagnostics.
+pub main :: () {
+	let p: Point = { x: 1, y: 1.0, };
+	_ = describe(p, {}, 1, 2, 3);
+}

@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:3:40: error[E0507]: cannot apply `+` to `S` and `S`
-== run (status 1)
--- stderr
-main.mc:3:40: error[E0507]: cannot apply `+` to `S` and `S`

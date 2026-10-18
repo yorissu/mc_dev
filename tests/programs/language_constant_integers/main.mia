@@ -1,0 +1,24 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+# constants are computed with 128-bit integers, then checked against their
+# type: these are the values where 64 bits would not be enough.
+U64_MAX :: 18446744073709551615u64;
+S64_MIN :: -9223372036854775808s64;
+HALF :: U64_MAX / 2;
+PRODUCT :: (u64)((U64_MAX / 3) * 3);
+Q1 :: -7 / 2;
+Q2 :: 7 / -2;
+Q3 :: -7 / -2;
+R1 :: -7 % 2;
+R2 :: 7 % -2;
+R3 :: -7 % -2;
+SHIFTED :: (1u64 << 63) >> 3;
+
+pub main :: () {
+	println("{} {} {} {}", U64_MAX, S64_MIN, HALF, PRODUCT);
+	println("{} {} {}", Q1, Q2, Q3);
+	println("{} {} {}", R1, R2, R3);
+	println("{} {} {}", SHIFTED, U64_MAX - 1, S64_MIN + 1);
+}

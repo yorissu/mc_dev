@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:2:27: error[E0405]: `f` is provided by a plugin and cannot have a body
+== run (status 1)
+-- stderr
+main.mia:2:27: error[E0405]: `f` is provided by a plugin and cannot have a body

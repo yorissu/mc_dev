@@ -1,9 +1,0 @@
-== check (status 0)
--- stderr
-main.mc:6:57: warning[W0503]: variable `open` is `mut` but never changed
-== run (status 101)
--- stdout
-{9, 2}
--- stderr
-main.mc:6:57: warning[W0503]: variable `open` is `mut` but never changed
-main.mc:5:25: runtime error: write through a read-only slice

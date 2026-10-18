@@ -1,4 +1,0 @@
-== check (status 0)
-== run (status 101)
--- stderr
-main.mc:5:46: runtime error: stopped after 1000000 instructions

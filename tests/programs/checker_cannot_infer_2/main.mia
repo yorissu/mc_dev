@@ -1,0 +1,11 @@
+
+make<T> :: () -> []T {
+	return {};
+}
+
+f :: () {
+	let s: []int = make();
+	_ = s;
+}
+
+pub main :: () {}

@@ -1,0 +1,12 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+pub main :: () {
+	let items: [3]int = {};
+	let i = 0;
+	while true {
+		items[i] = i;
+		i += 1;
+	}
+}

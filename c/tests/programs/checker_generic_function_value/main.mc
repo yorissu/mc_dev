@@ -1,4 +1,0 @@
-
-id<T> :: (a: T) -> T { return a; }
-f :: () { let g: (int) -> int = id; let h = id<u8>; _ = g(1); _ = h(2); }
-pub main :: () {}

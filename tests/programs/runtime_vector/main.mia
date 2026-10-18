@@ -1,0 +1,50 @@
+
+# the standard library's vector: a growable array on the heap. every
+# function is called here, so each generic body is checked at least once.
+
+import io
+import memory
+import vector
+
+Point :: {
+	let x: int;
+	let y: int;
+}
+
+pub main :: () {
+	# make and push: pushing past the capacity grows it (1, 2, 4, 8, 16)
+	let numbers = vector.make<int>(1);
+	for i in 0..10 then vector.push(&numbers, &(i * i));
+	io.println("squares: {}", vector.items(&numbers));
+	io.println("length {}, capacity {}", numbers.length, lenof(numbers.data));
+
+	# at is a view of one element: read it, or write through it; copy_at copies it
+	io.println("at 3: {}, copy_at 4: {}", vector.at(&numbers, 3)[0], vector.copy_at(&numbers, 4));
+	for i in 0..10 then vector.at(&numbers, (uint)i)[0] = i;
+	io.println("counted: {}", vector.items(&numbers));
+
+	# items is a view of the elements in use; copy_items is a copy in new memory
+	let view = vector.items(&numbers);
+	let copied = vector.copy_items(&numbers);
+	view[0] = 100;
+	io.println("view {}, copy {}", view[0], copied[0]);
+	_ = memory.free(copied);
+
+	# pop takes from the end, and gives none once the vector is empty
+	for i in 0..11 {
+		let popped = vector.pop(&numbers);
+		io.println("pop {}: {}", numbers.length, popped);
+	}
+
+	# drop frees the storage
+	vector.drop(&numbers);
+	io.println("dropped: length {}, capacity {}", numbers.length, lenof(numbers.data));
+
+	# any element type: values are copied in
+	let points = vector.make<Point>();
+	vector.push(&points, &{ x: 1, y: 2, });
+	vector.push(&points, &{ x: 3, y: 4, });
+	vector.at(&points, 1)[0].y = 40;
+	io.println("points: {}, first: {}", vector.items(&points), vector.copy_at(&points, 0));
+	vector.drop(&points);
+}

@@ -1,0 +1,7 @@
+== check (status 1)
+-- stderr
+main.mia:9:22: error[E0201]: expected an expression, found `;`
+main.mia:11:29: error[E0202]: `~` and `+` need parentheses to show their order
+main.mia:13:28: error[E0202]: `~` and `&&` need parentheses to show their order
+main.mia:15:38: error[E0202]: `~` and `==` need parentheses to show their order
+main.mia:17:46: error[E0201]: expected `(` after `lenof`, found `;`

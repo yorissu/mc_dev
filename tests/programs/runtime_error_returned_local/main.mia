@@ -1,0 +1,13 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+leak :: () -> []int {
+	let local: [2]int = { 1, 2, };
+	return local[..];
+}
+
+pub main :: () -> int {
+	let s = leak();
+	return s[1];
+}

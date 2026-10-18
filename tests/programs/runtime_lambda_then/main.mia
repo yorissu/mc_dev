@@ -1,0 +1,33 @@
+
+# lambdas take `then` and one statement, without a `;` of its own: it ends
+# where the expression around the lambda goes on.
+import io
+import option
+
+apply :: (f: (int) -> int, x: int) -> int then return f(x);
+twice :: (f: (int) -> int, g: (int) -> int, x: int) -> int then return g(f(x));
+run :: (f: ()) then f();
+
+pub main :: () {
+	io.println("{}", apply((x: int) -> int then return x * 2, 21));
+	io.println("{}", twice((x: int) -> int then return x + 1, (x: int) -> int then return x * 10, 4));
+	let square = (x: int) -> int then return x * x;
+	io.println("{}", square(9));
+	let sign = (x: int) -> int then if x < 0 then return -1;
+	else return 1;
+	io.println("{} {}", sign(-5), sign(5));
+	run(() then io.println("ran"));
+	let total = 0;
+	let nested = (x: int) -> int then return apply((y: int) -> int then return y + 100, x);
+	io.println("{}", nested(1));
+	io.println("{}", option.none<int>() ~ option.unwrap_or(() -> int then return -1));
+	io.println("{}", 7 ~ (x: int) -> int then return x * 3);
+	let block = (x: int) -> int {
+		let y = x + 1;
+		return y;
+	};
+	total += block(1);
+	io.println("{}", total);
+	let early = (x: int) -> int then while true then return x;
+	io.println("{}", early(8));
+}

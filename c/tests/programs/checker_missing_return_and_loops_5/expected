@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:18: error[E0524]: this function returns nothing
-== run (status 1)
--- stderr
-main.mc:2:18: error[E0524]: this function returns nothing

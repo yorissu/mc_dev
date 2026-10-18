@@ -1,0 +1,50 @@
+
+# there is no `mut`: variables, parameters, fields, loop variables and
+# references can all be changed; constants, functions and temporaries cannot.
+
+from io import println
+
+Point :: {
+	let x: int;
+	let y: int;
+}
+
+move :: (p: &Point, by: int) {
+	p.x += by;
+	p.y += by;
+}
+
+swap :: (a: &int, b: &int) {
+	let kept = a;
+	a = b;
+	b = kept;
+}
+
+twice :: (n: int) -> int {
+	n *= 2;
+	return n;
+}
+
+pub main :: () {
+	let p: Point = { x: 1, y: 2, };
+	p.x = 10;
+	move(&p, 5);
+	println("{}", p);
+	let a = 1;
+	let b = 2;
+	swap(&a, &b);
+	println("{} {}", a, b);
+	swap(&a, &a);
+	println("{}", a);
+	println("{}", twice(21));
+	let total = 0;
+	for i in 0..3 {
+		i *= 10;
+		total += i;
+	}
+	println("{}", total);
+	let numbers: [3]int = { 1, 2, 3, };
+	let view = numbers[..];
+	view[0] = 7;
+	println("{}", numbers);
+}

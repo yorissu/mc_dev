@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:4:11: error[E0706]: index 3 is out of bounds
+== run (status 1)
+-- stderr
+main.mia:4:11: error[E0706]: index 3 is out of bounds

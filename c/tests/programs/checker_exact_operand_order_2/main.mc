@@ -1,3 +1,0 @@
-
-f :: (a: V) -> V { return 2 * a; }
-pub main :: () {}

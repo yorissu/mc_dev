@@ -1,0 +1,4 @@
+== check (status 0)
+== run (status 101)
+-- stderr
+main.mia:20:2: runtime error: the plugin function `main.oops` reads argument 3, but it has 0

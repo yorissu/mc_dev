@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:7:11: error[E0507]: cannot apply `+` to `S` and `S`
+== run (status 1)
+-- stderr
+main.mia:7:11: error[E0507]: cannot apply `+` to `S` and `S`

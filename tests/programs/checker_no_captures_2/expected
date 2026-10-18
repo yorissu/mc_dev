@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:5:10: error[E0516]: `a` is a variable of the enclosing function
+== run (status 1)
+-- stderr
+main.mia:5:10: error[E0516]: `a` is a variable of the enclosing function

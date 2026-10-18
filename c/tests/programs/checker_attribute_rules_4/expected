@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:18: error[E0405]: `f` is provided by a plugin and cannot have a body
-== run (status 1)
--- stderr
-main.mc:2:18: error[E0405]: `f` is provided by a plugin and cannot have a body

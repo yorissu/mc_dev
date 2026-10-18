@@ -1,0 +1,72 @@
+
+/// the instructions of the virtual machine: name, how many type codes it
+/// carries in its name (0, 1 or 2) and how many integer operands it takes
+/// (0 to 3). typed instructions show their codes in their name: 'ADD_S32',
+/// 'LOAD_U8', 'LOAD_BYTES' (a struct or an array), 'CAST_INT_F32',
+/// 'INDEX_SLICE_F32_UINT'. an instruction that moves a value between memory
+/// and the operand stack has the value's size as its last operand. see
+/// bytecode.h for what each one does.
+
+// constants and the operand stack
+mia_opcode(CONST, 0, 1)
+mia_opcode(ZERO, 0, 1)
+mia_opcode(POP, 0, 1)
+mia_opcode(DUP, 0, 1)
+// locals of the frame
+mia_opcode(LOAD, 1, 2)
+mia_opcode(STORE, 1, 2)
+// locations: a block and a byte offset in it
+mia_opcode(LOC_LOCAL, 0, 1)
+mia_opcode(LOC_CONST, 0, 1)
+mia_opcode(LOC_FIELD, 0, 1)
+mia_opcode(LOC_INDEX, 1, 2)
+mia_opcode(LOC_INDEX_SLICE, 1, 1)
+mia_opcode(TEMP_LOC, 1, 2)
+mia_opcode(LOAD_LOC, 1, 1)
+mia_opcode(STORE_LOC, 1, 1)
+// structs and arrays on the operand stack
+mia_opcode(FIELD, 1, 3)
+mia_opcode(SET_FIELD, 1, 3)
+mia_opcode(MAKE_ARRAY, 1, 2)
+mia_opcode(INDEX, 2, 3)
+// slices
+mia_opcode(INDEX_SLICE, 2, 1)
+mia_opcode(LEN_SLICE, 0, 0)
+mia_opcode(SLICE_IS_NULL, 0, 0)
+mia_opcode(SLICE_LOC, 2, 3)
+mia_opcode(SLICE_SLICE, 2, 2)
+// control
+mia_opcode(JUMP, 0, 1)
+mia_opcode(JUMP_IF_FALSE, 0, 1)
+mia_opcode(JUMP_IF_TRUE, 0, 1)
+mia_opcode(NOT, 0, 0)
+mia_opcode(RANGE_INIT, 1, 2)
+mia_opcode(RANGE_TEST, 0, 2)
+mia_opcode(RANGE_STEP, 0, 1)
+mia_opcode(CALL, 0, 1)
+mia_opcode(CALL_VALUE, 0, 2)
+mia_opcode(CALL_INTRINSIC, 0, 2)
+mia_opcode(FUNCTION, 0, 1)
+mia_opcode(INTRINSIC, 0, 1)
+mia_opcode(RETURN, 0, 1)
+mia_opcode(ASSERT_FAIL, 0, 1)
+// arithmetic and comparisons
+mia_opcode(ADD, 1, 0)
+mia_opcode(SUB, 1, 0)
+mia_opcode(MUL, 1, 0)
+mia_opcode(DIV, 1, 0)
+mia_opcode(MOD, 1, 0)
+mia_opcode(AND, 1, 0)
+mia_opcode(OR, 1, 0)
+mia_opcode(XOR, 1, 0)
+mia_opcode(SHL, 2, 0)
+mia_opcode(SHR, 2, 0)
+mia_opcode(EQ, 1, 0)
+mia_opcode(NE, 1, 0)
+mia_opcode(LT, 1, 0)
+mia_opcode(GT, 1, 0)
+mia_opcode(LE, 1, 0)
+mia_opcode(GE, 1, 0)
+mia_opcode(NEG, 1, 0)
+mia_opcode(BITNOT, 1, 0)
+mia_opcode(CAST, 2, 0)

@@ -1,4 +1,0 @@
-== check (status 0)
-== run (status 101)
--- stderr
-main.mc:5:64: runtime error: `copy` into a read-only slice

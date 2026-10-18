@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:6:4: error[E0502]: mismatched types
+== run (status 1)
+-- stderr
+main.mia:6:4: error[E0502]: mismatched types

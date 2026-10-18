@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:15: error[E0506]: variable `a` needs a type or a value
-== run (status 1)
--- stderr
-main.mc:2:15: error[E0506]: variable `a` needs a type or a value

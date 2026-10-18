@@ -1,0 +1,10 @@
+
+# a dropped vector has no storage, and push does not allocate one.
+
+import vector
+
+pub main :: () {
+	let numbers = vector.make<int>();
+	vector.drop(&numbers);
+	vector.push(&numbers, &1);
+}

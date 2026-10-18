@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:6:2: error[E0304]: `thing` is ambiguous
+== run (status 1)
+-- stderr
+main.mia:6:2: error[E0304]: `thing` is ambiguous

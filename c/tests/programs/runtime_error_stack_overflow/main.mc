@@ -1,6 +1,0 @@
-
-from io import print, println
-from memory import alloc, realloc, free, copy
-
-deep :: (n: int) -> int { return deep(n + 1) + 1; }
-pub main :: () -> int { return deep(0); }

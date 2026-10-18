@@ -1,0 +1,12 @@
+
+# a name must be valid utf-8; text in strings is written as it is.
+from io import println
+
+pub main :: () {
+	let cafÃ© = 1;
+	let ÿ = 2;
+	let aÃ = 3;
+	let bí € = 4;
+	let cÀ¯ = 5;
+	println("{} ÿ", cafÃ©);
+}

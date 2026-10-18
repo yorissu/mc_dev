@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:2:1: error[E0414]: struct `Node` contains itself
+== run (status 1)
+-- stderr
+main.mia:2:1: error[E0414]: struct `Node` contains itself

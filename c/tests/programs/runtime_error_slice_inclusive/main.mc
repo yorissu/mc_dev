@@ -1,5 +1,0 @@
-
-from io import print, println
-from memory import alloc, realloc, free, copy
-
-pub main :: () { let items: [3]int = { 1, 2, 3, }; let n = 3; println("{}", items[0..=n]); }

@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:21:28: error[E0531]: too many values for `describe`
+== run (status 1)
+-- stderr
+main.mia:21:28: error[E0531]: too many values for `describe`

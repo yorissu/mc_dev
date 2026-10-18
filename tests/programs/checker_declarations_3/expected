@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:2:27: error[E0415]: `...` must be the last parameter
+== run (status 1)
+-- stderr
+main.mia:2:27: error[E0415]: `...` must be the last parameter

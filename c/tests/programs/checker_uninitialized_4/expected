@@ -1,6 +1,0 @@
-== check (status 0)
--- stderr
-main.mc:2:50: warning[W0502]: `a` may be read before it is assigned
-== run (status 0)
--- stderr
-main.mc:2:50: warning[W0502]: `a` may be read before it is assigned

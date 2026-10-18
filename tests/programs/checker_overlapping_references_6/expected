@@ -1,0 +1,8 @@
+== check (status 1)
+-- stderr
+main.mia:3:9: error[E0501]: cannot find `P`
+main.mia:4:2: error[E0501]: cannot find `swap`
+== run (status 1)
+-- stderr
+main.mia:3:9: error[E0501]: cannot find `P`
+main.mia:4:2: error[E0501]: cannot find `swap`

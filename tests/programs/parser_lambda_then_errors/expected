@@ -1,0 +1,7 @@
+== check (status 1)
+-- stderr
+main.mia:6:26: error[E0201]: expected a statement after `then`
+main.mia:10:26: error[E0206]: `then` takes a single statement, not a block
+main.mia:12:3: error[E0201]: expected an expression, found `;`
+main.mia:16:31: error[E0206]: the body of a lambda without braces cannot be a declaration
+main.mia:21:2: error[E0201]: expected `;` after the variable, found `let`

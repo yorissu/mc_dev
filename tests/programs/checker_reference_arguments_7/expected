@@ -1,0 +1,10 @@
+== check (status 1)
+-- stderr
+main.mia:4:2: error[E0501]: cannot find `grow`
+main.mia:5:6: error[E0501]: cannot find `read`
+main.mia:6:6: error[E0501]: cannot find `read`
+== run (status 1)
+-- stderr
+main.mia:4:2: error[E0501]: cannot find `grow`
+main.mia:5:6: error[E0501]: cannot find `read`
+main.mia:6:6: error[E0501]: cannot find `read`

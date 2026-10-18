@@ -1,4 +1,0 @@
-== check (status 0)
-== run (status 101)
--- stderr
-main.mc:5:77: runtime error: slice 0..4 is out of bounds (length 3)

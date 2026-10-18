@@ -1,2 +1,0 @@
-commands: check run dis mcb
-flags: --plugin @plugins@/math@shared@ -I ../../../examples/plugins/math

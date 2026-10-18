@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:21: error[E0201]: expected an expression, found `;`
-== run (status 1)
--- stderr
-main.mc:2:21: error[E0201]: expected an expression, found `;`

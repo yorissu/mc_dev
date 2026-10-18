@@ -1,0 +1,28 @@
+
+# what a pipe step cannot be, and values that do not fit its first parameter.
+import io
+
+Point :: {
+	let x: int;
+}
+
+nothing :: (x: int) {}
+bump :: (n: &int) then n += 1;
+norm :: (p: Point) -> int then return p.x;
+narrow :: (x: u8) -> u8 then return x;
+
+f :: () {
+	let p: Point = { x: 0, };
+	let n = 0;
+	n ~ bump;
+	p.x ~ bump;
+	&p ~ norm;
+	_ = 5 ~ p;
+	_ = 5 ~ Point;
+	_ = 5 ~ io;
+	let v = 5 ~ nothing;
+	_ = 256 ~ narrow;
+	3 ~ narrow;
+}
+
+pub main :: () {}

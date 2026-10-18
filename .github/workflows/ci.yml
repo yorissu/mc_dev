@@ -1,0 +1,76 @@
+
+# builds mia in every configuration on linux (gcc and clang), macos and
+# windows (msvc), runs the tests in each, and runs the linters.
+
+name: ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    name: linux ${{ matrix.cc }} ${{ matrix.config }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+        config: [debug, release, portable]
+    steps:
+      - uses: actions/checkout@v4
+      - name: build and test
+        run: make -j"$(nproc)" CC=${{ matrix.cc }} CONFIG=${{ matrix.config }} check
+
+  macos:
+    name: macos ${{ matrix.config }}
+    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [debug, release, portable]
+    steps:
+      - uses: actions/checkout@v4
+      - name: build and test
+        run: make -j"$(sysctl -n hw.ncpu)" CONFIG=${{ matrix.config }} check
+
+  windows:
+    name: windows msvc ${{ matrix.config }}
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [debug, release]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: build and test
+        shell: cmd
+        run: build.bat ${{ matrix.config }} check
+
+  mingw:
+    name: windows mingw release
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: make mingw-w64-ucrt-x86_64-gcc
+      - name: build and test
+        # mingw has no address sanitizer: the release config only
+        run: make -j"$(nproc)" CC=gcc CONFIG=release check
+
+  lint:
+    name: lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: install the linters
+        run: sudo apt-get update && sudo apt-get install -y cppcheck shellcheck
+      - name: lint
+        run: make lint

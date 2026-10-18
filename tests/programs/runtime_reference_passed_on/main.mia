@@ -1,0 +1,46 @@
+
+# a function passes its own reference parameter on as it is: `bump(n)`
+# lends the caller's variable again (`&n` would be an error).
+
+from io import println
+
+Counter :: {
+	let count: int;
+}
+
+bump :: (n: &int) {
+	n += 1;
+}
+
+twice :: (n: &int) {
+	bump(n);
+	bump((n));
+}
+
+four_times :: (n: &int) {
+	twice(n);
+	twice(n);
+}
+
+tick<T> :: (counter: &Counter, extra: &T) {
+	counter.count += 1;
+}
+
+tick_twice<T> :: (counter: &Counter, extra: &T) {
+	tick(counter, extra);
+	tick<T>(counter, extra);
+}
+
+pub main :: () {
+	let n = 0;
+	four_times(&n);
+	println("{}", n);
+	let counter: Counter = { count: 0, };
+	tick_twice(&counter, &true);
+	println("{}", counter);
+	let apply = (n: &int) {
+		bump(n);
+	};
+	apply(&n);
+	println("{}", n);
+}

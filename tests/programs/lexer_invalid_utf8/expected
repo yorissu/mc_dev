@@ -1,0 +1,12 @@
+== check (status 1)
+-- stderr
+main.mia:7:6: error[E0101]: a name that is not valid utf-8
+main.mia:8:6: error[E0101]: a name that is not valid utf-8
+main.mia:9:6: error[E0101]: a name that is not valid utf-8
+main.mia:10:6: error[E0101]: a name that is not valid utf-8
+== run (status 1)
+-- stderr
+main.mia:7:6: error[E0101]: a name that is not valid utf-8
+main.mia:8:6: error[E0101]: a name that is not valid utf-8
+main.mia:9:6: error[E0101]: a name that is not valid utf-8
+main.mia:10:6: error[E0101]: a name that is not valid utf-8

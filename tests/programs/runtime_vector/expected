@@ -1,0 +1,21 @@
+== check (status 0)
+== run (status 0)
+-- stdout
+squares: {0, 1, 4, 9, 16, 25, 36, 49, 64, 81}
+length 10, capacity 16
+at 3: 9, copy_at 4: 16
+counted: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+view 100, copy 0
+pop 9: {ok: true, value: 9}
+pop 8: {ok: true, value: 8}
+pop 7: {ok: true, value: 7}
+pop 6: {ok: true, value: 6}
+pop 5: {ok: true, value: 5}
+pop 4: {ok: true, value: 4}
+pop 3: {ok: true, value: 3}
+pop 2: {ok: true, value: 2}
+pop 1: {ok: true, value: 1}
+pop 0: {ok: true, value: 100}
+pop 0: {ok: false, value: 0}
+dropped: length 0, capacity 0
+points: {{x: 1, y: 2}, {x: 3, y: 40}}, first: {x: 1, y: 2}

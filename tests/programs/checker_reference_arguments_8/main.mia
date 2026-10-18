@@ -1,0 +1,7 @@
+
+f :: () {
+	let a = 1;
+	grow(&a);
+}
+
+pub main :: () {}

@@ -1,0 +1,21 @@
+
+from io import println
+
+Point :: {
+	let x: s16;
+	let y: f64;
+}
+
+[plugin = "probe"]
+describe :: (p: Point, s: []u16, values: ...) -> uint;
+
+[plugin = "probe"]
+wrap :: (value: int) -> u8;
+
+[plugin = "probe"]
+oops :: ();
+
+# a plugin that reads an argument it does not have stops the program; it does not crash.
+pub main :: () {
+	oops();
+}

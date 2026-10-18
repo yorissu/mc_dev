@@ -1,0 +1,14 @@
+
+# a reference parameter is passed on as it is: `&` on it is an error.
+
+bump :: (n: &int) {
+	n += 1;
+}
+
+twice :: (n: &int) {
+	bump(n);
+	bump(&n);
+	bump(&(n));
+}
+
+pub main :: () {}

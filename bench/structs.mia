@@ -1,0 +1,30 @@
+
+# structs passed by value, function calls and f32 arithmetic.
+
+from io import println
+
+Vec3 :: {
+	let x: f32;
+	let y: f32;
+	let z: f32;
+}
+
+add :: (a: Vec3, b: Vec3) -> Vec3 {
+	return { x: a.x + b.x, y: a.y + b.y, z: a.z + b.z, };
+}
+
+scale :: (a: Vec3, s: f32) -> Vec3 {
+	return { x: a.x * s, y: a.y * s, z: a.z * s, };
+}
+
+pub main :: () {
+	let position: Vec3 = { x: 0, y: 0, z: 0, };
+	let velocity: Vec3 = { x: 1, y: 2, z: 3, };
+	for i in 0..300000 {
+		position = add(position, scale(velocity, 0.001));
+		if position.x > 100 {
+			position.x = 0;
+		}
+	}
+	println("{}", position);
+}

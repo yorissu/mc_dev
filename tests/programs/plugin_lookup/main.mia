@@ -1,0 +1,16 @@
+
+# plugins are looked up by name in the plugin directories: a function's
+# '[plugin = "name"]' names its plugin, whose library is name.so (.dylib,
+# .dll) in one of them.
+
+import future
+import misnamed
+import nowhere
+import twice
+
+pub main :: () {
+	future.nothing();     # future.so is there, but refused
+	misnamed.nothing();   # misnamed.so registers the plugin 'other'
+	nowhere.nothing();    # no library at all
+	twice.nothing();      # twice.so is the plugin 'twice', without this function
+}

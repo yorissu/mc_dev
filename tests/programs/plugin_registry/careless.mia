@@ -1,0 +1,2 @@
+[plugin = "careless"]
+pub nothing :: ();

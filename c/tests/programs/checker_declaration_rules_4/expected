@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:3:32: error[E0409]: `_==_` must return `bool`
-== run (status 1)
--- stderr
-main.mc:3:32: error[E0409]: `_==_` must return `bool`

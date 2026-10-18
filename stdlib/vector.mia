@@ -1,0 +1,90 @@
+
+import memory
+import option
+
+DEFAULT_CAPACITY :: 4;
+
+pub Vector<T> :: {
+	let data: []T = {};
+	let length: uint = 0;
+}
+
+pub make<T> :: (capacity: uint = DEFAULT_CAPACITY) -> Vector<T> {
+	assert(capacity > 0, "initial vector capacity must be higher than 0.");
+	return { data: memory.alloc<T>(capacity), };
+}
+
+pub drop<T> :: (vector: &Vector<T>) {
+	vector = { data: memory.free<T>(vector.data), length: 0, };
+}
+
+pub items<T> :: (vector: &Vector<T>) -> []T {
+	return vector.data[0..vector.length];
+}
+
+pub copy_items<T> :: (vector: &Vector<T>) -> []T {
+	let copy = memory.alloc<T>(vector.length);
+	_ = memory.copy<T>(copy, items(vector));
+	return copy;
+}
+
+pub is_empty<T> :: (vector: &Vector<T>) -> bool {
+	return vector.length == 0;
+}
+
+pub at<T> :: (vector: &Vector<T>, index: uint) -> []T {
+	assert(index < vector.length, "vector index out of range.");
+	return vector.data[index..(index + 1)];
+}
+
+pub copy_at<T> :: (vector: &Vector<T>, index: uint) -> T {
+	return at<T>(vector, index)[0];
+}
+
+pub push<T> :: (vector: &Vector<T>, value: &T) {
+	let capacity = lenof(vector.data);
+	assert(capacity > 0, "cannot push to an unallocated vector.");
+	if vector.length + 1 > capacity then
+		vector.data = memory.realloc<T>(vector.data, capacity * 2);
+	vector.data[vector.length] = value;
+	vector.length += 1;
+}
+
+pub pop<T> :: (vector: &Vector<T>) -> option.Option<T> {
+	if vector.length == 0 then return option.none();
+	vector.length -= 1;
+	return option.some(vector.data[vector.length]);
+}
+
+# looking at it
+#   capacity<T> :: (vector: &Vector<T>) -> uint                        lenof(data)
+#   get<T> :: (vector: &Vector<T>, index: uint) -> option.Option<T>    a copy; none when out of range
+#   first<T>, last<T> :: (vector: &Vector<T>) -> option.Option<T>
+#
+# changing it
+#   set<T> :: (vector: &Vector<T>, index: uint, value: &T)
+#   insert<T> :: (vector: &Vector<T>, index: uint, value: &T)    shifts the rest up
+#   remove<T> :: (vector: &Vector<T>, index: uint) -> T          shifts the rest down, keeps the order
+#   swap_remove<T> :: (vector: &Vector<T>, index: uint) -> T     moves the last element in: O(1)
+#   clear<T> :: (vector: &Vector<T>)                             length 0, keeps the storage
+#   truncate<T> :: (vector: &Vector<T>, length: uint)
+#   resize<T> :: (vector: &Vector<T>, length: uint, fill: &T)
+#
+# memory
+#   reserve<T> :: (vector: &Vector<T>, additional: uint)   room for that many more pushes at once
+#   shrink<T> :: (vector: &Vector<T>)                       capacity down to length
+#
+# many at once (memory.copy does the moving)
+#   from<T> :: (values: []T) -> Vector<T>           a vector holding a copy of the values
+#   extend<T> :: (vector: &Vector<T>, values: []T)
+#   clone<T> :: (vector: &Vector<T>) -> Vector<T>    its own storage
+#
+# with a function (there are no operators on structs, so equality and order
+# come from the caller)
+#   find<T> :: (vector: &Vector<T>, matches: (&T) -> bool) -> option.Option<uint>
+#   each<T> :: (vector: &Vector<T>, visit: (&T))
+#   retain<T> :: (vector: &Vector<T>, keep: (&T) -> bool)    drops the others, keeps the order
+#   sort<T> :: (vector: &Vector<T>, less: (&T, &T) -> bool)
+#
+# a view from at or items is invalid once the vector grows (push, insert,
+# reserve): using it is a run-time error, so take a new one after a change.

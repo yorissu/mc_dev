@@ -1,0 +1,4 @@
+
+[plugin = "host"] read :: () -> int;
+X :: read();
+pub main :: () {}

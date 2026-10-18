@@ -1,0 +1,8 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+pub main :: () {
+	let a: [2]int = {};
+	_ = free(a[..]);
+}

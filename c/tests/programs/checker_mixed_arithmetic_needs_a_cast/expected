@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:41: error[E0507]: cannot apply `+` to `s32` and `int`
-== run (status 1)
--- stderr
-main.mc:2:41: error[E0507]: cannot apply `+` to `s32` and `int`

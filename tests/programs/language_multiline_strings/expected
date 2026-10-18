@@ -1,0 +1,69 @@
+== check (status 0)
+== run (status 0)
+-- stdout
+usage: tool <file>
+	-v  verbose
+"quoted" and ""doubled"" quotes need no escape
+one	tab
+
+two (a blank line above)
+[nul-terminated] 15 bytes
+[] 0
+4
+== ast (status 0)
+-- stdout
+Module
+  imports:
+    FromImport path=[io]
+      names:
+        ImportName name=println
+  declarations:
+    Constant name=HELP
+      value: StringLiteral data='usage: tool <file>\n\t-v  verbose\n"quoted" and ""doubled"" quotes need no escape'
+    Function name=main public
+      body: Block
+        statements:
+          ExpressionStatement
+            expression: Call
+              callee: Name name=println
+              arguments:
+                StringLiteral data='{}'
+                Name name=HELP
+          Let name=poem
+            value: StringLiteral data='one\ttab\n\ntwo (a blank line above)'
+          ExpressionStatement
+            expression: Call
+              callee: Name name=println
+              arguments:
+                StringLiteral data='{}'
+                Name name=poem
+          DeclarationStatement
+            declaration: Constant name=TEXT
+              value: StringLiteral data='nul-terminated\x00' c
+          ExpressionStatement
+            expression: Call
+              callee: Name name=println
+              arguments:
+                StringLiteral data='[{}] {} bytes'
+                Name name=TEXT
+                LenOf
+                  operand: Name name=TEXT
+          Let name=empty
+            value: StringLiteral data=''
+          ExpressionStatement
+            expression: Call
+              callee: Name name=println
+              arguments:
+                StringLiteral data='[{}] {}'
+                Name name=empty
+                LenOf
+                  operand: Name name=empty
+          Let name=windows
+            value: StringLiteral data='a\r\nb'
+          ExpressionStatement
+            expression: Call
+              callee: Name name=println
+              arguments:
+                StringLiteral data='{}'
+                LenOf
+                  operand: Name name=windows

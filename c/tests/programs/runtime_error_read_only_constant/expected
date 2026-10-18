@@ -1,6 +1,0 @@
-== check (status 0)
-== run (status 101)
--- stdout
-{1, 2, 3}
--- stderr
-main.mc:6:25: runtime error: write through a read-only slice

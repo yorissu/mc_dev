@@ -1,0 +1,4 @@
+== check (status 0)
+== run (status 101)
+-- stderr
+@stdlib@/vector.mia:46:2: runtime error: cannot push to an unallocated vector.

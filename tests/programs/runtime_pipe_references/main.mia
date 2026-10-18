@@ -1,0 +1,37 @@
+
+# what a pipe lends to a `&` parameter: `&` on a variable or a part of one,
+# a reference parameter as it is, and temporaries.
+import io
+
+Point :: {
+	let x: int;
+	let y: int;
+}
+
+bump :: (n: &int) then n += 1;
+
+shift :: (p: &Point, by: int) {
+	p.x += by;
+	p.y += by;
+}
+
+norm :: (p: Point) -> int then return p.x * p.x + p.y * p.y;
+first :: (s: []int) -> int then return s[0];
+
+move_on :: (p: &Point) {
+	p ~ shift(1);
+	(p) ~ shift(1);
+}
+
+pub main :: () {
+	let p: Point = { x: 0, y: 0, };
+	let numbers: [3]int = { 1, 2, 3, };
+	&p.x ~ bump;
+	&numbers[1] ~ bump;
+	&p ~ move_on;
+	(Point){ x: 9, y: 9, } ~ shift(1);
+	&5 ~ bump;
+	io.println("{} {}", p, numbers);
+	io.println("{}", { x: 3, y: 4, } ~ norm);
+	io.println("{}", numbers[..] ~ first);
+}

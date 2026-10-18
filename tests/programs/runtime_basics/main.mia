@@ -1,0 +1,94 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+
+Point :: {
+	let x: int;
+	let y: int;
+}
+
+Pair :: {
+	let a: int;
+	let b: [2]int;
+}
+
+add :: (a: u8, b: u8) -> u8 {
+	return a + b;
+}
+
+negate :: (a: s8) -> s8 {
+	return -a;
+}
+
+shift :: (a: u64, b: u64) -> u64 {
+	return a << b;
+}
+
+fib :: (n: int) -> int {
+	if n < 2 {
+		return n;
+	}
+	return fib(n - 1) + fib(n - 2);
+}
+
+twice :: (f: (int) -> int, x: int) -> int {
+	return f(f(x));
+}
+
+double :: (x: int) -> int {
+	return 2 * x;
+}
+
+bump :: (value: &int) {
+	value += 1;
+}
+
+square :: (n: int) -> int {
+	return n * n;
+}
+
+TABLE :: table();
+
+table :: () -> [4]int {
+	let t: [4]int = {};
+	for i in 0..4 {
+		t[i] = square(i);
+	}
+	return t;
+}
+
+pub main :: () -> int {
+	let p: Point = { x: 1, y: -2, };
+	let items: [3]int = { 1, 2, 3, };
+	println("{} {} {{literal}} {}", p, items, true);
+	print("{} {}", 0.1f32, 1.0 / 3.0);
+	println(" {}", "text"c);
+	println("{} {} {} {}", add(255, 1), negate(-128), shift(1, 63), (u8)(-1 + 0));
+	let total = 0;
+	for i in 10..0 {
+		total += i;
+	}
+	for i in 0..=3 {
+		if i == 1 {
+			continue;
+		}
+		total += 100;
+	}
+	let n = 0;
+	while true {
+		n += 1;
+		if n == 5 {
+			break;
+		}
+	}
+	println("{} {} {}", fib(20), total, n);
+	let g = double;
+	println("{} {} {}", twice(double, 3), twice((x: int) -> int {
+		return x + 1;
+	}, 3), g == double);
+	let pair: Pair = { a: 1, b: { 5, 6, }, };
+	bump(&pair.a);
+	bump(&pair.b[1]);
+	println("{} {}", pair, TABLE);
+	return 300;
+}

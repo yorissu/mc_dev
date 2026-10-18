@@ -1,0 +1,40 @@
+
+# pipes everywhere an expression goes: conditions, defaults, array lengths,
+# constants, assert, loop bounds, and generic functions.
+from io import println
+
+Point :: {
+	let x: int;
+	let y: int = 2 ~ double;
+}
+
+double :: (x: int) -> int then return x * 2;
+positive :: (x: int) -> bool then return x > 0;
+length :: (s: []int) -> uint then return lenof(s);
+scaled :: (x: int, by: int = 3 ~ double) -> int then return x * by;
+grow :: (p: &Point) then p.x += 1;
+
+grow_all<T> :: (p: &Point, extra: T) {
+	p ~ grow;
+	p ~ grow;
+}
+
+SIZE :: 2 ~ double;
+
+pub main :: () {
+	if 3 ~ positive then println("positive");
+	else println("not");
+	if -3 ~ positive then println("positive");
+	else if (-3 ~ double) < 0 then println("negative, doubled");
+	println("{}", {} ~ length);
+	let empty: []int = {};
+	println("{}", empty ~ length);
+	let p: Point = { x: 0, };
+	&p ~ grow_all(true);
+	println("{}", p);
+	println("{}", 5 ~ scaled);
+	let table: [SIZE ~ double]int = {};
+	println("{}", lenof(table));
+	assert((3 ~ double) == 6, "pipes in assert");
+	for i in 0..3 then println("{}", i ~ double);
+}

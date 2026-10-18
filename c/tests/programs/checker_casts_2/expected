@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:32: error[E0510]: cannot cast `bool` to `int`
-== run (status 1)
--- stderr
-main.mc:2:32: error[E0510]: cannot cast `bool` to `int`

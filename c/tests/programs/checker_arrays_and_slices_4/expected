@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:47: error[E0706]: index 3 is out of bounds
-== run (status 1)
--- stderr
-main.mc:2:47: error[E0706]: index 3 is out of bounds

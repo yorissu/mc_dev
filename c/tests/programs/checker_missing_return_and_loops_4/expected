@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:11: error[E0515]: `break` outside of a loop
-== run (status 1)
--- stderr
-main.mc:2:11: error[E0515]: `break` outside of a loop

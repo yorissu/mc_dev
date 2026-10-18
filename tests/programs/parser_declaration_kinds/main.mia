@@ -1,0 +1,15 @@
+
+S :: {
+	let a: int;
+	let b: []u8 = {};
+}
+
+f :: (x: int, y: &S) -> int {
+	return x;
+}
+
+g :: () {}
+C :: (1 + 2) * 3;
+[plugin = "host"] h<T> :: (n: uint) -> []T;
+
+pub main :: () {}

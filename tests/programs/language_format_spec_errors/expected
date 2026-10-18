@@ -1,0 +1,93 @@
+== check (status 1)
+-- stderr
+error[E0530]: invalid format string
+ --> main.mia:6:10
+  |
+5 | pub main :: () {
+6 |     println("{:q}", 1);
+  |             ^^^^^^ unknown character `q` in the format specifier
+7 |     println("{:5.}", 1.0);
+  |
+  = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: invalid format string
+ --> main.mia:7:10
+  |
+6 |     println("{:q}", 1);
+7 |     println("{:5.}", 1.0);
+  |             ^^^^^^^ `.` must be followed by the precision, a number
+8 |     println("{:.101f}", 1.0);
+  |
+  = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: invalid format string
+ --> main.mia:8:10
+  |
+7 |     println("{:5.}", 1.0);
+8 |     println("{:.101f}", 1.0);
+  |             ^^^^^^^^^^ the precision is too large (at most 100)
+9 |     println("{:x5}", 1);
+  |
+  = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: invalid format string
+  --> main.mia:9:10
+   |
+ 8 |     println("{:.101f}", 1.0);
+ 9 |     println("{:x5}", 1);
+   |             ^^^^^^^ unknown character `5` in the format specifier
+10 |     println("{:.2f}", 1);
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: the format specifier does not fit its value
+  --> main.mia:10:10
+   |
+ 9 |     println("{:x5}", 1);
+10 |     println("{:.2f}", 1);
+   |             ^^^^^^^^  - this is a `int`
+   |             |
+   |             `f` is for floats, but the value is an integer
+11 |     println("{:#}", 1);
+
+error[E0530]: the format specifier does not fit its value
+  --> main.mia:11:10
+   |
+10 |     println("{:.2f}", 1);
+11 |     println("{:#}", 1);
+   |             ^^^^^^  - this is a `int`
+   |             |
+   |             `#` is for integers written with `x`, `X`, `o` or `b`
+12 |     println("{:#x}", 1.5);
+
+error[E0530]: the format specifier does not fit its value
+  --> main.mia:12:10
+   |
+11 |     println("{:#}", 1);
+12 |     println("{:#x}", 1.5);
+   |             ^^^^^^^  --- this is a `float`
+   |             |
+   |             `x` is for integers, but the value is a float
+13 |     println("a{{b}} {} {:>3} {x", 1, 2);
+
+error[E0530]: invalid format string
+  --> main.mia:13:10
+   |
+12 |     println("{:#x}", 1.5);
+13 |     println("a{{b}} {} {:>3} {x", 1, 2);
+   |             ^^^^^^^^^^^^^^^^^^^^ `{` is not closed by `}` (write `{{` for a brace)
+14 |     println("{:99999}", 1);
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+error[E0530]: invalid format string
+  --> main.mia:14:10
+   |
+13 |     println("a{{b}} {} {:>3} {x", 1, 2);
+14 |     println("{:99999}", 1);
+   |             ^^^^^^^^^^ the width is too large (at most 10000)
+15 | }
+   |
+   = help: `{}` and `{:spec}` are replaced by the next value; write `{{` and `}}` for braces
+
+9 error(s), 0 warning(s)

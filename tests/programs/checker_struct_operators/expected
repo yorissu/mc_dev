@@ -1,0 +1,8 @@
+== check (status 1)
+-- stderr
+main.mia:16:8: error[E0507]: cannot apply `+` to `V` and `V`
+main.mia:17:8: error[E0507]: cannot apply `==` to `V` and `V`
+main.mia:18:8: error[E0507]: cannot apply `<` to `V` and `V`
+main.mia:19:6: error[E0507]: cannot apply unary `-` to `V`
+main.mia:20:6: error[E0513]: `V` cannot be indexed
+main.mia:22:2: error[E0507]: cannot apply `+` to `V` and `V`

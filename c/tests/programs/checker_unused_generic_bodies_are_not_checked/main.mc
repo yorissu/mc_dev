@@ -1,3 +1,0 @@
-
-never<T> :: (a: T) -> T { return a.missing; }
-pub main :: () {}

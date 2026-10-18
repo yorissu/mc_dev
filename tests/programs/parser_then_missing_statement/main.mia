@@ -1,0 +1,4 @@
+
+# `then` is followed by one statement.
+
+pub main :: () then

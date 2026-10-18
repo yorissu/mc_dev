@@ -1,0 +1,3 @@
+== invoke build -o other.mia main.mia (status 1)
+-- stderr
+error[E0602]: the output `other.mia` is named like a source file (`.mia`)

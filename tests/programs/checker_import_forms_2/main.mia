@@ -1,0 +1,8 @@
+
+import geo.shapes as s
+
+f :: () -> s.Point {
+	return s.add(s.make(), s.make());
+}
+
+pub main :: () {}

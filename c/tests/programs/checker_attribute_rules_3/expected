@@ -1,8 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:2: error[E0403]: `plugin` takes the name of a plugin, or nothing
-main.mc:2:14: error[E0404]: `f` has no body
-== run (status 1)
--- stderr
-main.mc:2:2: error[E0403]: `plugin` takes the name of a plugin, or nothing
-main.mc:2:14: error[E0404]: `f` has no body

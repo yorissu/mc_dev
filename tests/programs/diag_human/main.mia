@@ -1,0 +1,21 @@
+
+from io import println
+
+Box<T> :: {
+	let value: T;
+}
+
+# the same mistake in a generic: reported once, though two instances have it
+first<T> :: (box: Box<T>) -> T {
+	let wrong: u8 = "text";
+	return box.value;
+}
+
+pub main :: () {
+	let a: Box<int> = { value: 1, };
+	let b: Box<f32> = { value: 2.0, };
+	_ = first(a);
+	_ = first(b);
+	let big: u8 = 300;
+	let f: (int, []u8) -> int = first;
+}

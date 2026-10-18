@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:5:2: error[E0520]: `g` takes 1 type argument(s), found 2
+== run (status 1)
+-- stderr
+main.mia:5:2: error[E0520]: `g` takes 1 type argument(s), found 2

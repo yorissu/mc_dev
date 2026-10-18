@@ -1,0 +1,12 @@
+# there are no operator functions: `op.` is not an attribute.
+
+V :: {
+	let x: int;
+}
+
+[op._+_]
+add :: (a: V, b: V) -> V {
+	return { x: a.x + b.x, };
+}
+
+pub main :: () {}

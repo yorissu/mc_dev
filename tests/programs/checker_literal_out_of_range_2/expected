@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:3:10: error[E0511]: `300` does not fit in `u8`
+== run (status 1)
+-- stderr
+main.mia:3:10: error[E0511]: `300` does not fit in `u8`

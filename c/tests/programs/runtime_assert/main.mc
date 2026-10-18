@@ -1,5 +1,0 @@
-
-from io import print, println, write, write_line
-from memory import alloc, realloc, free, copy
-check :: (x: int) { assert(x > 0, "x must be positive"); }
-pub main :: () { check(1); check(-1); }

@@ -1,0 +1,4 @@
+== check (status 1)
+-- stderr
+main.mia:14:7: error[E0517]: this parameter is a reference
+main.mia:19:7: error[E0517]: this parameter is a reference

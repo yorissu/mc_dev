@@ -1,0 +1,5 @@
+== check (status 1)
+-- stderr
+main.mia:15:2: error[E0508]: cannot assign to `LIMIT`
+main.mia:16:2: error[E0508]: cannot assign to `origin`
+main.mia:17:2: error[E0508]: cannot assign to `origin().x`

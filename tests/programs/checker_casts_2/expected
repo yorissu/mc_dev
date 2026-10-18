@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:3:9: error[E0510]: cannot cast `bool` to `int`
+== run (status 1)
+-- stderr
+main.mia:3:9: error[E0510]: cannot cast `bool` to `int`

@@ -1,3 +1,0 @@
-
-Node :: { let next: Node; }
-pub main :: () {}

@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:3:11: error[E0505]: `println` takes at least 1 argument(s), found 0
-== run (status 1)
--- stderr
-main.mc:3:11: error[E0505]: `println` takes at least 1 argument(s), found 0

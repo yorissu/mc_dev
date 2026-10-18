@@ -1,3 +1,0 @@
-
-f :: () { _ = missing; }
-pub main :: () {}

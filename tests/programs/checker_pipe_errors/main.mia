@@ -1,0 +1,19 @@
+
+# what a pipe step must be: a function with a first parameter for the value;
+# a variable is lent to a `&` parameter only with `&` at the head.
+
+nothing :: () {}
+
+double :: (x: int) -> int then return x * 2;
+
+bump :: (n: &int) then n += 1;
+
+f :: () {
+	let n = 0;
+	n ~ bump;
+	_ = 5 ~ 3;
+	_ = 5 ~ double(1);
+	5 ~ nothing;
+}
+
+pub main :: () {}

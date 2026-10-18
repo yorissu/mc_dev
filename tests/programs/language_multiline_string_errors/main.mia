@@ -1,0 +1,17 @@
+
+from io import println
+
+pub main :: () {
+	let a = """text on the first line
+		""";
+	let b = """
+		fine
+	less indented
+		""";
+	let c = """
+		fine
+		"""x;
+	println("{} {} {}", a, b, c);
+	let d = """
+		never closed
+}

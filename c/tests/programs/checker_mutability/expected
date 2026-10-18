@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:22: error[E0508]: cannot assign to `a`
-== run (status 1)
--- stderr
-main.mc:2:22: error[E0508]: cannot assign to `a`

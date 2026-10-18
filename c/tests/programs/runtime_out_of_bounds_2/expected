@@ -1,7 +1,0 @@
-== check (status 0)
--- stderr
-main.mc:4:26: warning[W0503]: variable `a` is `mut` but never changed
-== run (status 101)
--- stderr
-main.mc:4:26: warning[W0503]: variable `a` is `mut` but never changed
-main.mc:4:57: runtime error: slice 3..5 is out of bounds (length 4)

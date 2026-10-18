@@ -1,0 +1,6 @@
+
+f :: () {
+	println();
+}
+
+pub main :: () {}

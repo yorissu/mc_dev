@@ -1,0 +1,24 @@
+
+# a lambda's `then` takes one statement: not nothing, not a block, not a
+# declaration; the statement around the lambda still ends with its `;`.
+
+a :: () {
+	let f = (x: int) -> int then;
+}
+
+b :: () {
+	let f = (x: int) -> int then {
+		return x;
+	};
+}
+
+c :: () {
+	let f = (x: int) -> int then let y = x;
+}
+
+d :: () {
+	let f = (x: int) -> int then return x
+	let g = 1;
+}
+
+pub main :: () {}

@@ -1,0 +1,18 @@
+
+# what an assignment cannot change: a constant, a function or a temporary.
+
+LIMIT :: 3;
+
+Point :: {
+	let x: int;
+}
+
+origin :: () -> Point {
+	return {};
+}
+
+pub main :: () {
+	LIMIT = 4;
+	origin = origin;
+	origin().x = 1;
+}

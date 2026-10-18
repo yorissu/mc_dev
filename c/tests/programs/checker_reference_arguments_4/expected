@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:4:31: error[E0517]: this parameter is a reference
-== run (status 1)
--- stderr
-main.mc:4:31: error[E0517]: this parameter is a reference

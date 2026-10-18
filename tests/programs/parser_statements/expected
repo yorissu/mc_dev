@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:14:15: error[E0501]: cannot find `n`
+== run (status 1)
+-- stderr
+main.mia:14:15: error[E0501]: cannot find `n`

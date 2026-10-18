@@ -1,0 +1,9 @@
+
+# a vector starts with room for at least one element.
+
+import vector
+
+pub main :: () {
+	let numbers = vector.make<int>(0);
+	vector.push(&numbers, &1);
+}

@@ -1,0 +1,8 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+[plugin = "test_collect"] collect :: (values: ...) -> int;
+
+pub main :: () {
+	println("{}", collect(1, 2.5, true));
+}

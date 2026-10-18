@@ -1,0 +1,2 @@
+commands: check
+flags: -P @plugins@

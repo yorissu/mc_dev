@@ -1,0 +1,3 @@
+== check (status 1)
+-- stderr
+main.mia:8:32: error[E0505]: `square` takes 1 argument(s), found 0

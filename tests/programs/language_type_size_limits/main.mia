@@ -1,0 +1,22 @@
+
+# a type takes at most 4294967296 bytes (4 GiB): larger arrays and structs
+# are errors where they are written, and sizes never wrap around.
+
+Halves :: {
+	let a: [3000000000]u8;
+	let b: [3000000000]u8;
+}
+
+Fits :: {
+	let a: [1000000000]u8;
+}
+
+pub main :: () {
+	let a: [5000000000]u8 = {};
+	let b: [4611686018427387904][4]u8 = {};
+	let c: [18446744073709551616]u8 = {};
+	let d: [3][2000000000]u8 = {};
+	let e: [8]Halves = {};
+	let f: [5]Fits = {};
+	let g: Fits = {};
+}

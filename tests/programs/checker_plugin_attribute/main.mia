@@ -1,0 +1,16 @@
+
+# a plugin function names the plugin that provides it: [plugin = "name"].
+
+[plugin]
+bare :: () -> int;
+
+[plugin = 3]
+numbered :: () -> int;
+
+[plugin = "math"]
+named :: () -> int;
+
+pub main :: () {
+	_ = bare();
+	_ = numbered();
+}

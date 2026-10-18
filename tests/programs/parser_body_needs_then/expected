@@ -1,0 +1,3 @@
+== check (status 1)
+-- stderr
+main.mia:5:11: error[E0201]: expected `{` or `then` after the condition of `if`, found `return`

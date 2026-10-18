@@ -1,0 +1,13 @@
+== check (status 0)
+-- stderr
+main.mia:12:26: warning[W0531]: the square root of a negative number is nan
+main.mia:13:26: warning[W0531]: the square root of a negative number is nan
+== run (status 101)
+-- stdout
+nan
+nan
+3.0
+-- stderr
+main.mia:12:26: warning[W0531]: the square root of a negative number is nan
+main.mia:13:26: warning[W0531]: the square root of a negative number is nan
+main.mia:17:2: runtime error: `math.scale` of a read-only slice

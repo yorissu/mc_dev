@@ -1,8 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:3:41: error[E0508]: cannot assign to `p.id`
-main.mc:3:19: warning[W0503]: variable `p` is `mut` but never changed
-== run (status 1)
--- stderr
-main.mc:3:41: error[E0508]: cannot assign to `p.id`
-main.mc:3:19: warning[W0503]: variable `p` is `mut` but never changed

@@ -1,6 +1,0 @@
-== check (status 1)
--- stderr
-main.mc:2:19: error[E0511]: `300` does not fit in `u8`
-== run (status 1)
--- stderr
-main.mc:2:19: error[E0511]: `300` does not fit in `u8`

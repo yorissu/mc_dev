@@ -1,0 +1,31 @@
+== invoke check main.mia (status 1)
+-- stderr
+main.mia:4:1: error[E0301]: module `helper` not found
+main.mia:7:19: error[E0501]: cannot find `helper`
+== invoke run -M mods main.mia (status 0)
+-- stdout
+42
+== invoke run -Mmods main.mia (status 0)
+-- stdout
+42
+== invoke run --module-dir mods main.mia (status 0)
+-- stdout
+42
+== invoke run -M mods -P mods main.mia (status 0)
+-- stdout
+42
+== invoke run -M mods -Pno/such/directory main.mia (status 1)
+-- stderr
+error[E0603]: the plugin directory `no/such/directory` does not exist
+== invoke check -I mods main.mia (status 2)
+-- stderr
+error[E0602]: unknown option `-I`
+ = help: 'mia --help' lists the commands and 'mia <command> --help' their options
+== invoke check -M (status 2)
+-- stderr
+error[E0602]: `-M` needs a value
+ = help: 'mia --help' lists the commands and 'mia <command> --help' their options
+== invoke check main.mia -P (status 2)
+-- stderr
+error[E0602]: `-P` needs a value
+ = help: 'mia --help' lists the commands and 'mia <command> --help' their options

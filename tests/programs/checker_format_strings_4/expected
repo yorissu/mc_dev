@@ -1,0 +1,6 @@
+== check (status 1)
+-- stderr
+main.mia:5:2: error[E0530]: the format string has 1 placeholder(s), but 2 value(s) are given
+== run (status 1)
+-- stderr
+main.mia:5:2: error[E0530]: the format string has 1 placeholder(s), but 2 value(s) are given

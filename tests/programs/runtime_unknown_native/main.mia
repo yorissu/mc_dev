@@ -1,0 +1,8 @@
+
+from io import print, println
+from memory import alloc, realloc, free, copy
+[plugin = "nobody_has_this"] missing :: () -> int;
+
+pub main :: () {
+	_ = missing();
+}

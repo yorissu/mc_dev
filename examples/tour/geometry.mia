@@ -1,0 +1,35 @@
+
+# geometry: a small vector type and the functions on it.
+
+pub Vec2 :: {
+	let x: f32;
+	let y: f32;
+}
+
+pub add :: (a: Vec2, b: Vec2) -> Vec2 {
+	return { x: a.x + b.x, y: a.y + b.y, };
+}
+
+pub subtract :: (a: Vec2, b: Vec2) -> Vec2 {
+	return { x: a.x - b.x, y: a.y - b.y, };
+}
+
+pub scale :: (a: Vec2, s: f32) -> Vec2 {
+	return { x: a.x * s, y: a.y * s, };
+}
+
+pub negate :: (a: Vec2) -> Vec2 {
+	return { x: -a.x, y: -a.y, };
+}
+
+pub dot :: (a: &Vec2, b: &Vec2) -> f32 {
+	return a.x * b.x + a.y * b.y;
+}
+
+# divides the caller's vector by its squared length, in place (there is no
+# square root in the standard library yet).
+pub normalize :: (v: &Vec2) {
+	let length_squared = dot(v, v);
+	if length_squared == 0 then return;
+	v = scale(v, 1 / length_squared);
+}
