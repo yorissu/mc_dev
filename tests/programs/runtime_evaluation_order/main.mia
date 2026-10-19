@@ -1,0 +1,80 @@
+
+# evaluation goes left to right, as the code reads. each part writes its
+# number into a log, so the log shows the order in which the parts ran.
+
+from io import println
+
+Pair :: {
+	let a: int;
+	let b: int;
+}
+
+note :: (log: &int, n: int) -> int {
+	log = log * 10 + n;
+	return n;
+}
+
+three :: (a: int, b: int, c: int) -> int then return a * 100 + b * 10 + c;
+
+# a function value is evaluated before the arguments of its call
+pick :: (log: &int) -> (int, int, int) -> int {
+	log = log * 10 + 9;
+	return three;
+}
+
+pass :: (log: &int, numbers: []int) -> []int {
+	log = log * 10 + 1;
+	return numbers;
+}
+
+# the same order at compile time
+at_compile_time :: () -> int {
+	let log = 0;
+	let numbers: [4]int = {};
+	_ = three(note(&log, 1), note(&log, 2), note(&log, 3));
+	numbers[note(&log, 1)] = note(&log, 2);
+	return log;
+}
+
+ORDER :: at_compile_time();
+
+pub main :: () {
+	let log = 0;
+	_ = three(note(&log, 1), note(&log, 2), note(&log, 3));
+	println("arguments: {}", log);
+
+	log = 0;
+	_ = pick(&log)(note(&log, 1), note(&log, 2), note(&log, 3));
+	println("function value, then its arguments: {}", log);
+
+	log = 0;
+	_ = note(&log, 1) ~ three(note(&log, 2), note(&log, 3));
+	println("piped value, then the step's arguments: {}", log);
+
+	log = 0;
+	_ = note(&log, 1) + note(&log, 2) * note(&log, 3);
+	println("operands: {}", log);
+
+	log = 0;
+	let numbers: [4]int = {};
+	_ = pass(&log, numbers[..])[note(&log, 2)];
+	println("slice, then index: {}", log);
+
+	log = 0;
+	numbers[note(&log, 1)] = note(&log, 2);
+	println("place, then value: {}", log);
+
+	log = 0;
+	numbers[note(&log, 1)] += note(&log, 2);
+	println("place, then value (+=): {}", log);
+
+	log = 0;
+	let pair: Pair = { b: note(&log, 1), a: note(&log, 2), };
+	println("fields as written: {} {}", log, pair);
+
+	log = 0;
+	let elements: [3]int = { note(&log, 1), note(&log, 2), note(&log, 3), };
+	println("elements: {} {}", log, elements);
+
+	println("at compile time: {}", ORDER);
+}

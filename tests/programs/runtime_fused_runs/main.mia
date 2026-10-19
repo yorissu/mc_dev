@@ -1,0 +1,40 @@
+
+# runs of instructions the machine runs as one operation: a word local and a
+# constant (their sum stored back: 'i = i + 1'), two word locals, an element
+# of a slice local at a word local index, and its location ('items[i] = v').
+# they count every instruction, stop inside a run where a limit says, and an
+# error in one names its own instruction ('peek' and 'poke' below).
+
+from io import println
+
+fill :: (items: []int) {
+	for i in 0..lenof(items) then items[i] = (int)i * 3;
+}
+
+sum :: (items: []int) -> int {
+	let total = 0;
+	let i: uint = 0;
+	while i < lenof(items) {
+		total = total + items[i];
+		i = i + 1;
+	}
+	return total;
+}
+
+flag :: (bits: []bool, at: uint) -> bool then return bits[at];
+
+peek :: (items: []int, at: uint) -> int then return items[at];
+
+poke :: (items: []int, at: uint) then items[at] = 1;
+
+pub main :: (args: [][]u8) -> int {
+	let numbers: [5]int = {};
+	fill(numbers[..]);
+	println("sum: {}", sum(numbers[..]));
+	let marks: [3]bool = {};
+	marks[1] = true;
+	println("flags: {} {}", flag(marks[..], 0), flag(marks[..], 1));
+	if lenof(args) == 2 then println("{}", peek(numbers[..], 5));
+	if lenof(args) == 3 then poke(numbers[..], 9);
+	return 0;
+}

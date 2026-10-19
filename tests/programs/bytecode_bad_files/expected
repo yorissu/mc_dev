@@ -9,7 +9,7 @@ error[E0601]: cannot load `not_bytecode.miab`: not a mia bytecode file
 error[E0601]: cannot load `truncated.miab`: the file is truncated
 == invoke run wrong_version.miab (status 1)
 -- stderr
-error[E0601]: cannot load `wrong_version.miab`: bytecode format version 99, but this mia reads version 4; build the program again
+error[E0601]: cannot load `wrong_version.miab`: bytecode format version 99, but this mia reads version 5; build the program again
 == invoke run bad_section.miab (status 1)
 -- stderr
 error[E0601]: cannot load `bad_section.miab`: the file is corrupted (a count is larger than the file)
@@ -31,3 +31,9 @@ runtime error: the module is broken (a parameter of `take` is outside its frame)
 == invoke run array_too_long.miab (status 101)
 -- stderr
 runtime error: the module is broken (the type `[2]u8` does not fit its size)
+== invoke run number_too_long.miab (status 1)
+-- stderr
+error[E0601]: cannot load `number_too_long.miab`: the file is corrupted (a number is too long)
+== invoke dis not_bytecode.miab (status 1)
+-- stderr
+error[E0601]: cannot load `not_bytecode.miab`: not a mia bytecode file

@@ -1,0 +1,15 @@
+
+import io
+
+pub open :: (path: []u8, mode: []u8)
+
+pub main :: (args: [][]u8) -> int {
+	io.println("{}", args);
+	let me = args[0];
+	if lenof(args) != 2 then io.println("{}: no file was provided!", me);
+
+
+	io.println("{}: {}: no such file or directory", me, );
+
+	return 0;
+}

@@ -1,0 +1,86 @@
+== dis (status 0)
+-- stdout
+files
+     0  main.mia
+types
+     0  [4]int: array, 32 byte(s), 4 of int
+     1  int: int, 8 byte(s)
+     2  [26]u8: array, 26 byte(s), 26 of u8
+     3  u8: int, 1 byte(s)
+     4  []u8: slice, 16 byte(s), of u8
+     5  f64: float, 8 byte(s)
+     6  bool: bool, 1 byte(s)
+intrinsics
+     0  io.println (plugin io)
+entry
+  main (returns a value)
+
+function 0 main (0 parameter(s), frame 32 byte(s), result 1 word(s))
+          # main.mia:29  let total = 0;
+        0  CONST 0                      # 0
+        1  STORE_INT 0 8
+          # main.mia:30  for i in 0..3 then total += SQUARES[i];
+        2  CONST 0                      # 0
+        3  CONST 1                      # 3
+        4  RANGE_INIT_INT 8 0
+        5  RANGE_TEST 8 18
+  >     6  LOAD_INT 0 8
+        7  CONST 2                      # {0, 1, 4, 9}
+        8  LOAD_INT 8 8
+        9  INDEX_INT_INT 4 4 8
+       10  ADD_INT
+       11  STORE_INT 0 8
+       12  RANGE_NEXT 8 6
+          # main.mia:31  while total > 10 then total -= 1;
+       13  JUMP 18
+  >    14  LOAD_INT 0 8
+       15  CONST 3                      # 1
+       16  SUB_INT
+       17  STORE_INT 0 8
+  >    18  LOAD_INT 0 8
+       19  CONST 4                      # 10
+       20  GT_INT
+       21  JUMP_IF_TRUE 14
+          # main.mia:32  if ORIGIN.x == 1 && ORIGIN.y > 2.0 then total += twice(add_one, 1);
+       22  LOAD_INT 0 8
+       23  FUNCTION 1                   # add_one
+       24  CONST 3                      # 1
+       25  CALL 2                       # twice
+       26  ADD_INT
+       27  STORE_INT 0 8
+          # main.mia:33  assert(total == 8);
+       28  LOAD_INT 0 8
+       29  CONST 5                      # 8
+       30  EQ_INT
+       31  JUMP_IF_TRUE 33
+       32  ASSERT_FAIL 6                # "assertion failed: total == 8"
+          # main.mia:34  println("total {}, origin {} {}, {}", total, ORIGIN.x, ORIGIN.y, true);
+  >    33  LOC_CONST 7                  # "total {}, origin {} {}, {}"
+       34  SLICE_LOC_INT_INT 8 26 1
+       35  LOAD_INT 0 8
+       36  CONST 3                      # 1
+       37  CONST 8                      # 2.5
+       38  CONST 9                      # true
+       39  CALL_INTRINSIC 0 6           # io.println
+          # main.mia:35  return total;
+       40  LOAD_INT 0 8
+       41  RETURN 1
+
+function 1 add_one (1 parameter(s), frame 8 byte(s), result 1 word(s))
+          # main.mia:26  add_one :: (value: int) -> int then return value + 1;
+        0  LOAD_INT 0 8
+        1  CONST 3                      # 1
+        2  ADD_INT
+        3  RETURN 1
+
+function 2 twice (2 parameter(s), frame 16 byte(s), result 1 word(s))
+          # main.mia:24  twice :: (f: (int) -> int, value: int) -> int then return f(f(value));
+        0  LOAD_FN 0 8
+        1  LOAD_FN 0 8
+        2  LOAD_INT 8 8
+        3  CALL_VALUE 1 1
+        4  CALL_VALUE 1 1
+        5  RETURN 1
+== run (status 8)
+-- stdout
+total 8, origin 1 2.5, true

@@ -1,0 +1,36 @@
+
+# 'mia dis' lists the bytecode of a program: its files, types and plugin
+# functions, then the instructions of each function under the source line
+# they come from, with what their operands name. '>' marks where a jump lands.
+
+from io import println
+
+Point :: {
+	let x: int;
+	let y: f64;
+}
+
+make :: () -> Point then return { x: 1, y: 2.5 };
+
+squares :: () -> [4]int {
+	let items: [4]int = {};
+	for i in 0..4 then items[i] = i * i;
+	return items;
+}
+
+ORIGIN :: make();
+SQUARES :: squares();
+
+twice :: (f: (int) -> int, value: int) -> int then return f(f(value));
+
+add_one :: (value: int) -> int then return value + 1;
+
+pub main :: () -> int {
+	let total = 0;
+	for i in 0..3 then total += SQUARES[i];
+	while total > 10 then total -= 1;
+	if ORIGIN.x == 1 && ORIGIN.y > 2.0 then total += twice(add_one, 1);
+	assert(total == 8);
+	println("total {}, origin {} {}, {}", total, ORIGIN.x, ORIGIN.y, true);
+	return total;
+}

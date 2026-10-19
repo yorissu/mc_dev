@@ -1,0 +1,28 @@
+
+# 'mia run --profile' counts what runs: the instructions run in each function
+# (not in the functions it calls) and its calls, the source lines and the
+# instructions that ran most, and the pairs of instructions that ran one right
+# after the other (the next one of the code). a stopped run shows its counts too.
+
+from io import println
+
+collatz :: (start: int) -> int {
+	let n = start;
+	let steps = 0;
+	while n != 1 {
+		if n % 2 == 0 then n = n / 2;
+		else n = 3 * n + 1;
+		steps += 1;
+	}
+	return steps;
+}
+
+pub main :: () -> int {
+	let longest = 0;
+	for start in 1..30 {
+		let steps = collatz(start);
+		if steps > longest then longest = steps;
+	}
+	println("longest: {}", longest);
+	return 0;
+}

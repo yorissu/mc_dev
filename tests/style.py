@@ -26,7 +26,7 @@ TAB = 4
 TEXT = ('.c', '.h', '.def', '.mia', '.txt', '.sh', '.py', '.json', '.bat', '.yml')
 CODE = ('.c', '.h', '.def', '.mia', '.sh', '.py')
 
-MODULES = set('''arena ast bytecode checker cli code compiler diag evaluator format global int128 lexer map opcode parser
+MODULES = set('''arena ast bytecode checker cli code compiler diag evaluator format global int128 lexer listing map opcode parser
 plugin plugins printer program scalar source span string system token type vector view vm io memory'''.split())
 GLOBAL = set('''mia_has_typeof mia_noreturn mia_unused mia_count_of mia_printf_like mia_panic mia_panic_at mia_assert
 mia_unreachable mia_malloc mia_calloc mia_realloc mia_free mia_strdup mia_portable mia_printf_family'''.split())

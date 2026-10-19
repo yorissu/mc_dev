@@ -11,6 +11,14 @@
 
 static const char _mia_bytecode_magic[4] = { 'M', 'I', 'A', '\0', };
 
+/// what changed in a position from the one before it (the byte before the changes).
+enum {
+	_mia_bytecode_position_file   = 1,
+	_mia_bytecode_position_line   = 2,
+	_mia_bytecode_position_column = 4,
+	_mia_bytecode_position_length = 8,
+};
+
 void mia_bytecode_constant_free(mia_bytecode_constant_s* const constant) {
 	for (size_t i = 0; i < constant->items.count; ++i) mia_bytecode_constant_free(&constant->items.data[i]);
 	mia_vector_free(&constant->items);
@@ -55,29 +63,33 @@ void mia_bytecode_free(mia_bytecode_module_s* const module) {
 
 // --- writing ---------------------------------------------------------------------------
 
-static void _mia_bytecode_put(mia_string_s* const out, const uint64_t value, const size_t bytes) {
+/// 'bytes' bytes of 'value', little-endian (the version, the bits of floats).
+static void _mia_bytecode_put_fixed(mia_string_s* const out, const uint64_t value, const size_t bytes) {
 	for (size_t i = 0; i < bytes; ++i) mia_string_append_char(out, (char)(uint8_t)(value >> (8 * i)));
 }
 
 static void _mia_bytecode_put_u8(mia_string_s* const out, const uint64_t value) {
-	_mia_bytecode_put(out, value, 1);
+	mia_string_append_char(out, (char)(uint8_t)value);
 }
 
-static void _mia_bytecode_put_u32(mia_string_s* const out, const uint64_t value) {
-	_mia_bytecode_put(out, value, 4);
+/// an unsigned varint: 7 bits a byte, the lowest first; the top bit says another byte follows.
+static void _mia_bytecode_put_u(mia_string_s* const out, const uint64_t value) {
+	uint64_t rest = value;
+	while (rest >= 0x80) {
+		mia_string_append_char(out, (char)(uint8_t)(rest | 0x80));
+		rest >>= 7;
+	}
+	mia_string_append_char(out, (char)(uint8_t)rest);
 }
 
-static void _mia_bytecode_put_u64(mia_string_s* const out, const uint64_t value) {
-	_mia_bytecode_put(out, value, 8);
-}
-
-static void _mia_bytecode_put_s64(mia_string_s* const out, const int64_t value) {
-	_mia_bytecode_put(out, (uint64_t)value, 8);
+/// a signed varint: zigzag (0, -1, 1, -2... as 0, 1, 2, 3...), then unsigned.
+static void _mia_bytecode_put_s(mia_string_s* const out, const int64_t value) {
+	_mia_bytecode_put_u(out, ((uint64_t)value << 1) ^ ((value < 0) ? UINT64_MAX : 0));
 }
 
 static void _mia_bytecode_put_string(mia_string_s* const out, const char* const text) {
 	const size_t length = (text != NULL) ? strlen(text) : 0;
-	_mia_bytecode_put_u32(out, length);
+	_mia_bytecode_put_u(out, length);
 	if (length > 0) mia_string_append(out, mia_view_new(text, length));
 }
 
@@ -89,111 +101,123 @@ static uint64_t _mia_bytecode_real_bits(const double value) {
 
 static void _mia_bytecode_put_constant(mia_string_s* const out, const mia_bytecode_constant_s* const constant) {
 	_mia_bytecode_put_u8(out, (uint64_t)constant->kind);
-	_mia_bytecode_put_s64(out, constant->type);
+	_mia_bytecode_put_s(out, constant->type);
 	switch (constant->kind) {
 		case mia_bytecode_constant_none: break;
 		case mia_bytecode_constant_integer:
-			_mia_bytecode_put_u64(out, constant->integer);
 			_mia_bytecode_put_u8(out, constant->is_signed);
+			if (constant->is_signed) _mia_bytecode_put_s(out, (int64_t)constant->integer);
+			else _mia_bytecode_put_u(out, constant->integer);
 			break;
-		case mia_bytecode_constant_real:      _mia_bytecode_put_u64(out, _mia_bytecode_real_bits(constant->real)); break;
+		case mia_bytecode_constant_real:      _mia_bytecode_put_fixed(out, _mia_bytecode_real_bits(constant->real), 8); break;
 		case mia_bytecode_constant_boolean:   _mia_bytecode_put_u8(out, constant->boolean); break;
 		case mia_bytecode_constant_text:      _mia_bytecode_put_string(out, constant->text); break;
 		case mia_bytecode_constant_function:
-		case mia_bytecode_constant_intrinsic: _mia_bytecode_put_u64(out, constant->integer); break;
+		case mia_bytecode_constant_intrinsic: _mia_bytecode_put_u(out, constant->integer); break;
 		case mia_bytecode_constant_slice:
 			_mia_bytecode_put_u8(out, constant->null);
 			_mia_bytecode_put_u8(out, constant->read_only);
-			_mia_bytecode_put_s64(out, constant->start);
-			_mia_bytecode_put_s64(out, constant->length);
+			_mia_bytecode_put_s(out, constant->start);
+			_mia_bytecode_put_s(out, constant->length);
 			break;
 		case mia_bytecode_constant_list:
 			break;
 	}
 	if (mia_bytecode_constant_slice == constant->kind || mia_bytecode_constant_list == constant->kind) {
-		_mia_bytecode_put_u32(out, constant->items.count);
+		_mia_bytecode_put_u(out, constant->items.count);
 		for (size_t i = 0; i < constant->items.count; ++i) _mia_bytecode_put_constant(out, &constant->items.data[i]);
 	}
 }
 
 static void _mia_bytecode_put_indexes(mia_string_s* const out, const int64_t* const items, const size_t count) {
-	for (size_t i = 0; i < count; ++i) _mia_bytecode_put_u32(out, (uint64_t)items[i]);
+	for (size_t i = 0; i < count; ++i) _mia_bytecode_put_u(out, (uint64_t)items[i]);
+}
+
+/// the positions of a function, each as what changed from the one before.
+static void _mia_bytecode_put_positions(mia_string_s* const out, const mia_bytecode_function_s* const function) {
+	mia_bytecode_position_s last = { .file = -1, };
+	for (size_t p = 0; p < function->code.count; ++p) {
+		const mia_bytecode_position_s position = (p < function->positions.count) ? function->positions.data[p] : (mia_bytecode_position_s) { .file = -1, };
+		const uint8_t changed = (uint8_t)((position.file != last.file ? _mia_bytecode_position_file : 0) | (position.line != last.line ? _mia_bytecode_position_line : 0)
+			| (position.column != last.column ? _mia_bytecode_position_column : 0) | (position.length != last.length ? _mia_bytecode_position_length : 0));
+		_mia_bytecode_put_u8(out, changed);
+		if (changed & _mia_bytecode_position_file) _mia_bytecode_put_s(out, (int64_t)position.file - last.file);
+		if (changed & _mia_bytecode_position_line) _mia_bytecode_put_s(out, (int64_t)position.line - last.line);
+		if (changed & _mia_bytecode_position_column) _mia_bytecode_put_s(out, (int64_t)position.column - last.column);
+		if (changed & _mia_bytecode_position_length) _mia_bytecode_put_u(out, position.length);
+		last = position;
+	}
 }
 
 void mia_bytecode_write(const mia_bytecode_module_s* const module, mia_string_s* const out) {
 	mia_string_append(out, mia_view_new(_mia_bytecode_magic, sizeof(_mia_bytecode_magic)));
-	_mia_bytecode_put_u32(out, mia_bytecode_version);
-	_mia_bytecode_put_u32(out, module->files.count);
+	_mia_bytecode_put_fixed(out, mia_bytecode_version, 4);
+	_mia_bytecode_put_u(out, module->files.count);
 	for (size_t i = 0; i < module->files.count; ++i) _mia_bytecode_put_string(out, module->files.data[i]);
-	_mia_bytecode_put_u32(out, module->types.count);
+	_mia_bytecode_put_u(out, module->types.count);
 	for (size_t i = 0; i < module->types.count; ++i) {
 		const mia_bytecode_type_s* const type = &module->types.data[i];
 		_mia_bytecode_put_string(out, type->name);
 		_mia_bytecode_put_u8(out, (uint64_t)type->kind);
 		_mia_bytecode_put_u8(out, (uint64_t)type->code);
-		_mia_bytecode_put_u64(out, type->size);
-		_mia_bytecode_put_u64(out, type->alignment);
-		_mia_bytecode_put_u32(out, (uint64_t)type->element);
-		_mia_bytecode_put_s64(out, type->length);
-		_mia_bytecode_put_s64(out, type->zero);
-		_mia_bytecode_put_u32(out, type->field_names.count);
+		_mia_bytecode_put_u(out, type->size);
+		_mia_bytecode_put_u(out, type->alignment);
+		_mia_bytecode_put_u(out, (uint64_t)type->element);
+		_mia_bytecode_put_s(out, type->length);
+		_mia_bytecode_put_s(out, type->zero);
+		_mia_bytecode_put_u(out, type->field_names.count);
 		for (size_t f = 0; f < type->field_names.count; ++f) {
 			_mia_bytecode_put_string(out, type->field_names.data[f]);
-			_mia_bytecode_put_u32(out, (uint64_t)type->field_types.data[f]);
-			_mia_bytecode_put_u64(out, type->field_offsets.data[f]);
+			_mia_bytecode_put_u(out, (uint64_t)type->field_types.data[f]);
+			_mia_bytecode_put_u(out, type->field_offsets.data[f]);
 		}
 	}
-	_mia_bytecode_put_u32(out, module->constants.count);
+	_mia_bytecode_put_u(out, module->constants.count);
 	for (size_t i = 0; i < module->constants.count; ++i) _mia_bytecode_put_constant(out, &module->constants.data[i]);
-	_mia_bytecode_put_u32(out, module->intrinsics.count);
+	_mia_bytecode_put_u(out, module->intrinsics.count);
 	for (size_t i = 0; i < module->intrinsics.count; ++i) {
 		const mia_bytecode_intrinsic_s* const intrinsic = &module->intrinsics.data[i];
 		_mia_bytecode_put_string(out, intrinsic->name);
 		_mia_bytecode_put_string(out, intrinsic->plugin);
-		_mia_bytecode_put_s64(out, intrinsic->result);
-		_mia_bytecode_put_u32(out, intrinsic->arguments.count);
-		_mia_bytecode_put_u32(out, intrinsic->parameters.count);
-		_mia_bytecode_put_u32(out, intrinsic->variadic.count);
+		_mia_bytecode_put_s(out, intrinsic->result);
+		_mia_bytecode_put_u(out, intrinsic->arguments.count);
+		_mia_bytecode_put_u(out, intrinsic->parameters.count);
+		_mia_bytecode_put_u(out, intrinsic->variadic.count);
 		_mia_bytecode_put_indexes(out, intrinsic->arguments.data, intrinsic->arguments.count);
 		_mia_bytecode_put_indexes(out, intrinsic->parameters.data, intrinsic->parameters.count);
 		_mia_bytecode_put_indexes(out, intrinsic->variadic.data, intrinsic->variadic.count);
-		_mia_bytecode_put_u32(out, intrinsic->flags.count);
-		for (size_t f = 0; f < intrinsic->flags.count; ++f) _mia_bytecode_put_u32(out, intrinsic->flags.data[f]);
+		_mia_bytecode_put_u(out, intrinsic->flags.count);
+		for (size_t f = 0; f < intrinsic->flags.count; ++f) _mia_bytecode_put_u(out, intrinsic->flags.data[f]);
 	}
-	_mia_bytecode_put_u32(out, module->functions.count);
+	_mia_bytecode_put_u(out, module->functions.count);
 	for (size_t i = 0; i < module->functions.count; ++i) {
 		const mia_bytecode_function_s* const function = &module->functions.data[i];
 		_mia_bytecode_put_string(out, function->name);
-		_mia_bytecode_put_u32(out, function->parameters);
-		_mia_bytecode_put_u64(out, function->frame);
-		_mia_bytecode_put_u32(out, function->result);
+		_mia_bytecode_put_u(out, function->parameters);
+		_mia_bytecode_put_u(out, function->frame);
+		_mia_bytecode_put_u(out, function->result);
 		_mia_bytecode_put_u8(out, function->returns);
-		_mia_bytecode_put_u32(out, function->slots.count);
+		_mia_bytecode_put_u(out, function->slots.count);
 		for (size_t s = 0; s < function->slots.count; ++s) {
 			_mia_bytecode_put_u8(out, (uint64_t)function->slots.data[s].code);
-			_mia_bytecode_put_u64(out, function->slots.data[s].offset);
-			_mia_bytecode_put_u64(out, function->slots.data[s].size);
+			_mia_bytecode_put_u(out, function->slots.data[s].offset);
+			_mia_bytecode_put_u(out, function->slots.data[s].size);
 		}
-		_mia_bytecode_put_u32(out, function->code.count);
+		_mia_bytecode_put_u(out, function->code.count);
 		for (size_t c = 0; c < function->code.count; ++c) {
 			const mia_bytecode_instruction_s* const instruction = &function->code.data[c];
 			_mia_bytecode_put_u8(out, (uint64_t)instruction->opcode);
-			_mia_bytecode_put_u8(out, (uint64_t)instruction->type);
-			_mia_bytecode_put_u8(out, (uint64_t)instruction->target);
+			const int types = mia_opcode_types(instruction->opcode);
+			if (types >= 1) _mia_bytecode_put_u8(out, (uint64_t)instruction->type);
+			if (types >= 2) _mia_bytecode_put_u8(out, (uint64_t)instruction->target);
 			const int operands = mia_opcode_operands(instruction->opcode);
-			if (operands >= 1) _mia_bytecode_put_s64(out, instruction->a);
-			if (operands >= 2) _mia_bytecode_put_s64(out, instruction->b);
-			if (operands >= 3) _mia_bytecode_put_s64(out, instruction->c);
+			if (operands >= 1) _mia_bytecode_put_s(out, instruction->a);
+			if (operands >= 2) _mia_bytecode_put_s(out, instruction->b);
+			if (operands >= 3) _mia_bytecode_put_s(out, instruction->c);
 		}
-		for (size_t p = 0; p < function->code.count; ++p) {
-			const mia_bytecode_position_s position = (p < function->positions.count) ? function->positions.data[p] : (mia_bytecode_position_s) { .file = -1, };
-			_mia_bytecode_put_u32(out, (uint64_t)(int64_t)position.file);
-			_mia_bytecode_put_u32(out, position.line);
-			_mia_bytecode_put_u32(out, position.column);
-			_mia_bytecode_put_u32(out, position.length);
-		}
+		_mia_bytecode_put_positions(out, function);
 	}
-	_mia_bytecode_put_u32(out, (uint64_t)module->entry);
+	_mia_bytecode_put_u(out, (uint64_t)module->entry);
 	_mia_bytecode_put_u8(out, module->entry_returns);
 }
 
@@ -225,7 +249,7 @@ static void _mia_bytecode_reader_fail(_mia_bytecode_reader_s* const r, const cha
 	if (NULL == r->error) r->error = error;
 }
 
-static uint64_t _mia_bytecode_get(_mia_bytecode_reader_s* const r, const size_t bytes) {
+static uint64_t _mia_bytecode_get_fixed(_mia_bytecode_reader_s* const r, const size_t bytes) {
 	if (r->error != NULL) return 0;
 	if (r->length - r->at < bytes) {
 		_mia_bytecode_reader_fail(r, "the file is truncated");
@@ -238,19 +262,43 @@ static uint64_t _mia_bytecode_get(_mia_bytecode_reader_s* const r, const size_t 
 }
 
 static uint8_t _mia_bytecode_get_u8(_mia_bytecode_reader_s* const r) {
-	return (uint8_t)_mia_bytecode_get(r, 1);
+	return (uint8_t)_mia_bytecode_get_fixed(r, 1);
 }
 
+/// an unsigned varint (at most 10 bytes, the last one holding the 64th bit at most).
+static uint64_t _mia_bytecode_get_u(_mia_bytecode_reader_s* const r) {
+	// most numbers take one byte
+	if (NULL == r->error && r->at < r->length && r->data[r->at] < 0x80) return r->data[r->at++];
+	uint64_t value = 0;
+	for (unsigned shift = 0; NULL == r->error; shift += 7) {
+		if (r->at == r->length) {
+			_mia_bytecode_reader_fail(r, "the file is truncated");
+			break;
+		}
+		const uint8_t byte = r->data[r->at++];
+		if (63 == shift && byte > 1) {
+			_mia_bytecode_reader_fail(r, "the file is corrupted (a number is too long)");
+			break;
+		}
+		value |= (uint64_t)(byte & 0x7F) << shift;
+		if (0 == (byte & 0x80)) return value;
+	}
+	return 0;
+}
+
+static int64_t _mia_bytecode_get_s(_mia_bytecode_reader_s* const r) {
+	const uint64_t value = _mia_bytecode_get_u(r);
+	return (int64_t)(value >> 1) ^ -(int64_t)(value & 1);
+}
+
+/// an unsigned varint that must fit in 32 bits (counts, indexes).
 static uint32_t _mia_bytecode_get_u32(_mia_bytecode_reader_s* const r) {
-	return (uint32_t)_mia_bytecode_get(r, 4);
-}
-
-static uint64_t _mia_bytecode_get_u64(_mia_bytecode_reader_s* const r) {
-	return _mia_bytecode_get(r, 8);
-}
-
-static int64_t _mia_bytecode_get_s64(_mia_bytecode_reader_s* const r) {
-	return (int64_t)_mia_bytecode_get(r, 8);
+	const uint64_t value = _mia_bytecode_get_u(r);
+	if (value > UINT32_MAX) {
+		_mia_bytecode_reader_fail(r, "the file is corrupted (a number is out of range)");
+		return 0;
+	}
+	return (uint32_t)value;
 }
 
 /// a count of entries that each take at least 'minimum' bytes (so a broken
@@ -278,7 +326,7 @@ static char* _mia_bytecode_get_string(_mia_bytecode_reader_s* const r) {
 static void _mia_bytecode_get_constant(_mia_bytecode_reader_s* const r, mia_bytecode_constant_s* const constant, const int depth) {
 	*constant = (mia_bytecode_constant_s) {0};
 	const uint8_t kind = _mia_bytecode_get_u8(r);
-	constant->type = _mia_bytecode_get_s64(r);
+	constant->type = _mia_bytecode_get_s(r);
 	if (kind > mia_bytecode_constant_intrinsic || depth > mia_bytecode_nesting_limit) {
 		_mia_bytecode_reader_fail(r, "the file is corrupted (an unknown constant)");
 		return;
@@ -287,29 +335,29 @@ static void _mia_bytecode_get_constant(_mia_bytecode_reader_s* const r, mia_byte
 	switch (constant->kind) {
 		case mia_bytecode_constant_none: break;
 		case mia_bytecode_constant_integer:
-			constant->integer = _mia_bytecode_get_u64(r);
 			constant->is_signed = _mia_bytecode_get_u8(r) != 0;
+			constant->integer = constant->is_signed ? (uint64_t)_mia_bytecode_get_s(r) : _mia_bytecode_get_u(r);
 			break;
 		case mia_bytecode_constant_real: {
-			const uint64_t bits = _mia_bytecode_get_u64(r);
+			const uint64_t bits = _mia_bytecode_get_fixed(r, 8);
 			memcpy(&constant->real, &bits, sizeof(bits));
 			break;
 		}
 		case mia_bytecode_constant_boolean:   constant->boolean = _mia_bytecode_get_u8(r) != 0; break;
 		case mia_bytecode_constant_text:      constant->text = _mia_bytecode_get_string(r); break;
 		case mia_bytecode_constant_function:
-		case mia_bytecode_constant_intrinsic: constant->integer = _mia_bytecode_get_u64(r); break;
+		case mia_bytecode_constant_intrinsic: constant->integer = _mia_bytecode_get_u(r); break;
 		case mia_bytecode_constant_slice:
 			constant->null = _mia_bytecode_get_u8(r) != 0;
 			constant->read_only = _mia_bytecode_get_u8(r) != 0;
-			constant->start = _mia_bytecode_get_s64(r);
-			constant->length = _mia_bytecode_get_s64(r);
+			constant->start = _mia_bytecode_get_s(r);
+			constant->length = _mia_bytecode_get_s(r);
 			break;
 		case mia_bytecode_constant_list:
 			break;
 	}
 	if (mia_bytecode_constant_slice == constant->kind || mia_bytecode_constant_list == constant->kind) {
-		const uint32_t count = _mia_bytecode_get_count(r, 9);
+		const uint32_t count = _mia_bytecode_get_count(r, 2);
 		for (uint32_t i = 0; i < count && NULL == r->error; ++i) {
 			mia_bytecode_constant_s item = {0};
 			_mia_bytecode_get_constant(r, &item, depth + 1);
@@ -323,6 +371,34 @@ static void _mia_bytecode_get_indexes(_mia_bytecode_reader_s* const r, const uin
 		const uint32_t index = _mia_bytecode_get_u32(r);
 		if (index >= limit) _mia_bytecode_reader_fail(r, "the file is corrupted (a type index is out of range)");
 		mia_vector_push(items, (int64_t)index);
+	}
+}
+
+/// the change of a position's part: within 32 bits either way (so adding it cannot overflow).
+static int64_t _mia_bytecode_get_change(_mia_bytecode_reader_s* const r) {
+	const int64_t change = _mia_bytecode_get_s(r);
+	if (change < -(int64_t)UINT32_MAX || change > (int64_t)UINT32_MAX) {
+		_mia_bytecode_reader_fail(r, "the file is corrupted (a position names no file)");
+		return 0;
+	}
+	return change;
+}
+
+/// the positions of a function's instructions, each from the one before.
+static void _mia_bytecode_get_positions(_mia_bytecode_reader_s* const r, const mia_bytecode_module_s* const module, mia_bytecode_function_s* const function) {
+	int64_t file = -1, line = 0, column = 0, length = 0;
+	for (size_t p = 0; p < function->code.count && NULL == r->error; ++p) {
+		const uint8_t changed = _mia_bytecode_get_u8(r);
+		if (changed & _mia_bytecode_position_file) file += _mia_bytecode_get_change(r);
+		if (changed & _mia_bytecode_position_line) line += _mia_bytecode_get_change(r);
+		if (changed & _mia_bytecode_position_column) column += _mia_bytecode_get_change(r);
+		if (changed & _mia_bytecode_position_length) length = (int64_t)_mia_bytecode_get_u32(r);
+		if (changed > 15 || file < -1 || file >= (int64_t)module->files.count || line < 0 || line > UINT32_MAX || column < 0 || column > UINT32_MAX) {
+			_mia_bytecode_reader_fail(r, "the file is corrupted (a position names no file)");
+			break;
+		}
+		const mia_bytecode_position_s position = { .file = (int32_t)file, .line = (uint32_t)line, .column = (uint32_t)column, .length = (uint32_t)length, };
+		mia_vector_push(&function->positions, position);
 	}
 }
 
@@ -349,7 +425,7 @@ static bool _mia_bytecode_instruction_valid(const mia_bytecode_module_s* const m
 			return a >= 0 && a < (int64_t)module->intrinsics.count;
 		case mia_opcode_JUMP: case mia_opcode_JUMP_IF_FALSE: case mia_opcode_JUMP_IF_TRUE:
 			return a >= 0 && a <= (int64_t)function->code.count;
-		case mia_opcode_RANGE_TEST:
+		case mia_opcode_RANGE_TEST: case mia_opcode_RANGE_NEXT:
 			return instruction->b >= 0 && instruction->b <= (int64_t)function->code.count;
 		default:
 			return true;
@@ -365,96 +441,99 @@ bool mia_bytecode_read(const mia_view_s data, mia_bytecode_module_s* const modul
 		return false;
 	}
 	r->at = sizeof(_mia_bytecode_magic);
-	const uint32_t version = _mia_bytecode_get_u32(r);
+	const uint32_t version = (uint32_t)_mia_bytecode_get_fixed(r, 4);
 	if (NULL == r->error && version != mia_bytecode_version) {
 		*error = mia_string_format("bytecode format version %u, but this mia reads version %u; build the program again", version, mia_bytecode_version);
 		return false;
 	}
-	const uint32_t files = _mia_bytecode_get_count(r, 4);
+	const uint32_t files = _mia_bytecode_get_count(r, 1);
 	for (uint32_t i = 0; i < files && NULL == r->error; ++i) mia_vector_push(&module->files, _mia_bytecode_get_string(r));
-	const uint32_t types = _mia_bytecode_get_count(r, 40);
+	const uint32_t types = _mia_bytecode_get_count(r, 9);
 	for (uint32_t i = 0; i < types && NULL == r->error; ++i) {
 		mia_bytecode_type_s type = { .name = _mia_bytecode_get_string(r), };
 		const uint8_t kind = _mia_bytecode_get_u8(r), code = _mia_bytecode_get_u8(r);
 		if (kind >= mia_bytecode_descriptor_count || code >= mia_code_count) _mia_bytecode_reader_fail(r, "the file is corrupted (an unknown type)");
 		type.kind = (mia_bytecode_descriptor_kind_e)(kind % mia_bytecode_descriptor_count);
 		type.code = (mia_code_e)(code % mia_code_count);
-		type.size = _mia_bytecode_get_u64(r);
-		type.alignment = _mia_bytecode_get_u64(r);
+		type.size = _mia_bytecode_get_u(r);
+		type.alignment = _mia_bytecode_get_u(r);
 		type.element = _mia_bytecode_get_u32(r);
-		type.length = _mia_bytecode_get_s64(r);
-		type.zero = _mia_bytecode_get_s64(r);
-		const uint32_t fields = _mia_bytecode_get_count(r, 16);
+		type.length = _mia_bytecode_get_s(r);
+		type.zero = _mia_bytecode_get_s(r);
+		const uint32_t fields = _mia_bytecode_get_count(r, 3);
 		for (uint32_t f = 0; f < fields && NULL == r->error; ++f) {
 			mia_vector_push(&type.field_names, _mia_bytecode_get_string(r));
 			mia_vector_push(&type.field_types, (int64_t)_mia_bytecode_get_u32(r));
-			mia_vector_push(&type.field_offsets, _mia_bytecode_get_u64(r));
+			mia_vector_push(&type.field_offsets, _mia_bytecode_get_u(r));
 		}
 		mia_vector_push(&module->types, type);
 	}
-	const uint32_t constants = _mia_bytecode_get_count(r, 9);
+	const uint32_t constants = _mia_bytecode_get_count(r, 2);
 	for (uint32_t i = 0; i < constants && NULL == r->error; ++i) {
 		mia_bytecode_constant_s constant = {0};
 		_mia_bytecode_get_constant(r, &constant, 0);
 		mia_vector_push(&module->constants, constant);
 	}
-	const uint32_t intrinsics = _mia_bytecode_get_count(r, 28);
+	const uint32_t intrinsics = _mia_bytecode_get_count(r, 7);
 	for (uint32_t i = 0; i < intrinsics && NULL == r->error; ++i) {
 		mia_bytecode_intrinsic_s intrinsic = { .name = _mia_bytecode_get_string(r), };
 		intrinsic.plugin = _mia_bytecode_get_string(r);
-		intrinsic.result = _mia_bytecode_get_s64(r);
+		intrinsic.result = _mia_bytecode_get_s(r);
 		if (intrinsic.result < -1 || intrinsic.result >= (int64_t)module->types.count) _mia_bytecode_reader_fail(r, "the file is corrupted (a type index is out of range)");
-		const uint32_t arguments = _mia_bytecode_get_count(r, 4), parameters = _mia_bytecode_get_count(r, 4), variadic = _mia_bytecode_get_count(r, 4);
+		const uint32_t arguments = _mia_bytecode_get_count(r, 1), parameters = _mia_bytecode_get_count(r, 1), variadic = _mia_bytecode_get_count(r, 1);
 		_mia_bytecode_get_indexes(r, arguments, module->types.count, &intrinsic.arguments);
 		_mia_bytecode_get_indexes(r, parameters, module->types.count, &intrinsic.parameters);
 		_mia_bytecode_get_indexes(r, variadic, module->types.count, &intrinsic.variadic);
-		const uint32_t flags = _mia_bytecode_get_count(r, 4);
+		const uint32_t flags = _mia_bytecode_get_count(r, 1);
 		for (uint32_t f = 0; f < flags && NULL == r->error; ++f) mia_vector_push(&intrinsic.flags, _mia_bytecode_get_u32(r));
 		mia_vector_push(&module->intrinsics, intrinsic);
 	}
-	const uint32_t functions = _mia_bytecode_get_count(r, 25);
+	const uint32_t functions = _mia_bytecode_get_count(r, 7);
 	for (uint32_t i = 0; i < functions && NULL == r->error; ++i) {
 		mia_bytecode_function_s function = { .name = _mia_bytecode_get_string(r), };
 		function.parameters = _mia_bytecode_get_u32(r);
-		function.frame = _mia_bytecode_get_u64(r);
+		function.frame = _mia_bytecode_get_u(r);
 		function.result = _mia_bytecode_get_u32(r);
 		function.returns = _mia_bytecode_get_u8(r) != 0;
-		const uint32_t slots = _mia_bytecode_get_count(r, 17);
+		const uint32_t slots = _mia_bytecode_get_count(r, 3);
 		for (uint32_t s = 0; s < slots && NULL == r->error; ++s) {
 			mia_bytecode_slot_s slot = {0};
 			const uint8_t code = _mia_bytecode_get_u8(r);
 			if (code >= mia_code_count) _mia_bytecode_reader_fail(r, "the file is corrupted (an unknown type code)");
 			slot.code = (mia_code_e)(code % mia_code_count);
-			slot.offset = _mia_bytecode_get_u64(r);
-			slot.size = _mia_bytecode_get_u64(r);
+			slot.offset = _mia_bytecode_get_u(r);
+			slot.size = _mia_bytecode_get_u(r);
 			mia_vector_push(&function.slots, slot);
 		}
-		const uint32_t code = _mia_bytecode_get_count(r, 3 + 16);
+		// an instruction takes a byte at least, and so does its position
+		const uint32_t code = _mia_bytecode_get_count(r, 2);
+		if (NULL == r->error) {
+			mia_vector_reserve(&function.code, code);
+			mia_vector_reserve(&function.positions, code);
+		}
 		for (uint32_t c = 0; c < code && NULL == r->error; ++c) {
 			mia_bytecode_instruction_s instruction = {0};
-			const uint8_t opcode = _mia_bytecode_get_u8(r), type = _mia_bytecode_get_u8(r), target = _mia_bytecode_get_u8(r);
-			if (opcode >= mia_opcode_count || type >= mia_code_count || target >= mia_code_count) {
+			const uint8_t opcode = _mia_bytecode_get_u8(r);
+			if (opcode >= mia_opcode_count) {
 				_mia_bytecode_reader_fail(r, "the file is corrupted (an unknown instruction)");
 				break;
 			}
 			instruction.opcode = (mia_opcode_e)opcode;
+			const int codes = mia_opcode_types(instruction.opcode);
+			const uint8_t type = (codes >= 1) ? _mia_bytecode_get_u8(r) : 0, target = (codes >= 2) ? _mia_bytecode_get_u8(r) : 0;
+			if (type >= mia_code_count || target >= mia_code_count) {
+				_mia_bytecode_reader_fail(r, "the file is corrupted (an unknown instruction)");
+				break;
+			}
 			instruction.type = (mia_code_e)type;
 			instruction.target = (mia_code_e)target;
 			const int operands = mia_opcode_operands(instruction.opcode);
-			if (operands >= 1) instruction.a = _mia_bytecode_get_s64(r);
-			if (operands >= 2) instruction.b = _mia_bytecode_get_s64(r);
-			if (operands >= 3) instruction.c = _mia_bytecode_get_s64(r);
+			if (operands >= 1) instruction.a = _mia_bytecode_get_s(r);
+			if (operands >= 2) instruction.b = _mia_bytecode_get_s(r);
+			if (operands >= 3) instruction.c = _mia_bytecode_get_s(r);
 			mia_vector_push(&function.code, instruction);
 		}
-		for (uint32_t p = 0; p < code && NULL == r->error; ++p) {
-			mia_bytecode_position_s position = {0};
-			position.file = (int32_t)_mia_bytecode_get_u32(r);
-			position.line = _mia_bytecode_get_u32(r);
-			position.column = _mia_bytecode_get_u32(r);
-			position.length = _mia_bytecode_get_u32(r);
-			if (position.file < -1 || position.file >= (int32_t)module->files.count) _mia_bytecode_reader_fail(r, "the file is corrupted (a position names no file)");
-			mia_vector_push(&function.positions, position);
-		}
+		_mia_bytecode_get_positions(r, module, &function);
 		mia_vector_push(&module->functions, function);
 	}
 	module->entry = _mia_bytecode_get_u32(r);

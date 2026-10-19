@@ -1,0 +1,25 @@
+== check (status 0)
+== run (status 0)
+-- stdout
+arguments: 123
+function value, then its arguments: 9123
+piped value, then the step's arguments: 123
+operands: 123
+slice, then index: 12
+place, then value: 12
+place, then value (+=): 12
+fields as written: 12 {a: 2, b: 1}
+elements: 123 {1, 2, 3}
+at compile time: 12312
+== miab (status 0)
+-- stdout
+arguments: 123
+function value, then its arguments: 9123
+piped value, then the step's arguments: 123
+operands: 123
+slice, then index: 12
+place, then value: 12
+place, then value (+=): 12
+fields as written: 12 {a: 2, b: 1}
+elements: 123 {1, 2, 3}
+at compile time: 12312

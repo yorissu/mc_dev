@@ -150,6 +150,7 @@ struct mia_program_variable_s {
 	mia_program_variable_kind_e kind       ;
 	mia_span_s                  span       ;
 	bool                        reference  ;
+	bool                        changed    ;   // assigned or lent to a reference parameter somewhere
 	int                         level      ;
 	const mia_ast_node_s*       initializer;   // lets: the value it starts with, or null
 };

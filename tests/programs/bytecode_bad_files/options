@@ -10,3 +10,5 @@ invoke: run field_offset_outside.miab
 invoke: run scalar_code_bytes.miab
 invoke: run slot_offset_wraps.miab
 invoke: run array_too_long.miab
+invoke: run number_too_long.miab
+invoke: dis not_bytecode.miab

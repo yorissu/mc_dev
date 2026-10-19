@@ -70,3 +70,5 @@ mia_opcode(GE, 1, 0)
 mia_opcode(NEG, 1, 0)
 mia_opcode(BITNOT, 1, 0)
 mia_opcode(CAST, 2, 0)
+// added later: at the end, so the numbers of the others stay what older .miab files have
+mia_opcode(RANGE_NEXT, 0, 2)

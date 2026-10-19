@@ -24,8 +24,22 @@
 
 #include <stdio.h>
 
+/// what a profiled run executed in one function of the module.
+typedef struct {
+	uint64_t  calls   ;
+	size_t    count   ;   // its instructions
+	uint64_t* runs    ;   // per instruction: how often it ran
+	uint64_t* followed;   // per instruction: how often the next one of the code ran right after it, in the same call
+} mia_vm_profile_function_s;
+
+/// what a profiled run executed: the module's functions, in their order.
+typedef struct {
+	mia_vector_of(mia_vm_profile_function_s) functions;
+} mia_vm_profile_s;
+
 typedef struct {
 	FILE*                out           ;   // what the program prints (stdout when null)
+	mia_vm_profile_s*    profile       ;   // counts what runs (one instruction at a time, slower); null: nothing counted
 	uint64_t             limit         ;   // stop after this many instructions; 0: no limit
 	uint64_t             call_depth    ;   // the calls that may be running at once; 0: the default, 10000
 	const mia_plugins_s* plugins       ;   // the plugin functions; null: only the built-in ones
@@ -59,6 +73,8 @@ typedef struct {
 bool mia_vm_run(const mia_bytecode_module_s* const module, const mia_vm_options_s* const options, mia_vm_result_s* const result);
 
 void mia_vm_result_free(mia_vm_result_s* const result);
+
+void mia_vm_profile_free(mia_vm_profile_s* const profile);
 
 /// the exit status of a finished run: main's int result & 0xFF, else 0.
 int mia_vm_exit_status(const mia_vm_result_s* const result);

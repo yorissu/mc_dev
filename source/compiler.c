@@ -526,10 +526,22 @@ static int64_t _mia_compiler_here(_mia_compiler_function_s* const f) {
 	return (int64_t)_mia_compiler_target(f)->code.count;
 }
 
-static void _mia_compiler_patch(_mia_compiler_function_s* const f, const int64_t index, const int64_t target) {
-	mia_bytecode_instruction_s* const instruction = &_mia_compiler_target(f)->code.data[index];
-	if (mia_opcode_RANGE_TEST == instruction->opcode) instruction->b = target;
+/// where an instruction jumps to; -1 when it does not jump.
+static int64_t _mia_compiler_jump_target(const mia_bytecode_instruction_s* const instruction) {
+	switch (instruction->opcode) {
+		case mia_opcode_JUMP: case mia_opcode_JUMP_IF_FALSE: case mia_opcode_JUMP_IF_TRUE: return instruction->a;
+		case mia_opcode_RANGE_TEST: case mia_opcode_RANGE_NEXT: return instruction->b;
+		default: return -1;
+	}
+}
+
+static void _mia_compiler_set_jump_target(mia_bytecode_instruction_s* const instruction, const int64_t target) {
+	if (mia_opcode_RANGE_TEST == instruction->opcode || mia_opcode_RANGE_NEXT == instruction->opcode) instruction->b = target;
 	else instruction->a = target;
+}
+
+static void _mia_compiler_patch(_mia_compiler_function_s* const f, const int64_t index, const int64_t target) {
+	_mia_compiler_set_jump_target(&_mia_compiler_target(f)->code.data[index], target);
 }
 
 static void _mia_compiler_push_constant(_mia_compiler_function_s* const f, const mia_bytecode_constant_s constant) {
@@ -982,9 +994,19 @@ static void _mia_compiler_composite(_mia_compiler_function_s* const f, const mia
 	}
 }
 
+typedef mia_vector_of(int64_t) _mia_compiler_jumps_s;
+
+static void _mia_compiler_jump_if(_mia_compiler_function_s* const f, const mia_ast_node_s* const node, const bool when, _mia_compiler_jumps_s* const jumps);
+
+static void _mia_compiler_patch_all(_mia_compiler_function_s* const f, _mia_compiler_jumps_s* const jumps, const int64_t target) {
+	for (size_t i = 0; i < jumps->count; ++i) _mia_compiler_patch(f, jumps->data[i], target);
+	mia_vector_free(jumps);
+}
+
 static void _mia_compiler_assert(_mia_compiler_function_s* const f, const mia_ast_node_s* const node) {
-	_mia_compiler_value(f, node->as.assert_statement.condition);
-	const int64_t skip = _mia_compiler_emit_a(f, mia_opcode_JUMP_IF_TRUE, 0);
+	// (a condition known to hold leaves only a jump over the failure, which is tidied away)
+	_mia_compiler_jumps_s skip = {0};
+	_mia_compiler_jump_if(f, node->as.assert_statement.condition, true, &skip);
 	const mia_ast_node_s* const message = node->as.assert_statement.message;
 	mia_bytecode_constant_s text = { .kind = mia_bytecode_constant_text, .type = -1, };
 	if (message != NULL && mia_ast_node_string == message->kind) {
@@ -997,7 +1019,7 @@ static void _mia_compiler_assert(_mia_compiler_function_s* const f, const mia_as
 		text.text = mia_string_format("assertion failed: " mia_view_fmt, mia_view_arg(condition));
 	}
 	_mia_compiler_emit_a(f, mia_opcode_ASSERT_FAIL, _mia_compiler_constant(f->c, text));
-	_mia_compiler_patch(f, skip, _mia_compiler_here(f));
+	_mia_compiler_patch_all(f, &skip, _mia_compiler_here(f));
 }
 
 static void _mia_compiler_lenof(_mia_compiler_function_s* const f, const mia_ast_node_s* const node) {
@@ -1058,7 +1080,56 @@ static void _mia_compiler_index(_mia_compiler_function_s* const f, const mia_ast
 	_mia_compiler_emit_full(f, instruction);
 }
 
+/// whether 'node' is made of literals and constants only (no variable, no
+/// call): what may have a value at compile time, checked before asking the
+/// evaluator (which costs more).
+static bool _mia_compiler_constant_shape(const mia_ast_node_s* const node) {
+	switch (node->kind) {
+		case mia_ast_node_integer: case mia_ast_node_float: case mia_ast_node_char: case mia_ast_node_bool: case mia_ast_node_string:
+		case mia_ast_node_sizeof:
+			return true;
+		case mia_ast_node_name:   return node->note.constant != NULL;
+		case mia_ast_node_paren:  return _mia_compiler_constant_shape(node->as.paren.inner);
+		case mia_ast_node_cast:   return _mia_compiler_constant_shape(node->as.cast.operand);
+		case mia_ast_node_unary:  return _mia_compiler_constant_shape(node->as.unary.operand);
+		case mia_ast_node_binary: return _mia_compiler_constant_shape(node->as.binary.left) && _mia_compiler_constant_shape(node->as.binary.right);
+		case mia_ast_node_member: return (NULL == node->note.field) ? node->note.constant != NULL : _mia_compiler_constant_shape(node->as.member.target);
+		case mia_ast_node_index:  return _mia_compiler_constant_shape(node->as.index.target) && _mia_compiler_constant_shape(node->as.index.index);
+		default:                  return false;
+	}
+}
+
+/// an operation whose value is known at compile time (on literals and
+/// constants: '2 * SIZE', 'ORIGIN.x', 'TABLE[3]') as that value: one
+/// constant. the evaluator computes as the machine does (integers wrap to
+/// their type, f32 rounds), and an operation the machine would stop on
+/// (division by zero) is not known, so it stays for the machine.
+static bool _mia_compiler_fold(_mia_compiler_function_s* const f, const mia_ast_node_s* const node) {
+	const mia_type_s* const type = node->note.type;
+	if (NULL == type) return false;
+	switch (node->kind) {
+		case mia_ast_node_binary: case mia_ast_node_unary: case mia_ast_node_index: break;
+		case mia_ast_node_member: if (NULL == node->note.field) return false; break;
+		case mia_ast_node_cast: {
+			// a float made an integer is left to the machine (the evaluator converts through 128 bits, the machine through 64)
+			const mia_type_s* const source = node->as.cast.operand->note.type;
+			const bool from_float = mia_type_is_special(source, mia_type_special_untyped_float) || (mia_type_scalar == source->kind && 'f' == mia_scalar_kind(source->as.scalar));
+			if (from_float && mia_type_scalar == type->kind && 'i' == mia_scalar_kind(type->as.scalar)) return false;
+			break;
+		}
+		default: return false;
+	}
+	mia_evaluator_value_s value = {0};
+	if (!_mia_compiler_constant_shape(node) || !mia_checker_try_value(f->c->checker, node, &value)) return false;
+	const bool scalar = mia_evaluator_value_integer == value.kind || mia_evaluator_value_real == value.kind || mia_evaluator_value_boolean == value.kind;
+	if (scalar && !(mia_type_scalar == type->kind || mia_type_is_untyped(type))) return false;
+	if (!scalar && !(mia_evaluator_value_list == value.kind && (mia_type_array == type->kind || mia_type_struct == type->kind))) return false;
+	_mia_compiler_push_constant(f, _mia_compiler_convert(f->c, &value, type));
+	return true;
+}
+
 static void _mia_compiler_expression(_mia_compiler_function_s* const f, const mia_ast_node_s* const node) {
+	if (_mia_compiler_fold(f, node)) return;
 	switch (node->kind) {
 		case mia_ast_node_integer: _mia_compiler_scalar(f, false, node->as.integer.value, 0.0, node->note.type); break;
 		case mia_ast_node_float:   _mia_compiler_scalar(f, true, mia_int128_zero(), node->as.floating.value, node->note.type); break;
@@ -1162,17 +1233,23 @@ static void _mia_compiler_open_loop(_mia_compiler_function_s* const f, const int
 	mia_vector_push(&f->loops, loop);
 }
 
-typedef mia_vector_of(int64_t) _mia_compiler_jumps_s;
-
-static void _mia_compiler_patch_all(_mia_compiler_function_s* const f, _mia_compiler_jumps_s* const jumps, const int64_t target) {
-	for (size_t i = 0; i < jumps->count; ++i) _mia_compiler_patch(f, jumps->data[i], target);
-	mia_vector_free(jumps);
+/// whether a condition is known at compile time ('true', 'DEBUG', 'SIZE > 4'), and its value.
+static bool _mia_compiler_known(_mia_compiler_function_s* const f, const mia_ast_node_s* const node, bool* const holds) {
+	if (mia_ast_node_bool == node->kind) {
+		*holds = node->as.boolean.value;
+		return true;
+	}
+	mia_evaluator_value_s value = {0};
+	if (!_mia_compiler_constant_shape(node) || !mia_checker_try_value(f->c->checker, node, &value) || value.kind != mia_evaluator_value_boolean) return false;
+	*holds = value.as.boolean;
+	return true;
 }
 
 /// a condition as jumps: adds to 'jumps' the jumps taken when 'node' is
 /// 'when' (to be patched), and falls through otherwise. '&&', '||' and '!'
 /// become jumps too, so no bool is made, and a comparison stays right before
-/// its jump (which the machine runs as one operation).
+/// its jump (which the machine runs as one operation). a condition known at
+/// compile time is a plain jump, or nothing.
 static void _mia_compiler_jump_if(_mia_compiler_function_s* const f, const mia_ast_node_s* const node, const bool when, _mia_compiler_jumps_s* const jumps) {
 	if (mia_ast_node_paren == node->kind) {
 		_mia_compiler_jump_if(f, node->as.paren.inner, when, jumps);
@@ -1182,8 +1259,9 @@ static void _mia_compiler_jump_if(_mia_compiler_function_s* const f, const mia_a
 		_mia_compiler_jump_if(f, node->as.unary.operand, !when, jumps);
 		return;
 	}
-	if (mia_ast_node_bool == node->kind) {
-		if (node->as.boolean.value == when) mia_vector_push(jumps, _mia_compiler_emit_a(f, mia_opcode_JUMP, 0));
+	bool holds = false;
+	if (_mia_compiler_known(f, node, &holds)) {
+		if (holds == when) mia_vector_push(jumps, _mia_compiler_emit_a(f, mia_opcode_JUMP, 0));
 		return;
 	}
 	if (mia_ast_node_binary == node->kind && (mia_ast_operator_and == node->as.binary.operation || mia_ast_operator_or == node->as.binary.operation)) {
@@ -1221,23 +1299,59 @@ static void _mia_compiler_if(_mia_compiler_function_s* const f, const mia_ast_no
 	_mia_compiler_patch(f, end, _mia_compiler_here(f));
 }
 
+/// 'for': the range is tested once before the first round, and RANGE_NEXT
+/// steps it and jumps back after each, so a round costs one instruction.
+/// the variable is the range's counter itself when it is a word the body
+/// never changes (no copy per round); otherwise a copy of it.
 static void _mia_compiler_for(_mia_compiler_function_s* const f, const mia_ast_node_s* const node) {
 	const int64_t base = _mia_compiler_reserve(f, 24, 8);
-	const mia_type_s* const type = node->note.variable->type;
+	const mia_program_variable_s* const variable = node->note.variable;
+	const mia_type_s* const type = variable->type;
+	const mia_code_e code = _mia_compiler_type_code(f->c, type);
+	const bool counter = !variable->changed && 8 == mia_code_size(code) && 'i' == mia_code_kind(code);
+	if (counter) mia_map_index_set(&f->slots, mia_map_key_of(variable), base);
 	_mia_compiler_value(f, node->as.for_statement.start);
 	_mia_compiler_value(f, node->as.for_statement.end);
-	_mia_compiler_emit_full(f, (mia_bytecode_instruction_s) { .opcode = mia_opcode_RANGE_INIT, .type = _mia_compiler_type_code(f->c, type), .a = base, .b = node->as.for_statement.inclusive, });
-	const int64_t test = _mia_compiler_here(f);
+	_mia_compiler_emit_full(f, (mia_bytecode_instruction_s) { .opcode = mia_opcode_RANGE_INIT, .type = code, .a = base, .b = node->as.for_statement.inclusive, });
 	const int64_t leave = _mia_compiler_emit_ab(f, mia_opcode_RANGE_TEST, base, 0);
-	_mia_compiler_emit_full(f, (mia_bytecode_instruction_s) { .opcode = mia_opcode_LOAD, .type = mia_code_int, .a = base, .b = 8, });
-	_mia_compiler_store_local(f, _mia_compiler_slot(f, node->note.variable), type);
+	const int64_t first = _mia_compiler_here(f);
+	if (!counter) {
+		_mia_compiler_emit_full(f, (mia_bytecode_instruction_s) { .opcode = mia_opcode_LOAD, .type = mia_code_int, .a = base, .b = 8, });
+		_mia_compiler_store_local(f, _mia_compiler_slot(f, variable), type);
+	}
 	_mia_compiler_open_loop(f, leave, -1);
 	_mia_compiler_block(f, node->as.for_statement.body);
 	const int64_t step = _mia_compiler_here(f);
 	const _mia_compiler_loop_s* const loop = &mia_vector_last(&f->loops);
 	for (size_t i = 0; i < loop->continues.count; ++i) _mia_compiler_patch(f, loop->continues.data[i], step);
-	_mia_compiler_emit_a(f, mia_opcode_RANGE_STEP, base);
-	_mia_compiler_emit_a(f, mia_opcode_JUMP, test);
+	_mia_compiler_emit_ab(f, mia_opcode_RANGE_NEXT, base, first);
+	_mia_compiler_finish_loop(f, _mia_compiler_here(f));
+}
+
+/// 'while': the test is at the bottom (a first jump goes to it), so a round
+/// ends in the test's jump back, not in a jump to a test at the top. a
+/// condition known to hold has no test (only its 'break's leave the loop;
+/// as for the checker, code after it is reached through a 'break' only).
+static void _mia_compiler_while(_mia_compiler_function_s* const f, const mia_ast_node_s* const node) {
+	const mia_ast_node_s* const condition = node->as.while_statement.condition;
+	bool holds = false;
+	const bool forever = _mia_compiler_known(f, condition, &holds) && holds;
+	const int64_t entry = forever ? -1 : _mia_compiler_emit_a(f, mia_opcode_JUMP, 0);
+	const int64_t first = _mia_compiler_here(f);
+	_mia_compiler_open_loop(f, -1, forever ? first : -1);
+	_mia_compiler_block(f, node->as.while_statement.body);
+	if (forever) {
+		_mia_compiler_emit_a(f, mia_opcode_JUMP, first);
+	}
+	else {
+		const int64_t test = _mia_compiler_here(f);
+		_mia_compiler_patch(f, entry, test);
+		const _mia_compiler_loop_s* const loop = &mia_vector_last(&f->loops);
+		for (size_t i = 0; i < loop->continues.count; ++i) _mia_compiler_patch(f, loop->continues.data[i], test);
+		_mia_compiler_jumps_s again = {0};
+		_mia_compiler_jump_if(f, condition, true, &again);
+		_mia_compiler_patch_all(f, &again, first);
+	}
 	_mia_compiler_finish_loop(f, _mia_compiler_here(f));
 }
 
@@ -1260,20 +1374,7 @@ static void _mia_compiler_statement_kind(_mia_compiler_function_s* const f, cons
 		}
 		case mia_ast_node_assign: _mia_compiler_assign(f, node); break;
 		case mia_ast_node_if: _mia_compiler_if(f, node); break;
-		case mia_ast_node_while: {
-			const int64_t start = _mia_compiler_here(f);
-			// 'while true' has no exit test (its condition makes no jump), only its 'break's leave it: as for the
-			// checker, code after it is reached through a 'break' only (a function's final RETURN may not fit its result)
-			_mia_compiler_jumps_s leave = {0};
-			_mia_compiler_jump_if(f, node->as.while_statement.condition, false, &leave);
-			_mia_compiler_open_loop(f, -1, start);
-			for (size_t i = 0; i < leave.count; ++i) mia_vector_push(&mia_vector_last(&f->loops).breaks, leave.data[i]);
-			mia_vector_free(&leave);
-			_mia_compiler_block(f, node->as.while_statement.body);
-			_mia_compiler_emit_a(f, mia_opcode_JUMP, start);
-			_mia_compiler_finish_loop(f, _mia_compiler_here(f));
-			break;
-		}
+		case mia_ast_node_while: _mia_compiler_while(f, node); break;
 		case mia_ast_node_for: _mia_compiler_for(f, node); break;
 		case mia_ast_node_break: {
 			const int64_t jump = _mia_compiler_emit_a(f, mia_opcode_JUMP, 0);
@@ -1303,6 +1404,119 @@ static void _mia_compiler_statement_kind(_mia_compiler_function_s* const f, cons
 
 static void _mia_compiler_statement(_mia_compiler_function_s* const f, const mia_ast_node_s* const node) {
 	_mia_compiler_at_node(f, node, _mia_compiler_statement_kind);
+}
+
+// --- tidying ------------------------------------------------------------------------------
+
+/// one round of tidying a finished function's jumps; false when nothing changed.
+/// a jump to a jump goes straight to where that one goes (and a jump to a
+/// return returns there); a conditional jump over a jump becomes the opposite
+/// jump; then what cannot run (code no path reaches, a jump to the next
+/// instruction) is removed and the jumps are renumbered.
+static bool _mia_compiler_tidy_round(_mia_compiler_function_s* const f) {
+	mia_bytecode_function_s* const function = _mia_compiler_target(f);
+	mia_bytecode_instruction_s* const code = function->code.data;
+	const size_t count = function->code.count;
+	bool changed = false;
+	for (size_t i = 0; i < count; ++i) {
+		const int64_t first = _mia_compiler_jump_target(&code[i]);
+		int64_t to = first;
+		if (to < 0) continue;
+		for (size_t hops = 0; hops < count && (uint64_t)to < count && mia_opcode_JUMP == code[to].opcode && code[to].a != to; ++hops) to = code[to].a;
+		if (to != first) {
+			_mia_compiler_set_jump_target(&code[i], to);
+			changed = true;
+		}
+		// the stack holds the same at the jump and at the return it leads to
+		if (mia_opcode_JUMP == code[i].opcode && (uint64_t)to < count && mia_opcode_RETURN == code[to].opcode) {
+			code[i] = code[to];
+			changed = true;
+		}
+	}
+	bool* const targeted = mia_calloc(count + 1, sizeof(bool));
+	bool* const removed = mia_calloc(count + 1, sizeof(bool));
+	bool* const reached = mia_calloc(count + 1, sizeof(bool));
+	size_t* const renumbered = mia_calloc(count + 1, sizeof(size_t));
+	for (size_t i = 0; i < count; ++i) {
+		const int64_t to = _mia_compiler_jump_target(&code[i]);
+		if (to >= 0 && (uint64_t)to <= count) targeted[to] = true;
+	}
+	// 'if c then break;': a jump over a jump, when nothing else jumps to the second one
+	for (size_t i = 0; i + 1 < count; ++i) {
+		const mia_opcode_e opcode = code[i].opcode;
+		if ((opcode != mia_opcode_JUMP_IF_FALSE && opcode != mia_opcode_JUMP_IF_TRUE) || code[i].a != (int64_t)i + 2) continue;
+		if (code[i + 1].opcode != mia_opcode_JUMP || targeted[i + 1] || removed[i]) continue;
+		code[i].opcode = (mia_opcode_JUMP_IF_FALSE == opcode) ? mia_opcode_JUMP_IF_TRUE : mia_opcode_JUMP_IF_FALSE;
+		code[i].a = code[i + 1].a;
+		removed[i + 1] = true;
+		changed = true;
+	}
+	// what runs: from the first instruction, along jumps and from each instruction to the next
+	mia_vector_of(size_t) work = {0};
+	if (count > 0) {
+		reached[0] = true;
+		mia_vector_push(&work, 0);
+	}
+	while (work.count > 0) {
+		const size_t at = mia_vector_pop(&work);
+		const mia_opcode_e opcode = code[at].opcode;
+		const int64_t to = removed[at] ? -1 : _mia_compiler_jump_target(&code[at]);
+		const bool falls = removed[at] || (opcode != mia_opcode_JUMP && opcode != mia_opcode_RETURN && opcode != mia_opcode_ASSERT_FAIL);
+		if (to >= 0 && (uint64_t)to < count && !reached[to]) {
+			reached[to] = true;
+			mia_vector_push(&work, (size_t)to);
+		}
+		if (falls && at + 1 < count && !reached[at + 1]) {
+			reached[at + 1] = true;
+			mia_vector_push(&work, at + 1);
+		}
+	}
+	mia_vector_free(&work);
+	for (size_t i = 0; i < count; ++i) {
+		if (!reached[i] && !removed[i]) {
+			removed[i] = true;
+			changed = true;
+		}
+	}
+	// a jump to the next instruction that stays (a removed instruction's number is that of the next one that stays)
+	for (bool again = true; again;) {
+		again = false;
+		size_t kept = 0;
+		for (size_t i = 0; i <= count; ++i) {
+			renumbered[i] = kept;
+			if (i < count && !removed[i]) kept += 1;
+		}
+		for (size_t i = 0; i < count; ++i) {
+			if (removed[i] || code[i].opcode != mia_opcode_JUMP || code[i].a < 0 || (uint64_t)code[i].a > count) continue;
+			if (renumbered[code[i].a] == renumbered[i] + 1) {
+				removed[i] = true;
+				again = changed = true;
+			}
+		}
+	}
+	if (changed) {
+		size_t kept = 0;
+		for (size_t i = 0; i < count; ++i) {
+			if (removed[i]) continue;
+			mia_bytecode_instruction_s instruction = code[i];
+			const int64_t to = _mia_compiler_jump_target(&instruction);
+			if (to >= 0 && (uint64_t)to <= count) _mia_compiler_set_jump_target(&instruction, (int64_t)renumbered[to]);
+			code[kept] = instruction;
+			function->positions.data[kept] = function->positions.data[i];
+			kept += 1;
+		}
+		function->code.count = kept;
+		function->positions.count = kept;
+	}
+	mia_free(targeted);
+	mia_free(removed);
+	mia_free(reached);
+	mia_free(renumbered);
+	return changed;
+}
+
+static void _mia_compiler_tidy(_mia_compiler_function_s* const f) {
+	for (int pass = 0; pass < 8 && _mia_compiler_tidy_round(f); ++pass) {}
 }
 
 static void _mia_compiler_function_free(_mia_compiler_function_s* const f) {
@@ -1352,6 +1566,7 @@ static void _mia_compiler_compile_function(_mia_compiler_s* const c, _mia_compil
 	_mia_compiler_block(f, body);
 	f->span = (mia_span_s) { .file = body->span.file, .begin = body->span.end - 1, .end = body->span.end, };
 	_mia_compiler_emit_a(f, mia_opcode_RETURN, 0);
+	_mia_compiler_tidy(f);
 	if (f->frame > mia_bytecode_frame_size_limit) {
 		_mia_compiler_fail(c, "the locals of `%s` take %llu bytes, more than the %llu a function may have", _mia_compiler_target(f)->name,
 			(unsigned long long)f->frame, (unsigned long long)mia_bytecode_frame_size_limit);

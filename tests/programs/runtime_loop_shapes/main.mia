@@ -1,0 +1,79 @@
+
+# loops as the compiler lays them out: the test of 'while' at the bottom,
+# 'for' stepping and jumping back in one instruction, its variable kept in the
+# range's counter unless the body changes it, jumps to jumps taken straight,
+# and conditions known at compile time without a test.
+
+from io import println
+
+DEBUG :: false;
+LIMIT :: 3;
+
+bump :: (value: &int) then value += 100;
+
+collect :: (log: &int, n: int) then log = log * 10 + n;
+
+pub main :: () -> int {
+	# assigning the variable changes this round only, not the rounds after it
+	let log = 0;
+	for i in 0..4 {
+		i = i * 2;
+		collect(&log, i);
+	}
+	println("assigned: {}", log);
+
+	# lent to a reference parameter: the same
+	log = 0;
+	for i in 1..4 {
+		bump(&i);
+		collect(&log, i % 10);
+	}
+	println("lent: {}", log);
+
+	# narrow, wide, inclusive, empty and backwards ranges
+	let total = 0;
+	for i in 250u8..255u8 then total += (int)i;
+	for i in 0..=3 then total += i * 1000;
+	for i in 5..5 then total += 1000000;
+	for i in 3..0 then total += i * 10000;
+	println("ranges: {}", total);
+
+	# continue and break in for and while, nested
+	log = 0;
+	for i in 0..6 {
+		if i % 2 == 0 then continue;
+		if i > 4 then break;
+		let j = 0;
+		while true {
+			j += 1;
+			if j == 2 then continue;
+			if j > 3 then break;
+			collect(&log, j);
+		}
+		collect(&log, i);
+	}
+	println("continue and break: {}", log);
+
+	# a while that never runs, conditions with && and ||, a known condition
+	let n = 10;
+	while n < 5 then n += 100;
+	while n > 0 && (n % 7 != 0 || n == 14) then n -= 1;
+	while DEBUG then n += 1000;
+	if LIMIT > 2 && !DEBUG then n += LIMIT * 10;
+	println("conditions: {}", n);
+
+	# breaking out of nested loops
+	let found = -1;
+	for i in 0..10 {
+		for j in 0..10 {
+			if i * j == 42 {
+				found = i * 100 + j;
+				break;
+			}
+		}
+		if found >= 0 then break;
+	}
+	println("found: {}", found);
+	assert(LIMIT == 3 && !DEBUG);
+	return found % 100;
+}

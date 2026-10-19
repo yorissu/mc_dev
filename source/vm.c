@@ -16,7 +16,9 @@
 /// the loop runs decoded instructions: the frequent ones (word loads and
 /// stores, arithmetic on 64-bit integers and doubles, comparisons, jumps,
 /// slice elements) get their own cases with the operand stack in a local
-/// pointer; the rest go through the general _mia_vm_step.
+/// pointer; the rest go through the general _mia_vm_step. a comparison and
+/// its jump, and a few frequent runs of instructions (_mia_vm_fuse), run as
+/// one case each, still counted instruction by instruction.
 ///
 /// the design (see also bytecode.h):
 ///
@@ -1104,7 +1106,7 @@ typedef enum {
 	_mia_vm_x_ult, _mia_vm_x_ule, _mia_vm_x_ugt, _mia_vm_x_uge,        // unsigned
 	_mia_vm_x_flt, _mia_vm_x_fle, _mia_vm_x_fgt, _mia_vm_x_fge,        // floats
 	_mia_vm_x_jump, _mia_vm_x_jump_false, _mia_vm_x_jump_true,
-	_mia_vm_x_range_test, _mia_vm_x_range_step,
+	_mia_vm_x_range_test, _mia_vm_x_range_next,
 	_mia_vm_x_index_slice8, _mia_vm_x_index_slice1,            // elements of 8 bytes, of u8 or bool
 	_mia_vm_x_loc_index_slice, _mia_vm_x_load_loc8, _mia_vm_x_store_loc8,
 	_mia_vm_x_dup1, _mia_vm_x_pop,
@@ -1115,14 +1117,20 @@ typedef enum {
 	_mia_vm_x_field, _mia_vm_x_set_field,                      // scalars in a struct on the stack
 	_mia_vm_x_not,
 	_mia_vm_x_load_loc, _mia_vm_x_store_loc, _mia_vm_x_index_slice, // other scalars, converted
-	// an integer comparison and the jump_false after it (b: the jump's target)
+	// an integer comparison and the jump after it (b: the jump's target; it jumps when the comparison fails)
 	_mia_vm_x_eq_jump, _mia_vm_x_ne_jump, _mia_vm_x_slt_jump, _mia_vm_x_sle_jump, _mia_vm_x_sgt_jump,
 	_mia_vm_x_sge_jump, _mia_vm_x_ult_jump, _mia_vm_x_ule_jump, _mia_vm_x_ugt_jump, _mia_vm_x_uge_jump,
+	// runs of instructions (see _mia_vm_fuse): a word local, then a constant word ('load_const'), a word
+	// local ('load_load'), the sum or difference of the two (and that stored to a word local), an element
+	// of a slice local at a word local index (8 bytes, 1 byte) or its location
+	_mia_vm_x_load_const, _mia_vm_x_load_load, _mia_vm_x_add_const, _mia_vm_x_sub_const, _mia_vm_x_add_const_store,
+	_mia_vm_x_sub_const_store, _mia_vm_x_index_local8, _mia_vm_x_index_local1, _mia_vm_x_loc_index_local,
 	_mia_vm_x_count,
 } _mia_vm_x_e;
 
 struct _mia_vm_exec_s {
 	uint8_t                           x          ;
+	uint8_t                           plain      ;   // the operation of this instruction alone (x is a fused one, or the same)
 	const mia_bytecode_instruction_s* instruction;
 	int64_t                           a          ;
 	int64_t                           b          ;
@@ -1613,6 +1621,14 @@ static void _mia_vm_step(_mia_vm_s* const vm, _mia_vm_frame_s* const frame, cons
 			memcpy(base + a, state, sizeof(state[0]));
 			break;
 		}
+		case mia_opcode_RANGE_NEXT: {
+			uint64_t state[3];
+			memcpy(state, base + a, sizeof(state));
+			state[0] += state[1];
+			memcpy(base + a, state, sizeof(state[0]));
+			if (state[0] != state[2]) frame->pc = instruction->b;
+			break;
+		}
 		case mia_opcode_CALL:           _mia_vm_call(vm, a); break;
 		case mia_opcode_CALL_VALUE:     _mia_vm_call_value(vm, a, instruction->b); break;
 		case mia_opcode_CALL_INTRINSIC: _mia_vm_call_plugin(vm, a, instruction->b); break;
@@ -1655,6 +1671,33 @@ static void _mia_vm_step(_mia_vm_s* const vm, _mia_vm_frame_s* const frame, cons
 }
 
 // --- the loop --------------------------------------------------------------------------------
+
+/// the loop of a profiled run: every instruction through the general step,
+/// counted (with the instruction that ran before it, when it is the one
+/// before it in the code). it runs what the fast loop runs, instruction for
+/// instruction, so the counts and the limit are the same.
+static void _mia_vm_profile_loop(_mia_vm_s* const vm) {
+	const uint64_t stop_at = (vm->options->limit > 0) ? vm->options->limit : UINT64_MAX;
+	mia_vm_profile_function_s* const functions = vm->options->profile->functions.data;
+	size_t last_depth = 0;
+	int64_t last_function = -1, last_pc = -1;
+	functions[_mia_vm_frame(vm)->function].calls += 1;
+	while (vm->frames.count > 0) {
+		if (vm->steps >= stop_at) _mia_vm_fail(vm, "stopped after %llu instructions", (unsigned long long)stop_at);
+		_mia_vm_frame_s* const frame = _mia_vm_frame(vm);
+		const int64_t pc = frame->pc;
+		mia_vm_profile_function_s* const counts = &functions[frame->function];
+		if (vm->frames.count == last_depth && frame->function == last_function && pc == last_pc + 1) counts->followed[last_pc] += 1;
+		counts->runs[pc] += 1;
+		last_depth = vm->frames.count;
+		last_function = frame->function;
+		last_pc = pc;
+		frame->pc = pc + 1;
+		vm->steps += 1;
+		_mia_vm_step(vm, frame, frame->code[pc].instruction);
+		if (vm->frames.count > last_depth) functions[_mia_vm_frame(vm)->function].calls += 1;
+	}
+}
 
 /// whether the loop dispatches with computed goto (gcc and clang; the
 /// portable build and msvc use a switch).
@@ -1699,7 +1742,7 @@ static void _mia_vm_loop(_mia_vm_s* const vm) {
 		[_mia_vm_x_fle] = &&op_fle, [_mia_vm_x_fgt] = &&op_fgt, [_mia_vm_x_fge] = &&op_fge,
 		[_mia_vm_x_jump] = &&op_jump, [_mia_vm_x_jump_false] = &&op_jump_false,
 		[_mia_vm_x_jump_true] = &&op_jump_true, [_mia_vm_x_range_test] = &&op_range_test,
-		[_mia_vm_x_range_step] = &&op_range_step, [_mia_vm_x_index_slice8] = &&op_index_slice8,
+		[_mia_vm_x_range_next] = &&op_range_next, [_mia_vm_x_index_slice8] = &&op_index_slice8,
 		[_mia_vm_x_index_slice1] = &&op_index_slice1, [_mia_vm_x_loc_index_slice] = &&op_loc_index_slice,
 		[_mia_vm_x_load_loc8] = &&op_load_loc8, [_mia_vm_x_store_loc8] = &&op_store_loc8,
 		[_mia_vm_x_dup1] = &&op_dup1, [_mia_vm_x_pop] = &&op_pop, [_mia_vm_x_call] = &&op_call,
@@ -1713,6 +1756,10 @@ static void _mia_vm_loop(_mia_vm_s* const vm) {
 		[_mia_vm_x_slt_jump] = &&op_slt_jump, [_mia_vm_x_sle_jump] = &&op_sle_jump, [_mia_vm_x_sgt_jump] = &&op_sgt_jump,
 		[_mia_vm_x_sge_jump] = &&op_sge_jump, [_mia_vm_x_ult_jump] = &&op_ult_jump, [_mia_vm_x_ule_jump] = &&op_ule_jump,
 		[_mia_vm_x_ugt_jump] = &&op_ugt_jump, [_mia_vm_x_uge_jump] = &&op_uge_jump,
+		[_mia_vm_x_load_const] = &&op_load_const, [_mia_vm_x_load_load] = &&op_load_load, [_mia_vm_x_add_const] = &&op_add_const,
+		[_mia_vm_x_sub_const] = &&op_sub_const, [_mia_vm_x_add_const_store] = &&op_add_const_store,
+		[_mia_vm_x_sub_const_store] = &&op_sub_const_store, [_mia_vm_x_index_local8] = &&op_index_local8,
+		[_mia_vm_x_index_local1] = &&op_index_local1, [_mia_vm_x_loc_index_local] = &&op_loc_index_local,
 	};
 #	define _mia_vm_op(_name) op_##_name:
 #	define _mia_vm_next()                                                      \
@@ -1722,6 +1769,7 @@ static void _mia_vm_loop(_mia_vm_s* const vm) {
 			steps += 1;                                                        \
 			goto *labels[exec->x];                                             \
 		} while (0)
+#	define _mia_vm_plain() goto *labels[exec->plain]
 	// every operation has its entry (one added to _mia_vm_x_e needs one here too)
 	for (size_t i = 0; i < _mia_vm_x_count; ++i) mia_assert(labels[i] != NULL);
 	_mia_vm_next();
@@ -1729,6 +1777,8 @@ static void _mia_vm_loop(_mia_vm_s* const vm) {
 #else
 #	define _mia_vm_op(_name) case _mia_vm_x_##_name:
 #	define _mia_vm_next() break
+#	define _mia_vm_plain() do { operation = exec->plain; goto again; } while (0)
+	uint8_t operation = 0;
 	for (;;) {
 		if (steps >= stop_at) {
 			_mia_vm_save();
@@ -1736,7 +1786,9 @@ static void _mia_vm_loop(_mia_vm_s* const vm) {
 		}
 		exec = &code[pc++];
 		steps += 1;
-		switch ((_mia_vm_x_e)exec->x) {
+		operation = exec->x;
+	again:
+		switch ((_mia_vm_x_e)operation) {
 #endif
 			_mia_vm_op(const1)   (sp++)->u = exec->word; _mia_vm_next();
 			_mia_vm_op(load8)    memcpy(sp++, base + exec->a, 8); _mia_vm_next();
@@ -1775,11 +1827,12 @@ static void _mia_vm_loop(_mia_vm_s* const vm) {
 				if (current == stop) pc = exec->b;
 				_mia_vm_next();
 			}
-			_mia_vm_op(range_step) {
-				uint64_t state[2];
+			_mia_vm_op(range_next) {
+				uint64_t state[3];
 				memcpy(state, base + exec->a, sizeof(state));
 				state[0] += state[1];
 				memcpy(base + exec->a, state, 8);
+				if (state[0] != state[2]) pc = exec->b;
 				_mia_vm_next();
 			}
 			_mia_vm_op(index_slice8)
@@ -1898,8 +1951,83 @@ static void _mia_vm_loop(_mia_vm_s* const vm) {
 				*sp++ = _mia_vm_read(type, _mia_vm_memory(vm, handle, _mia_vm_slice_offset(slice) + index.u * size, size));
 				_mia_vm_next();
 			}
-			// a comparison, then its jump_false: both instructions are counted, and a limit between them stops
-			// where the two would have
+			// a run of instructions as one operation: every instruction is counted, and with fewer steps left
+			// than the run has, the first runs alone (its plain operation). an error stops at the instruction
+			// that has it (pc moves past the run first, so the trace names it).
+#define _mia_vm_fused(_count)                                                  \
+			do {                                                               \
+				if (stop_at - steps < (uint64_t)(_count) - 1) _mia_vm_plain(); \
+				steps += (_count) - 1;                                         \
+				pc += (_count) - 1;                                            \
+			} while (0)
+			_mia_vm_op(load_const) {
+				_mia_vm_fused(2);
+				memcpy(sp, base + exec->a, 8);
+				sp[1].u = exec[1].word;
+				sp += 2;
+				_mia_vm_next();
+			}
+			_mia_vm_op(load_load) {
+				_mia_vm_fused(2);
+				memcpy(sp, base + exec->a, 8);
+				memcpy(sp + 1, base + exec[1].a, 8);
+				sp += 2;
+				_mia_vm_next();
+			}
+			_mia_vm_op(add_const)
+			_mia_vm_op(sub_const) {
+				_mia_vm_fused(3);
+				uint64_t value;
+				memcpy(&value, base + exec->a, 8);
+				(sp++)->u = (_mia_vm_x_add_const == exec->x) ? value + exec[1].word : value - exec[1].word;
+				_mia_vm_next();
+			}
+			_mia_vm_op(add_const_store)
+			_mia_vm_op(sub_const_store) {
+				_mia_vm_fused(4);
+				uint64_t value;
+				memcpy(&value, base + exec->a, 8);
+				value = (_mia_vm_x_add_const_store == exec->x) ? value + exec[1].word : value - exec[1].word;
+				memcpy(base + exec[3].a, &value, 8);
+				_mia_vm_next();
+			}
+			_mia_vm_op(index_local8)
+			_mia_vm_op(index_local1) {
+				_mia_vm_fused(3);
+				uint64_t slice[2];
+				_mia_vm_word_u index;
+				memcpy(slice, base + exec->a, 16);
+				memcpy(&index, base + exec[1].a, 8);
+				_mia_vm_save();
+				if (index.u >= _mia_vm_slice_length(slice[1])) _mia_vm_out_of_bounds(vm, exec[2].instruction->target, index, _mia_vm_slice_length(slice[1]), true);
+				if (_mia_vm_x_index_local8 == exec->x) {
+					memcpy(sp, _mia_vm_memory(vm, slice[0], _mia_vm_slice_offset(slice[1]) + index.u * 8, 8), 8);
+				}
+				else {
+					sp->u = *_mia_vm_memory(vm, slice[0], _mia_vm_slice_offset(slice[1]) + index.u, 1);
+					if (mia_code_bool == exec[2].instruction->type) sp->u = sp->u != 0;
+				}
+				sp += 1;
+				_mia_vm_next();
+			}
+			_mia_vm_op(loc_index_local) {
+				_mia_vm_fused(3);
+				uint64_t slice[2];
+				_mia_vm_word_u index;
+				memcpy(slice, base + exec->a, 16);
+				memcpy(&index, base + exec[1].a, 8);
+				_mia_vm_save();
+				if (index.u >= _mia_vm_slice_length(slice[1])) _mia_vm_out_of_bounds(vm, exec[2].instruction->type, index, _mia_vm_slice_length(slice[1]), true);
+				const uint64_t offset = _mia_vm_slice_offset(slice[1]) + index.u * (uint64_t)exec[2].a;
+				(void)_mia_vm_memory(vm, slice[0], offset, (uint64_t)exec[2].a);
+				sp[0].u = slice[0];
+				sp[1].u = offset;
+				sp += 2;
+				_mia_vm_next();
+			}
+#undef _mia_vm_fused
+			// a comparison, then its jump: both instructions are counted, and a limit between them stops
+			// where the two would have (the bool left on the stack then is never read)
 #define _mia_vm_compare_jump(_name, _test)                                     \
 			_mia_vm_op(_name##_jump) {                                         \
 				sp -= 2;                                                       \
@@ -1950,6 +2078,7 @@ stopped:
 #endif
 #undef _mia_vm_op
 #undef _mia_vm_next
+#undef _mia_vm_plain
 #undef _mia_vm_save
 #undef _mia_vm_load
 }
@@ -1999,7 +2128,7 @@ static uint8_t _mia_vm_decode(const _mia_vm_s* const vm, const mia_bytecode_inst
 		case mia_opcode_JUMP_IF_FALSE: return _mia_vm_x_jump_false;
 		case mia_opcode_JUMP_IF_TRUE:  return _mia_vm_x_jump_true;
 		case mia_opcode_RANGE_TEST:    return _mia_vm_x_range_test;
-		case mia_opcode_RANGE_STEP:    return _mia_vm_x_range_step;
+		case mia_opcode_RANGE_NEXT:    return _mia_vm_x_range_next;
 		case mia_opcode_INDEX_SLICE:
 			return (wide || is_double || mia_code_fn == code) ? _mia_vm_x_index_slice8 : (mia_code_u8 == code || mia_code_bool == code) ? _mia_vm_x_index_slice1
 				: _mia_vm_as_bytes(code) ? _mia_vm_x_step : _mia_vm_x_index_slice;
@@ -2068,6 +2197,7 @@ static bool _mia_vm_effect(const _mia_vm_s* const vm, const mia_bytecode_functio
 		case mia_opcode_NOT:       *pop = 1; *push = 1; return true;
 		case mia_opcode_RANGE_INIT: *pop = 2; return integer && _mia_vm_in_frame(a, 24);
 		case mia_opcode_RANGE_TEST:
+		case mia_opcode_RANGE_NEXT:
 		case mia_opcode_RANGE_STEP: return _mia_vm_in_frame(a, 24);
 		case mia_opcode_CALL:
 			*pop = vm->prepared.data[a].arguments;
@@ -2100,6 +2230,50 @@ static bool _mia_vm_effect(const _mia_vm_s* const vm, const mia_bytecode_functio
 }
 
 /// checks a function (see the top of this file) and decodes it.
+/// fuses the runs of instructions the profiles of programs show most (see
+/// _mia_vm_x_e), each into the operation of its first instruction, when
+/// nothing jumps into the run. 'target' marks the instructions jumps go to.
+static void _mia_vm_fuse(_mia_vm_exec_s* const code, const size_t count, const bool* const target) {
+	for (size_t i = 0; i + 1 < count; ++i) {
+		_mia_vm_exec_s* const exec = &code[i];
+		// (a comparison fused with its jump is left as it is)
+		if (exec->x != exec->plain || target[i + 1]) continue;
+		const uint8_t second = code[i + 1].plain;
+		const uint8_t third = (i + 2 < count && !target[i + 2]) ? code[i + 2].plain : (uint8_t)_mia_vm_x_count;
+		const uint8_t fourth = (i + 3 < count && _mia_vm_x_count != third && !target[i + 3]) ? code[i + 3].plain : (uint8_t)_mia_vm_x_count;
+		const bool add = _mia_vm_x_add == third, sub = _mia_vm_x_sub == third;
+		uint8_t fused = _mia_vm_x_count;
+		size_t length = 0;
+		if (_mia_vm_x_load8 == exec->x && _mia_vm_x_const1 == second) {
+			if ((add || sub) && _mia_vm_x_store8 == fourth) {
+				fused = add ? _mia_vm_x_add_const_store : _mia_vm_x_sub_const_store;
+				length = 4;
+			}
+			else if (add || sub) {
+				fused = add ? _mia_vm_x_add_const : _mia_vm_x_sub_const;
+				length = 3;
+			}
+			else {
+				fused = _mia_vm_x_load_const;
+				length = 2;
+			}
+		}
+		else if (_mia_vm_x_load8 == exec->x && _mia_vm_x_load8 == second) {
+			fused = _mia_vm_x_load_load;
+			length = 2;
+		}
+		else if (_mia_vm_x_load16 == exec->x && _mia_vm_x_load8 == second) {
+			length = 3;
+			if (_mia_vm_x_index_slice8 == third) fused = _mia_vm_x_index_local8;
+			else if (_mia_vm_x_index_slice1 == third) fused = _mia_vm_x_index_local1;
+			else if (_mia_vm_x_loc_index_slice == third) fused = _mia_vm_x_loc_index_local;
+		}
+		if (_mia_vm_x_count == fused) continue;
+		exec->x = fused;
+		i += length - 1;
+	}
+}
+
 static void _mia_vm_verify(_mia_vm_s* const vm, const int64_t index) {
 	const mia_bytecode_function_s* const function = &vm->module->functions.data[index];
 	_mia_vm_prepared_s* const prepared = &vm->prepared.data[index];
@@ -2140,7 +2314,7 @@ static void _mia_vm_verify(_mia_vm_s* const vm, const int64_t index) {
 		size_t successors = 0;
 		const mia_opcode_e opcode = instruction->opcode;
 		if (mia_opcode_JUMP == opcode || mia_opcode_JUMP_IF_FALSE == opcode || mia_opcode_JUMP_IF_TRUE == opcode) next[successors++] = (size_t)instruction->a;
-		if (mia_opcode_RANGE_TEST == opcode) next[successors++] = (size_t)instruction->b;
+		if (mia_opcode_RANGE_TEST == opcode || mia_opcode_RANGE_NEXT == opcode) next[successors++] = (size_t)instruction->b;
 		if (opcode != mia_opcode_JUMP && opcode != mia_opcode_RETURN && opcode != mia_opcode_ASSERT_FAIL) next[successors++] = at + 1;
 		for (size_t s = 0; s < successors; ++s) {
 			if (next[s] >= count) {
@@ -2168,37 +2342,43 @@ static void _mia_vm_verify(_mia_vm_s* const vm, const int64_t index) {
 		_mia_vm_exec_s* const exec = &prepared->code[i];
 		*exec = (_mia_vm_exec_s) { .instruction = instruction, .a = instruction->a, .b = instruction->b, };
 		exec->x = _mia_vm_decode(vm, instruction, &exec->word);
+		exec->plain = exec->x;
 	}
-	// an integer comparison and the jump_false after it become one operation, unless something jumps to
-	// the jump (then it has to stay an instruction of its own)
+	// an integer comparison and the jump after it become one operation, unless something jumps to the
+	// jump (then it has to stay an instruction of its own); before a jump_true, the operation tests the
+	// opposite comparison (and jumps when that one does not hold)
 	bool* const target = mia_calloc(count + 1, sizeof(bool));
 	for (size_t i = 0; i < count; ++i) {
 		const mia_bytecode_instruction_s* const instruction = &function->code.data[i];
 		const bool jumps = mia_opcode_JUMP == instruction->opcode || mia_opcode_JUMP_IF_FALSE == instruction->opcode
 			|| mia_opcode_JUMP_IF_TRUE == instruction->opcode;
-		const int64_t to = jumps ? instruction->a : (mia_opcode_RANGE_TEST == instruction->opcode) ? instruction->b : -1;
+		const bool ranges = mia_opcode_RANGE_TEST == instruction->opcode || mia_opcode_RANGE_NEXT == instruction->opcode;
+		const int64_t to = jumps ? instruction->a : ranges ? instruction->b : -1;
 		if (to >= 0 && (uint64_t)to <= count) target[to] = true;
 	}
 	for (size_t i = 0; i + 1 < count; ++i) {
-		if (prepared->code[i + 1].x != _mia_vm_x_jump_false || target[i + 1]) continue;
+		const uint8_t jump = prepared->code[i + 1].x;
+		if ((jump != _mia_vm_x_jump_false && jump != _mia_vm_x_jump_true) || target[i + 1]) continue;
+		const bool opposite = _mia_vm_x_jump_true == jump;
 		uint8_t fused = _mia_vm_x_count;
 		switch (prepared->code[i].x) {
-			case _mia_vm_x_eq: fused = _mia_vm_x_eq_jump; break;
-			case _mia_vm_x_ne: fused = _mia_vm_x_ne_jump; break;
-			case _mia_vm_x_slt: fused = _mia_vm_x_slt_jump; break;
-			case _mia_vm_x_sle: fused = _mia_vm_x_sle_jump; break;
-			case _mia_vm_x_sgt: fused = _mia_vm_x_sgt_jump; break;
-			case _mia_vm_x_sge: fused = _mia_vm_x_sge_jump; break;
-			case _mia_vm_x_ult: fused = _mia_vm_x_ult_jump; break;
-			case _mia_vm_x_ule: fused = _mia_vm_x_ule_jump; break;
-			case _mia_vm_x_ugt: fused = _mia_vm_x_ugt_jump; break;
-			case _mia_vm_x_uge: fused = _mia_vm_x_uge_jump; break;
+			case _mia_vm_x_eq: fused = opposite ? _mia_vm_x_ne_jump : _mia_vm_x_eq_jump; break;
+			case _mia_vm_x_ne: fused = opposite ? _mia_vm_x_eq_jump : _mia_vm_x_ne_jump; break;
+			case _mia_vm_x_slt: fused = opposite ? _mia_vm_x_sge_jump : _mia_vm_x_slt_jump; break;
+			case _mia_vm_x_sle: fused = opposite ? _mia_vm_x_sgt_jump : _mia_vm_x_sle_jump; break;
+			case _mia_vm_x_sgt: fused = opposite ? _mia_vm_x_sle_jump : _mia_vm_x_sgt_jump; break;
+			case _mia_vm_x_sge: fused = opposite ? _mia_vm_x_slt_jump : _mia_vm_x_sge_jump; break;
+			case _mia_vm_x_ult: fused = opposite ? _mia_vm_x_uge_jump : _mia_vm_x_ult_jump; break;
+			case _mia_vm_x_ule: fused = opposite ? _mia_vm_x_ugt_jump : _mia_vm_x_ule_jump; break;
+			case _mia_vm_x_ugt: fused = opposite ? _mia_vm_x_ule_jump : _mia_vm_x_ugt_jump; break;
+			case _mia_vm_x_uge: fused = opposite ? _mia_vm_x_ult_jump : _mia_vm_x_uge_jump; break;
 			default: break;
 		}
 		if (_mia_vm_x_count == fused) continue;
 		prepared->code[i].x = fused;
 		prepared->code[i].b = prepared->code[i + 1].a;
 	}
+	_mia_vm_fuse(prepared->code, count, target);
 	mia_free(target);
 }
 
@@ -2262,7 +2442,20 @@ static void _mia_vm_start(_mia_vm_s* const vm) {
 	_mia_vm_reserve(vm, 1024);
 	if (vm->prepared.data[vm->module->entry].arguments > 0) _mia_vm_push_command_line(vm);
 	_mia_vm_call(vm, vm->module->entry);
-	_mia_vm_loop(vm);
+	mia_vm_profile_s* const profile = vm->options->profile;
+	if (NULL == profile) {
+		_mia_vm_loop(vm);
+		return;
+	}
+	mia_vm_profile_free(profile);
+	for (size_t i = 0; i < vm->module->functions.count; ++i) {
+		const size_t count = vm->module->functions.data[i].code.count;
+		const mia_vm_profile_function_s counts = {
+			.count = count, .runs = mia_calloc(count > 0 ? count : 1, sizeof(uint64_t)), .followed = mia_calloc(count > 0 ? count : 1, sizeof(uint64_t)),
+		};
+		mia_vector_push(&profile->functions, counts);
+	}
+	_mia_vm_profile_loop(vm);
 }
 
 bool mia_vm_run(const mia_bytecode_module_s* const module, const mia_vm_options_s* const options, mia_vm_result_s* const result) {
@@ -2311,6 +2504,14 @@ void mia_vm_result_free(mia_vm_result_s* const result) {
 	mia_free(result->message);
 	mia_vector_free(&result->trace);
 	*result = (mia_vm_result_s) {0};
+}
+
+void mia_vm_profile_free(mia_vm_profile_s* const profile) {
+	for (size_t i = 0; i < profile->functions.count; ++i) {
+		mia_free(profile->functions.data[i].runs);
+		mia_free(profile->functions.data[i].followed);
+	}
+	mia_vector_free(&profile->functions);
 }
 
 int mia_vm_exit_status(const mia_vm_result_s* const result) {

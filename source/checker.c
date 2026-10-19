@@ -1583,6 +1583,27 @@ static bool _mia_checker_assignable(const mia_ast_node_s* const node) {
 	}
 }
 
+/// marks the variable that the place 'node' is part of as changed (assigned,
+/// or lent to a reference parameter): the compiler keeps a 'for' variable in
+/// the loop's counter only when it never is.
+static void _mia_checker_changes(const mia_ast_node_s* const node) {
+	switch (node->kind) {
+		case mia_ast_node_paren:  _mia_checker_changes(node->as.paren.inner); return;
+		case mia_ast_node_member: _mia_checker_changes(node->as.member.target); return;
+		case mia_ast_node_index: {
+			// an element of a slice is not part of the variable that holds the slice
+			const mia_type_s* const target = node->as.index.target->note.type;
+			if (target != NULL && mia_type_array == target->kind) _mia_checker_changes(node->as.index.target);
+			return;
+		}
+		case mia_ast_node_name:
+			if (node->note.variable != NULL) node->note.variable->changed = true;
+			return;
+		default:
+			return;
+	}
+}
+
 static void _mia_checker_assign(mia_checker_s* const c, mia_ast_node_s* const node, mia_checker_context_s* const context) {
 	mia_ast_node_s* const target = node->as.assign.target;
 	const mia_type_s* const error = mia_checker_special_type(c, mia_type_special_error);
@@ -1609,6 +1630,7 @@ static void _mia_checker_assign(mia_checker_s* const c, mia_ast_node_s* const no
 	else {
 		target_type = mia_checker_expression(c, target, context, NULL);
 	}
+	_mia_checker_changes(target);
 	if (target_type != error && !_mia_checker_assignable(target)) {
 		const mia_view_s text = mia_checker_node_text(c, target);
 		mia_diag_label_main(mia_diag_error(c->diag, mia_diag_E0508, target->span, "cannot assign to `" mia_view_fmt "`", mia_view_arg(text)),
@@ -2385,6 +2407,7 @@ static void _mia_checker_arguments(mia_checker_s* const c, mia_ast_node_s* const
 				if (variable != NULL && mia_program_symbol_variable == variable->kind) mia_checker_set_discard(&context->unassigned, (mia_program_variable_s*)variable);
 			}
 			const mia_type_s* const actual = _mia_checker_checked(c, operand, context, element);
+			_mia_checker_changes(operand);
 			argument->note.type = parameter;
 			mia_checker_coerce(c, operand, actual, element);
 			continue;

@@ -1,0 +1,6 @@
+invoke: run --stats main.mia
+invoke: run main.mia peek
+invoke: run main.mia poke it
+invoke: run --limit 30 main.mia
+invoke: run --limit 31 main.mia
+invoke: run --limit 30 --profile main.mia

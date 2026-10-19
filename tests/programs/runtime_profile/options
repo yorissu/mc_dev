@@ -1,0 +1,2 @@
+invoke: run --profile main.mia
+invoke: run --profile --stats --limit 300 main.mia

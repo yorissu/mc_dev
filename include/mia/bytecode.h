@@ -53,7 +53,8 @@
 ///   NOT                         : bool -> bool
 ///   RANGE_INIT_T [offset, inclusive] : start end -> (the range state at offset: current, step, stop)
 ///   RANGE_TEST [offset, target] : jumps to target when the range is done
-///   RANGE_STEP [offset]
+///   RANGE_NEXT [offset, target] : steps the range, then jumps to target unless it is done
+///   RANGE_STEP [offset]         : steps the range (no longer emitted, kept so older .miab files load)
 ///   CALL [function]             : arguments -> result
 ///   CALL_VALUE [w, r]           : function arguments (w words) -> result (r words)
 ///   CALL_INTRINSIC [intrinsic, w] : arguments (w words) -> result
@@ -63,30 +64,36 @@
 ///   ADD SUB MUL DIV MOD AND OR XOR EQ NE LT GT LE GE NEG BITNOT _T,
 ///   SHL_T_U SHR_T_U (U: the type of the count), CAST_FROM_TO
 ///
-/// the '.miab' file is binary and little-endian: the magic "MIA\0", the
-/// format version (u32), then the sections in this order, each a u32 count
-/// of entries: files (strings), types, constants, intrinsics, functions,
-/// and finally the entry function (u32) and whether it returns a value
-/// (u8). integers are fixed width: u8, u32, u64 or s64; a string is its
-/// length (u32) and its bytes. the reader checks every count and index, so
-/// a truncated or corrupted file is refused with a message.
+/// the '.miab' file is binary: the magic "MIA\0", the format version (4
+/// bytes, little-endian), then the sections in this order, each a count of
+/// entries: files (strings), types, constants, intrinsics, functions, and
+/// finally the entry function (u) and whether it returns a value (u8).
+/// numbers are varints: u is unsigned (7 bits a byte, the lowest first, the
+/// top bit set when another byte follows; at most 10 bytes), s is signed
+/// (zigzag: 0, -1, 1, -2... written as the u 0, 1, 2, 3...); a u8 is one
+/// byte, an f64 its 8 bytes little-endian; a string is its length (u) and its
+/// bytes. counts and indexes fit in 32 bits. the reader checks every number,
+/// count and index, so a truncated or corrupted file is refused with a message.
 ///
-///   type:      name (string), kind (u8), code (u8), size (u64), alignment (u64),
-///              element (u32), length (s64), zero (s64: a constant or -1),
-///              fields (u32 count, then name (string), type (u32), offset (u64) each)
-///   constant:  kind (u8), type (s64), then by kind: integer (u64 bits, u8 signed),
-///              real (u64 bits), boolean (u8), text (string), function (u64),
-///              list (u32 count, constants), slice (u8 null, u8 read-only,
-///              s64 start, s64 length, u32 count, constants)
-///   intrinsic: name (string), plugin (string), result (s64 type, -1: none), u32 counts of
+///   type:      name (string), kind (u8), code (u8), size (u), alignment (u),
+///              element (u), length (s), zero (s: a constant or -1),
+///              fields (u count, then name (string), type (u), offset (u) each)
+///   constant:  kind (u8), type (s), then by kind: integer (u8 signed, then the
+///              value: s when signed, else u), real (f64), boolean (u8), text
+///              (string), function and intrinsic (u), list (u count, constants),
+///              slice (u8 null, u8 read-only, s start, s length, u count, constants)
+///   intrinsic: name (string), plugin (string), result (s type, -1: none), u counts of
 ///              type arguments, of parameters and of variadic values, then
-///              each type (u32); flags (u32 count, then u32 each)
-///   function:  name (string), parameters (u32), frame (u64 bytes), result
-///              words (u32), returns (u8), parameter slots (u32 count, then
-///              code (u8), offset (u64), size (u64) each), code (u32 count,
-///              then opcode (u8), type (u8), target (u8), operands (s64 each,
-///              as many as the opcode takes)), positions (one per
-///              instruction: file (s32), line, column, length (u32))
+///              each type (u); flags (u count, then u each)
+///   function:  name (string), parameters (u), frame (u bytes), result
+///              words (u), returns (u8), parameter slots (u count, then
+///              code (u8), offset (u), size (u) each), code (u count, then
+///              opcode (u8), its type codes (u8 each, as many as the opcode
+///              has), operands (s each, as many as it takes)), then a position
+///              per instruction, as what changed from the one before (the
+///              first from file -1, line, column and length 0): a u8 of the
+///              parts that changed (1 file, 2 line, 4 column, 8 length), then
+///              those: file, line and column as s differences, length as u
 
 #include "mia/code.h"
 #include "mia/opcode.h"
@@ -109,7 +116,7 @@
 #define mia_bytecode_nesting_limit 1000
 
 /// the format version of '.miab' files.
-#define mia_bytecode_version 4
+#define mia_bytecode_version 5
 
 typedef struct {
 	mia_opcode_e opcode;

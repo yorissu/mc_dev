@@ -5,6 +5,7 @@ import option
 
 pub main :: () {
 	let v = vector.make<int>();
-	let i = &v | vector.pop | option.unwrap_or(() -> int then return -1);
+	vector.push(&v, &10);
+	let i = &v ~ vector.pop ~ option.unwrap_or(() -> int then return -1);
 	io.println("{}", i);
 }

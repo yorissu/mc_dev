@@ -10,6 +10,7 @@
 #include "mia/compiler.h"
 #include "mia/diag.h"
 #include "mia/format.h"
+#include "mia/listing.h"
 #include "mia/parser.h"
 #include "mia/system.h"
 #include "mia/plugins.h"
@@ -46,6 +47,7 @@ typedef struct {
 	bool                       color       ;
 	bool                       werror      ;
 	bool                       stats       ;
+	bool                       profile     ;
 	uint64_t                   limit       ;
 	uint64_t                   eval_steps  ;
 	uint64_t                   call_depth  ;
@@ -183,6 +185,19 @@ static int _mia_cli_build(_mia_cli_session_s* const s) {
 	return _mia_cli_status(s);
 }
 
+static int _mia_cli_dis(_mia_cli_session_s* const s) {
+	mia_bytecode_module_s module = {0};
+	if (_mia_cli_module(s, &module)) {
+		mia_string_s out = {0};
+		mia_listing_module(&module, &s->sources, &out);
+		(void)fputs(mia_string_cstr(&out), stdout);
+		mia_string_free(&out);
+	}
+	mia_bytecode_free(&module);
+	_mia_cli_report(s);
+	return _mia_cli_status(s);
+}
+
 /// the span of a bytecode position (a column and a length in code points).
 static bool _mia_cli_position_span(_mia_cli_session_s* const s, const char* const path, const mia_bytecode_position_s position, mia_span_s* const span) {
 	// the path comes from the bytecode: only a source file is shown, not any file it names
@@ -259,6 +274,9 @@ static void _mia_cli_runtime_report(_mia_cli_session_s* const s, const mia_vm_re
 	mia_diag_print(&s->diag, stderr, s->options->format, s->options->color);
 }
 
+/// the rows of each table of a profile.
+#define _mia_cli_profile_top 20
+
 static int _mia_cli_run(_mia_cli_session_s* const s) {
 	mia_bytecode_module_s module = {0};
 	if (!_mia_cli_module(s, &module)) {
@@ -296,9 +314,10 @@ static int _mia_cli_run(_mia_cli_session_s* const s) {
 		_mia_cli_report(s);
 		return _mia_cli_status_error;
 	}
+	mia_vm_profile_s profile = {0};
 	const mia_vm_options_s options = {
-		.out = stdout, .limit = s->options->limit, .call_depth = s->options->call_depth, .plugins = &s->plugins,
-		.arguments = s->options->arguments.data, .argument_count = s->options->arguments.count,
+		.out = stdout, .profile = s->options->profile ? &profile : NULL, .limit = s->options->limit, .call_depth = s->options->call_depth,
+		.plugins = &s->plugins, .arguments = s->options->arguments.data, .argument_count = s->options->arguments.count,
 	};
 	mia_vm_result_s result = {0};
 	const bool finished = mia_vm_run(&module, &options, &result);
@@ -311,6 +330,13 @@ static int _mia_cli_run(_mia_cli_session_s* const s) {
 	if (s->options->stats) {
 		(void)fprintf(stderr, "%llu instruction(s), %llu allocation(s), exit status %d\n", (unsigned long long)result.steps,
 			(unsigned long long)result.allocations, status);
+	}
+	if (s->options->profile) {
+		mia_string_s report = {0};
+		mia_listing_profile(&module, &profile, &s->sources, _mia_cli_profile_top, &report);
+		(void)fputs(mia_string_cstr(&report), stderr);
+		mia_string_free(&report);
+		mia_vm_profile_free(&profile);
 	}
 	mia_vm_result_free(&result);
 	mia_bytecode_free(&module);
@@ -351,7 +377,11 @@ static const _mia_cli_command_s _mia_cli_commands[] = {
 		"  --limit <n>             stop after <n> instructions\n"
 		"  --call-depth <n>        the calls that may run at once (default 10000)\n"
 		"  --stats                 print the instructions run and the heap allocations made\n"
+		"  --profile               count what runs (slower) and print the functions, source lines,\n"
+		"                          instructions and pairs of instructions that ran most\n"
 		"  -- <file> <arguments>   ends mia's options; the program gets the file and what follows it\n", _mia_cli_run, true, },
+	{ "dis", "print the bytecode of a program (.mia or .miab): its types, functions and instructions",
+		_mia_cli_check_options, _mia_cli_dis, true, },
 	{ "explain", "explain a diagnostic code ('mia explain E0502'), or list them all", "", _mia_cli_explain, false, },
 };
 
@@ -465,6 +495,7 @@ static int _mia_cli_parse(_mia_cli_options_s* const options, const int argc, con
 		else if (0 == strcmp(argument, "--color=auto")) options->color = _mia_cli_color_auto();
 		else if (0 == strcmp(argument, "--werror")) options->werror = true;
 		else if (0 == strcmp(argument, "--stats")) options->stats = true;
+		else if (0 == strcmp(argument, "--profile")) options->profile = true;
 		else if ((0 == strcmp(argument, "--limit") || 0 == strcmp(argument, "--eval-steps") || 0 == strcmp(argument, "--call-depth")) && has_next) {
 			char* end = NULL;
 			const char* const text = argv[++i];

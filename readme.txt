@@ -19,6 +19,8 @@ build it with 'make' (or build.bat with msvc, see building), then:
 	mia build <file.mia> [-o out] compile to bytecode (.miab)
 	mia check <file.mia>        check a program, or a module, and every module it imports
 	mia ast <file.mia>          print the syntax tree of one file
+	mia dis <file.mia|file.miab>
+	                            print the bytecode of a program: types, functions, instructions
 	mia explain [code]          explain a diagnostic code, or list them all
 
 	-M, --module-dir <dir>      another module directory (after the file's and the stdlib's); repeatable
@@ -28,6 +30,7 @@ build it with 'make' (or build.bat with msvc, see building), then:
 	--call-depth <n>            run: the calls that may run at once (default 10000)
 	--limit <n>                 run: stop after n instructions (0: no limit, the default)
 	--stats                     run: print the instructions run and the heap allocations made
+	--profile                   run: count what runs (slower) and print what ran most
 	--format human|short        diagnostics as annotated snippets or one line each
 	--color[=auto|always|never] colors (auto: stderr is a terminal and NO_COLOR is unset)
 	--no-color                  the same as --color=never
@@ -159,6 +162,13 @@ declarations are 'name :: ...':
   2^127 - 1) until they get their type; one that leaves that is E0511.
 - operators follow c's order, but bit operators, shifts, mixing && with ||,
   and chained comparisons need parentheses.
+- evaluation goes left to right, as the code reads, at run time and at
+  compile time: operands before their operator, a function value before
+  its arguments, a piped value before the step's own arguments, an array
+  before its index, the place an assignment writes before the value
+  (a[i()] = v(): i, then v), and the fields and elements of a literal in the
+  order they are written. '&&' and '||' stop at the first part that
+  decides.
 - discarding a result is an error ('_ = f();' discards on purpose).
 - integers wrap; the compiler warns when it can see an overflow ([wrap]
   silences it). let without a value warns when read too early ([uninit]
@@ -382,6 +392,7 @@ have no module part (mia_assert, mia_panic, mia_malloc).
 	include/mia/bytecode.h      bytecode modules (the instructions are documented there), .miab files
 	include/mia/compiler.h      checked program -> bytecode
 	include/mia/vm.h            the virtual machine
+	include/mia/listing.h       bytecode as text: listings ('mia dis') and profiles ('run --profile')
 	include/mia/plugin.h        the plugin api (what a plugin includes; stable, versioned)
 	include/mia/plugins.h       the plugins: loading and looking them up, the functions they provide
 	include/mia/cli.h           the command line
@@ -662,31 +673,63 @@ instruction loop does not check them again; it runs decoded instructions
 with fast cases for the frequent ones. with gcc and clang every case ends in
 its own jump to the next (computed goto; the portable build and msvc use a
 switch), and an integer comparison with the conditional jump after it runs
-as one case (still counted as two instructions). the compiler makes the
-conditions of 'if' and 'while' jumps: '&&', '||' and '!' build no bool.
+as one case (still counted as two instructions). so do, when the module is
+loaded, the runs of instructions that profiles show most: a word local and
+a constant (or their sum or difference, also stored to a local), two word
+locals, and an element of a slice local at a word local index (or its
+location). every instruction of a run is counted, a limit inside a run
+stops where it would have, and an error names the instruction that has it.
+the compiler makes the conditions of 'if' and 'while' jumps: '&&', '||' and
+'!' build no bool.
+
+the compiler also folds an operation on literals and constants ('2 *
+SIZE', 'ORIGIN.x', 'TABLE[3]') into one constant, computed by the
+compile-time evaluator as the machine would compute it (what would stop the
+machine, like a division by zero, is left to it), and a condition known at
+compile time into a plain jump or nothing. 'while' is tested at the bottom
+of its loop, so a round ends in the test's jump back; 'for' tests its range
+once, then RANGE_NEXT steps it and jumps back in one instruction, and its
+variable is the range's counter itself unless the body assigns it or lends
+it. a last pass over each function takes a jump to a jump straight to the
+end, makes a jump to a return a return, turns a conditional jump over a jump
+into the opposite jump and removes what no path reaches.
+
+two commands show what the machine gets and does. 'mia dis' lists a
+program's bytecode: its types and plugin functions, then every function's
+instructions under the source lines they come from, with the constant or
+function an operand names and '>' where a jump lands. 'mia run --profile'
+runs every instruction through the general case, counting it (slower, but
+the same instructions, so the same counts and limit as a normal run), then
+prints the functions, source lines and instructions that ran most, and the
+pairs of instructions that ran one right after the other: the candidates
+for a fast case or a fused one.
 
 there is no garbage collector: nothing owns memory except heap blocks,
 which 'free' gives back; what is left is freed when the machine stops
 ('--stats' counts the allocations). see source/vm.c and
 include/mia/bytecode.h.
 
-benchmarks (make bench; release build, wsl on one machine, milliseconds;
-before and after the dispatch, call and condition work of 2026-10-19):
+benchmarks (release build, the bytecode alone, best of nine runs, wsl on
+one machine, milliseconds): before the work of 2026-10-19, after its
+dispatch, call and condition part, and now, with the loop layout, folding
+and fused runs too:
 
-	              before   after
-	fib             185       86
-	sieve           167      125
-	sort            192      131
-	structs          58       43
+	              before   dispatch   now
+	fib             185        86      85
+	sieve           167       125      86
+	sort            192       131      99
+	structs          58        43      43
 
 
 bytecode files
 --------------
 
 'mia build' writes the compiled program as a binary .miab file, which 'run'
-takes like a source file. it is little-endian with fixed-width
-integers: the magic "MIA\0", the format version (u32, now 4), then the
-sections, each a u32 count of entries:
+takes like a source file. its numbers are varints (7 bits a byte; signed
+ones zigzag, so small ones of either sign take a byte) and each source
+position is written as what changed from the one before: the magic "MIA\0",
+the format version (4 bytes, now 5), then the sections, each a count of
+entries:
 
 	files        the source files (for runtime errors)
 	types        name, kind, type code, size, alignment, element, length, zero

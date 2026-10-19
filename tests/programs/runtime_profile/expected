@@ -1,0 +1,132 @@
+== invoke run --profile main.mia (status 0)
+-- stdout
+longest: 111
+-- stderr
+profile: 8738 instruction(s) run, 30 call(s)
+
+functions (the instructions run in each, not in what it calls)
+            8478  97.02%          29 call(s)  collatz
+             260   2.98%           1 call(s)  main
+
+lines
+            4043  46.27%  main.mia:13  if n % 2 == 0 then n = n / 2;
+            1837  21.02%  main.mia:12  while n != 1 {
+            1692  19.36%  main.mia:15  steps += 1;
+             732   8.38%  main.mia:14  else n = 3 * n + 1;
+             132   1.51%  main.mia:24  if steps > longest then longest = steps;
+              87   1.00%  main.mia:23  let steps = collatz(start);
+              58   0.66%  main.mia:10  let n = start;
+              58   0.66%  main.mia:11  let steps = 0;
+              58   0.66%  main.mia:17  return steps;
+              33   0.38%  main.mia:22  for start in 1..30 {
+               4   0.05%  main.mia:26  println("longest: {}", longest);
+               2   0.02%  main.mia:21  let longest = 0;
+               2   0.02%  main.mia:27  return 0;
+
+instructions
+            2299  26.31%  CONST
+            1875  21.46%  LOAD_INT
+             942  10.78%  STORE_INT
+             545   6.24%  ADD_INT
+             452   5.17%  JUMP_IF_FALSE
+             452   5.17%  JUMP_IF_TRUE
+             452   5.17%  NE_INT
+             423   4.84%  MOD_INT
+             423   4.84%  EQ_INT
+             330   3.78%  JUMP
+             301   3.44%  DIV_INT
+             122   1.40%  MUL_INT
+              30   0.34%  RETURN
+              29   0.33%  CALL
+              29   0.33%  GT_INT
+              29   0.33%  RANGE_NEXT
+               1   0.01%  LOC_CONST
+               1   0.01%  SLICE_LOC_INT_INT
+               1   0.01%  RANGE_INIT_INT
+               1   0.01%  RANGE_TEST
+
+pairs (an instruction, then the next one of the code right after it)
+            1599  18.30%  LOAD_INT, CONST
+             574   6.57%  STORE_INT, LOAD_INT
+             545   6.24%  CONST, ADD_INT
+             545   6.24%  ADD_INT, STORE_INT
+             452   5.17%  CONST, NE_INT
+             452   5.17%  NE_INT, JUMP_IF_TRUE
+             423   4.84%  CONST, MOD_INT
+             423   4.84%  CONST, EQ_INT
+             423   4.84%  MOD_INT, CONST
+             423   4.84%  EQ_INT, JUMP_IF_FALSE
+             330   3.78%  STORE_INT, JUMP
+             309   3.54%  JUMP_IF_FALSE, LOAD_INT
+             301   3.44%  CONST, DIV_INT
+             301   3.44%  DIV_INT, STORE_INT
+             122   1.40%  CONST, LOAD_INT
+             122   1.40%  LOAD_INT, MUL_INT
+             122   1.40%  MUL_INT, CONST
+              37   0.42%  LOAD_INT, STORE_INT
+              30   0.34%  CONST, STORE_INT
+              30   0.34%  STORE_INT, CONST
+== invoke run --profile --stats --limit 300 main.mia (status 101)
+-- stderr
+main.mia:14:12: runtime error: stopped after 300 instructions
+300 instruction(s), 0 allocation(s), exit status 101
+profile: 300 instruction(s) run, 6 call(s)
+
+functions (the instructions run in each, not in what it calls)
+             256  85.33%           5 call(s)  collatz
+              44  14.67%           1 call(s)  main
+
+lines
+             106  35.33%  main.mia:13  if n % 2 == 0 then n = n / 2;
+              65  21.67%  main.mia:12  while n != 1 {
+              40  13.33%  main.mia:15  steps += 1;
+              20   6.67%  main.mia:24  if steps > longest then longest = steps;
+              17   5.67%  main.mia:14  else n = 3 * n + 1;
+              14   4.67%  main.mia:23  let steps = collatz(start);
+              10   3.33%  main.mia:10  let n = start;
+              10   3.33%  main.mia:11  let steps = 0;
+               8   2.67%  main.mia:17  return steps;
+               8   2.67%  main.mia:22  for start in 1..30 {
+               2   0.67%  main.mia:21  let longest = 0;
+
+instructions
+              71  23.67%  LOAD_INT
+              69  23.00%  CONST
+              37  12.33%  STORE_INT
+              15   5.00%  JUMP_IF_FALSE
+              15   5.00%  JUMP_IF_TRUE
+              15   5.00%  NE_INT
+              13   4.33%  JUMP
+              13   4.33%  ADD_INT
+              11   3.67%  MOD_INT
+              11   3.67%  EQ_INT
+               8   2.67%  DIV_INT
+               5   1.67%  CALL
+               4   1.33%  RETURN
+               4   1.33%  GT_INT
+               4   1.33%  RANGE_NEXT
+               3   1.00%  MUL_INT
+               1   0.33%  RANGE_INIT_INT
+               1   0.33%  RANGE_TEST
+
+pairs (an instruction, then the next one of the code right after it)
+              44  14.67%  LOAD_INT, CONST
+              16   5.33%  STORE_INT, LOAD_INT
+              15   5.00%  CONST, NE_INT
+              15   5.00%  NE_INT, JUMP_IF_TRUE
+              13   4.33%  CONST, ADD_INT
+              13   4.33%  STORE_INT, JUMP
+              12   4.00%  ADD_INT, STORE_INT
+              11   3.67%  CONST, MOD_INT
+              11   3.67%  CONST, EQ_INT
+              11   3.67%  MOD_INT, CONST
+              11   3.67%  EQ_INT, JUMP_IF_FALSE
+              10   3.33%  JUMP_IF_FALSE, LOAD_INT
+               8   2.67%  CONST, DIV_INT
+               8   2.67%  DIV_INT, STORE_INT
+               7   2.33%  LOAD_INT, STORE_INT
+               6   2.00%  CONST, STORE_INT
+               6   2.00%  STORE_INT, CONST
+               5   1.67%  LOAD_INT, CALL
+               4   1.33%  LOAD_INT, LOAD_INT
+               4   1.33%  LOAD_INT, RETURN
